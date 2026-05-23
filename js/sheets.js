@@ -1,26 +1,35 @@
-// Sheets API — all calls go through the Apps Script web app
+// REST API client — talks to Node.js/SQLite backend
 const Sheets = {
-  async call(action, payload = {}) {
-    if (APPS_SCRIPT_URL === "YOUR_APPS_SCRIPT_URL_HERE") {
-      throw new Error("Please set your Apps Script URL in js/config.js");
-    }
-    const res = await fetch(APPS_SCRIPT_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({ action, ...payload }),
-    });
+  async request(method, endpoint, body) {
+    const opts = { method, headers: { 'Content-Type': 'application/json' } };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(endpoint, opts);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     return data;
   },
 
-  getCustomers: () => Sheets.call("getCustomers"),
-  addCustomer: (customer) => Sheets.call("addCustomer", { customer }),
-  updateCustomer: (id, customer) => Sheets.call("updateCustomer", { id, customer }),
-  deleteCustomer: (id) => Sheets.call("deleteCustomer", { id }),
+  getCustomers:           ()           => Sheets.request('GET',    '/api/customers'),
+  addCustomer:            (c)          => Sheets.request('POST',   '/api/customers', c),
+  updateCustomer:         (id, c)      => Sheets.request('PUT',    `/api/customers/${id}`, c),
+  deleteCustomer:         (id)         => Sheets.request('DELETE', `/api/customers/${id}`),
 
-  getOrders: () => Sheets.call("getOrders"),
-  addOrder: (order) => Sheets.call("addOrder", { order }),
-  updateOrder: (id, order) => Sheets.call("updateOrder", { id, order }),
-  deleteOrder: (id) => Sheets.call("deleteOrder", { id }),
+  getOrders:              ()           => Sheets.request('GET',    '/api/orders'),
+  addOrder:               (o)          => Sheets.request('POST',   '/api/orders', o),
+  updateOrder:            (id, o)      => Sheets.request('PUT',    `/api/orders/${id}`, o),
+  deleteOrder:            (id)         => Sheets.request('DELETE', `/api/orders/${id}`),
+};
+
+// AI — asks Claude questions about your business data
+const AI = {
+  async analyze(question) {
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    return data.answer;
+  },
 };

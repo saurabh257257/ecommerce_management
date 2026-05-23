@@ -1,5 +1,2 @@
-// =============================================
-// PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
-// after deploying the Apps Script (see README)
-// =============================================
-const APPS_SCRIPT_URL = "YOUR_APPS_SCRIPT_URL_HERE";
+// API base — empty string means same origin (the Node.js server)
+const API_BASE = '';

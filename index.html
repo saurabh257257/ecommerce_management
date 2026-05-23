@@ -7,10 +7,28 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* AI Chat Panel */
+    .ai-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-top: 24px; overflow: hidden; }
+    .ai-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+    .ai-header .ai-badge { background: #eef2ff; color: var(--primary); font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 20px; }
+    .ai-messages { padding: 16px 20px; min-height: 120px; max-height: 340px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+    .ai-msg { display: flex; gap: 10px; align-items: flex-start; }
+    .ai-msg.user { flex-direction: row-reverse; }
+    .ai-bubble { padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.5; max-width: 78%; }
+    .ai-msg.bot .ai-bubble { background: var(--bg); color: var(--text); border-bottom-left-radius: 4px; }
+    .ai-msg.user .ai-bubble { background: var(--primary); color: #fff; border-bottom-right-radius: 4px; }
+    .ai-avatar { width: 30px; height: 30px; border-radius: 50%; background: #eef2ff; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+    .ai-input-row { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
+    .ai-input-row input { flex: 1; padding: 9px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; }
+    .ai-input-row input:focus { border-color: var(--primary); }
+    .ai-chips { padding: 0 20px 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip { padding: 5px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 20px; font-size: 12px; cursor: pointer; color: var(--muted); transition: all .15s; }
+    .chip:hover { background: #eef2ff; color: var(--primary); border-color: var(--primary); }
+  </style>
 </head>
 <body>
 
-<!-- Sidebar -->
 <aside class="sidebar">
   <div class="sidebar-logo">
     <h1>ShopManager</h1>
@@ -32,7 +50,6 @@
   </nav>
 </aside>
 
-<!-- Main -->
 <div class="main">
   <div class="topbar">
     <h2>Dashboard</h2>
@@ -51,12 +68,12 @@
       <div class="stat-card">
         <div class="label">Total Customers</div>
         <div class="value" id="statCustomers">—</div>
-        <div class="change">from Google Sheets</div>
+        <div class="change">stored in SQLite</div>
       </div>
       <div class="stat-card">
         <div class="label">Total Orders</div>
         <div class="value" id="statOrders">—</div>
-        <div class="change">from Google Sheets</div>
+        <div class="change">stored in SQLite</div>
       </div>
       <div class="stat-card">
         <div class="label">Total Revenue</div>
@@ -79,18 +96,42 @@
       <table>
         <thead>
           <tr>
-            <th>Order ID</th>
-            <th>Customer</th>
-            <th>Product</th>
-            <th>Amount</th>
-            <th>Status</th>
-            <th>Date</th>
+            <th>Order ID</th><th>Customer</th><th>Product</th>
+            <th>Amount</th><th>Status</th><th>Date</th>
           </tr>
         </thead>
         <tbody id="recentOrdersBody">
           <tr class="loading-row"><td colspan="6"><span class="spinner"></span></td></tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- AI Chat Panel -->
+    <div class="ai-panel">
+      <div class="ai-header">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color:var(--primary)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+        <span style="font-weight:600;font-size:15px">Ask Claude AI</span>
+        <span class="ai-badge">Powered by Claude</span>
+      </div>
+      <div class="ai-messages" id="aiMessages">
+        <div class="ai-msg bot">
+          <div class="ai-avatar">🤖</div>
+          <div class="ai-bubble">Hi! I can analyze your business data. Ask me anything — like your top customers, revenue trends, or pending orders.</div>
+        </div>
+      </div>
+      <div class="ai-chips">
+        <span class="chip" onclick="askAI('What is my total revenue this month?')">Revenue summary</span>
+        <span class="chip" onclick="askAI('Who are my top 5 customers by order value?')">Top customers</span>
+        <span class="chip" onclick="askAI('How many orders are pending or processing?')">Pending orders</span>
+        <span class="chip" onclick="askAI('Which product is ordered the most?')">Best product</span>
+      </div>
+      <div class="ai-input-row">
+        <input type="text" id="aiInput" placeholder="Ask anything about your business…" onkeydown="if(event.key==='Enter') askAI()" />
+        <button class="btn btn-primary" id="aiSendBtn" onclick="askAI()">
+          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+          Ask
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -118,16 +159,15 @@ async function loadDashboard() {
     const pending = orders.filter(o => o.status === 'Pending' || o.status === 'Processing').length;
     document.getElementById('statPending').textContent = pending;
 
-    const recent = [...orders].reverse().slice(0, 8);
     const tbody = document.getElementById('recentOrdersBody');
-    if (recent.length === 0) {
+    if (orders.length === 0) {
       tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>No orders yet</div></td></tr>`;
     } else {
-      tbody.innerHTML = recent.map(o => `
+      tbody.innerHTML = orders.slice(0, 8).map(o => `
         <tr>
           <td><strong>#${o.id}</strong></td>
-          <td>${o.customerName || '—'}</td>
-          <td>${o.product || '—'}</td>
+          <td>${o.customerName||'—'}</td>
+          <td>${o.product||'—'}</td>
           <td>₹${parseFloat(o.amount||0).toLocaleString('en-IN')}</td>
           <td><span class="badge ${statusColors[o.status]||'badge-gray'}">${o.status||'—'}</span></td>
           <td style="color:var(--muted)">${o.date||'—'}</td>
@@ -135,10 +175,37 @@ async function loadDashboard() {
     }
     document.getElementById('syncStatus').textContent = 'Synced just now';
   } catch(e) {
-    document.getElementById('syncStatus').textContent = 'Not connected';
+    document.getElementById('syncStatus').textContent = 'Error';
     document.getElementById('recentOrdersBody').innerHTML = `<tr class="loading-row"><td colspan="6" style="color:var(--danger)">${e.message}</td></tr>`;
     ['statCustomers','statOrders','statRevenue','statPending'].forEach(id => document.getElementById(id).textContent = '—');
   }
+}
+
+async function askAI(question) {
+  const input = document.getElementById('aiInput');
+  const q = question || input.value.trim();
+  if (!q) return;
+
+  input.value = '';
+  const messages = document.getElementById('aiMessages');
+  const btn = document.getElementById('aiSendBtn');
+
+  messages.innerHTML += `<div class="ai-msg user"><div class="ai-avatar" style="background:#eef2ff">👤</div><div class="ai-bubble">${q}</div></div>`;
+  messages.innerHTML += `<div class="ai-msg bot" id="aiThinking"><div class="ai-avatar">🤖</div><div class="ai-bubble" style="color:var(--muted)"><span class="spinner" style="width:14px;height:14px;border-width:2px"></span> Thinking…</div></div>`;
+  messages.scrollTop = messages.scrollHeight;
+  btn.disabled = true;
+
+  try {
+    const answer = await AI.analyze(q);
+    document.getElementById('aiThinking').remove();
+    messages.innerHTML += `<div class="ai-msg bot"><div class="ai-avatar">🤖</div><div class="ai-bubble">${answer.replace(/\n/g,'<br>')}</div></div>`;
+  } catch(e) {
+    document.getElementById('aiThinking').remove();
+    messages.innerHTML += `<div class="ai-msg bot"><div class="ai-avatar">🤖</div><div class="ai-bubble" style="color:var(--danger)">${e.message}</div></div>`;
+  }
+
+  btn.disabled = false;
+  messages.scrollTop = messages.scrollHeight;
 }
 
 loadDashboard();
