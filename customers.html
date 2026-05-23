@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShopManager — Customers</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <h1>ShopManager</h1>
+    <p>Ecommerce Dashboard</p>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="index.html" class="nav-link">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+      Dashboard
+    </a>
+    <a href="customers.html" class="nav-link active">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      Customers
+    </a>
+    <a href="orders.html" class="nav-link">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+      Orders
+    </a>
+  </nav>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <h2>Customers</h2>
+    <div class="topbar-actions">
+      <div class="search-box">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input type="text" id="searchInput" placeholder="Search customers…" oninput="filterCustomers()" />
+      </div>
+      <button class="btn btn-primary" onclick="openModal()">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Add Customer
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="card">
+      <div class="card-header">
+        <h3 id="countLabel">All Customers</h3>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>City</th>
+            <th>Status</th>
+            <th>Joined</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="customersBody">
+          <tr class="loading-row"><td colspan="7"><span class="spinner"></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Add / Edit Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3 id="modalTitle">Add Customer</h3>
+    <form id="customerForm" onsubmit="saveCustomer(event)">
+      <input type="hidden" id="customerId" />
+      <div class="form-grid">
+        <div class="form-group">
+          <label>First Name *</label>
+          <input type="text" id="firstName" required />
+        </div>
+        <div class="form-group">
+          <label>Last Name *</label>
+          <input type="text" id="lastName" required />
+        </div>
+        <div class="form-group full">
+          <label>Email *</label>
+          <input type="email" id="email" required />
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input type="tel" id="phone" />
+        </div>
+        <div class="form-group">
+          <label>City</label>
+          <input type="text" id="city" />
+        </div>
+        <div class="form-group full">
+          <label>Address</label>
+          <textarea id="address"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="status">
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+            <option value="VIP">VIP</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <input type="text" id="notes" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="saveBtn">Save Customer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="js/config.js"></script>
+<script src="js/sheets.js"></script>
+<script>
+let allCustomers = [];
+const statusBadge = { Active:'badge-green', Inactive:'badge-gray', VIP:'badge-blue' };
+
+function initials(c) {
+  return ((c.firstName||'?')[0] + (c.lastName||'?')[0]).toUpperCase();
+}
+
+async function loadCustomers() {
+  try {
+    const res = await Sheets.getCustomers();
+    allCustomers = res.data || [];
+    renderCustomers(allCustomers);
+  } catch(e) {
+    document.getElementById('customersBody').innerHTML =
+      `<tr class="loading-row"><td colspan="7" style="color:var(--danger)">${e.message}</td></tr>`;
+  }
+}
+
+function renderCustomers(list) {
+  document.getElementById('countLabel').textContent = `All Customers (${list.length})`;
+  const tbody = document.getElementById('customersBody');
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      No customers yet. Add your first one!
+    </div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(c => `
+    <tr>
+      <td><div style="display:flex;align-items:center;gap:10px">
+        <div class="avatar">${initials(c)}</div>
+        <strong>${c.firstName} ${c.lastName}</strong>
+      </div></td>
+      <td>${c.email||'—'}</td>
+      <td>${c.phone||'—'}</td>
+      <td>${c.city||'—'}</td>
+      <td><span class="badge ${statusBadge[c.status]||'badge-gray'}">${c.status||'—'}</span></td>
+      <td style="color:var(--muted)">${c.joined||'—'}</td>
+      <td>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-outline btn-sm" onclick='editCustomer(${JSON.stringify(c)})'>Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteCustomer('${c.id}')">Delete</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function filterCustomers() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  if (!q) { renderCustomers(allCustomers); return; }
+  renderCustomers(allCustomers.filter(c =>
+    `${c.firstName} ${c.lastName} ${c.email} ${c.phone} ${c.city}`.toLowerCase().includes(q)
+  ));
+}
+
+function openModal(customer = null) {
+  document.getElementById('modalTitle').textContent = customer ? 'Edit Customer' : 'Add Customer';
+  document.getElementById('saveBtn').textContent = customer ? 'Update Customer' : 'Save Customer';
+  document.getElementById('customerId').value = customer?.id || '';
+  document.getElementById('firstName').value = customer?.firstName || '';
+  document.getElementById('lastName').value = customer?.lastName || '';
+  document.getElementById('email').value = customer?.email || '';
+  document.getElementById('phone').value = customer?.phone || '';
+  document.getElementById('city').value = customer?.city || '';
+  document.getElementById('address').value = customer?.address || '';
+  document.getElementById('status').value = customer?.status || 'Active';
+  document.getElementById('notes').value = customer?.notes || '';
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+function editCustomer(c) { openModal(c); }
+
+async function saveCustomer(e) {
+  e.preventDefault();
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  const id = document.getElementById('customerId').value;
+  const customer = {
+    firstName: document.getElementById('firstName').value.trim(),
+    lastName: document.getElementById('lastName').value.trim(),
+    email: document.getElementById('email').value.trim(),
+    phone: document.getElementById('phone').value.trim(),
+    city: document.getElementById('city').value.trim(),
+    address: document.getElementById('address').value.trim(),
+    status: document.getElementById('status').value,
+    notes: document.getElementById('notes').value.trim(),
+  };
+  try {
+    if (id) {
+      await Sheets.updateCustomer(id, customer);
+      toast('Customer updated!', 'success');
+    } else {
+      customer.joined = new Date().toLocaleDateString('en-IN');
+      await Sheets.addCustomer(customer);
+      toast('Customer added!', 'success');
+    }
+    closeModal();
+    await loadCustomers();
+  } catch(err) {
+    toast(err.message, 'error');
+  }
+  btn.disabled = false;
+  btn.textContent = id ? 'Update Customer' : 'Save Customer';
+}
+
+async function deleteCustomer(id) {
+  if (!confirm('Delete this customer? This cannot be undone.')) return;
+  try {
+    await Sheets.deleteCustomer(id);
+    toast('Customer deleted', 'success');
+    await loadCustomers();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = type ? `show ${type}` : 'show';
+  setTimeout(() => el.className = '', 3000);
+}
+
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+loadCustomers();
+</script>
+</body>
+</html>

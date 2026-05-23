@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShopManager — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <h1>ShopManager</h1>
+    <p>Ecommerce Dashboard</p>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="index.html" class="nav-link active">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+      Dashboard
+    </a>
+    <a href="customers.html" class="nav-link">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      Customers
+    </a>
+    <a href="orders.html" class="nav-link">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+      Orders
+    </a>
+  </nav>
+</aside>
+
+<!-- Main -->
+<div class="main">
+  <div class="topbar">
+    <h2>Dashboard</h2>
+    <div class="topbar-actions">
+      <span id="syncStatus" style="font-size:13px;color:var(--muted)">Loading…</span>
+      <button class="btn btn-outline btn-sm" onclick="loadDashboard()">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="label">Total Customers</div>
+        <div class="value" id="statCustomers">—</div>
+        <div class="change">from Google Sheets</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Total Orders</div>
+        <div class="value" id="statOrders">—</div>
+        <div class="change">from Google Sheets</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Total Revenue</div>
+        <div class="value" id="statRevenue">—</div>
+        <div class="change">all orders</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Pending Orders</div>
+        <div class="value" id="statPending">—</div>
+        <div class="change" style="color:var(--warning)">needs action</div>
+      </div>
+    </div>
+
+    <!-- Recent Orders -->
+    <div class="card">
+      <div class="card-header">
+        <h3>Recent Orders</h3>
+        <a href="orders.html" class="btn btn-outline btn-sm">View All</a>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Customer</th>
+            <th>Product</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="recentOrdersBody">
+          <tr class="loading-row"><td colspan="6"><span class="spinner"></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="js/config.js"></script>
+<script src="js/sheets.js"></script>
+<script>
+const statusColors = { Delivered:'badge-green', Shipped:'badge-blue', Processing:'badge-yellow', Cancelled:'badge-red', Pending:'badge-yellow' };
+
+async function loadDashboard() {
+  document.getElementById('syncStatus').textContent = 'Syncing…';
+  try {
+    const [cRes, oRes] = await Promise.all([Sheets.getCustomers(), Sheets.getOrders()]);
+    const customers = cRes.data || [];
+    const orders = oRes.data || [];
+
+    document.getElementById('statCustomers').textContent = customers.length;
+    document.getElementById('statOrders').textContent = orders.length;
+
+    const revenue = orders.reduce((s, o) => s + parseFloat(o.amount || 0), 0);
+    document.getElementById('statRevenue').textContent = '₹' + revenue.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+    const pending = orders.filter(o => o.status === 'Pending' || o.status === 'Processing').length;
+    document.getElementById('statPending').textContent = pending;
+
+    const recent = [...orders].reverse().slice(0, 8);
+    const tbody = document.getElementById('recentOrdersBody');
+    if (recent.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>No orders yet</div></td></tr>`;
+    } else {
+      tbody.innerHTML = recent.map(o => `
+        <tr>
+          <td><strong>#${o.id}</strong></td>
+          <td>${o.customerName || '—'}</td>
+          <td>${o.product || '—'}</td>
+          <td>₹${parseFloat(o.amount||0).toLocaleString('en-IN')}</td>
+          <td><span class="badge ${statusColors[o.status]||'badge-gray'}">${o.status||'—'}</span></td>
+          <td style="color:var(--muted)">${o.date||'—'}</td>
+        </tr>`).join('');
+    }
+    document.getElementById('syncStatus').textContent = 'Synced just now';
+  } catch(e) {
+    document.getElementById('syncStatus').textContent = 'Not connected';
+    document.getElementById('recentOrdersBody').innerHTML = `<tr class="loading-row"><td colspan="6" style="color:var(--danger)">${e.message}</td></tr>`;
+    ['statCustomers','statOrders','statRevenue','statPending'].forEach(id => document.getElementById(id).textContent = '—');
+  }
+}
+
+loadDashboard();
+</script>
+</body>
+</html>

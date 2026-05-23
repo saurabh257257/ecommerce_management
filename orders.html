@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShopManager — Orders</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <h1>ShopManager</h1>
+    <p>Ecommerce Dashboard</p>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="index.html" class="nav-link">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+      Dashboard
+    </a>
+    <a href="customers.html" class="nav-link">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      Customers
+    </a>
+    <a href="orders.html" class="nav-link active">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+      Orders
+    </a>
+  </nav>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <h2>Orders</h2>
+    <div class="topbar-actions">
+      <div class="search-box">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input type="text" id="searchInput" placeholder="Search orders…" oninput="filterOrders()" />
+      </div>
+      <select id="statusFilter" class="btn btn-outline" style="cursor:pointer" onchange="filterOrders()">
+        <option value="">All Statuses</option>
+        <option value="Pending">Pending</option>
+        <option value="Processing">Processing</option>
+        <option value="Shipped">Shipped</option>
+        <option value="Delivered">Delivered</option>
+        <option value="Cancelled">Cancelled</option>
+      </select>
+      <button class="btn btn-primary" onclick="openModal()">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Add Order
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="card">
+      <div class="card-header">
+        <h3 id="countLabel">All Orders</h3>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Customer</th>
+            <th>Product</th>
+            <th>Qty</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="ordersBody">
+          <tr class="loading-row"><td colspan="8"><span class="spinner"></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Add / Edit Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3 id="modalTitle">Add Order</h3>
+    <form id="orderForm" onsubmit="saveOrder(event)">
+      <input type="hidden" id="orderId" />
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Customer Name *</label>
+          <input type="text" id="customerName" required placeholder="e.g. Rahul Sharma" />
+        </div>
+        <div class="form-group full">
+          <label>Product / Description *</label>
+          <input type="text" id="product" required placeholder="e.g. Blue Sneakers - Size 10" />
+        </div>
+        <div class="form-group">
+          <label>Quantity</label>
+          <input type="number" id="qty" min="1" value="1" />
+        </div>
+        <div class="form-group">
+          <label>Amount (₹) *</label>
+          <input type="number" id="amount" required min="0" step="0.01" placeholder="0.00" />
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="status">
+            <option value="Pending">Pending</option>
+            <option value="Processing">Processing</option>
+            <option value="Shipped">Shipped</option>
+            <option value="Delivered">Delivered</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Payment</label>
+          <select id="payment">
+            <option value="COD">Cash on Delivery</option>
+            <option value="UPI">UPI</option>
+            <option value="Card">Card</option>
+            <option value="NetBanking">Net Banking</option>
+            <option value="Prepaid">Prepaid</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>Notes</label>
+          <textarea id="notes" placeholder="Delivery instructions, special requests…"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="saveBtn">Save Order</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="js/config.js"></script>
+<script src="js/sheets.js"></script>
+<script>
+let allOrders = [];
+const statusBadge = { Delivered:'badge-green', Shipped:'badge-blue', Processing:'badge-yellow', Cancelled:'badge-red', Pending:'badge-yellow' };
+
+async function loadOrders() {
+  try {
+    const res = await Sheets.getOrders();
+    allOrders = (res.data || []).reverse();
+    renderOrders(allOrders);
+  } catch(e) {
+    document.getElementById('ordersBody').innerHTML =
+      `<tr class="loading-row"><td colspan="8" style="color:var(--danger)">${e.message}</td></tr>`;
+  }
+}
+
+function renderOrders(list) {
+  document.getElementById('countLabel').textContent = `All Orders (${list.length})`;
+  const tbody = document.getElementById('ordersBody');
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      No orders yet. Add your first one!
+    </div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(o => `
+    <tr>
+      <td><strong>#${o.id}</strong></td>
+      <td>${o.customerName||'—'}</td>
+      <td>${o.product||'—'}</td>
+      <td>${o.qty||1}</td>
+      <td><strong>₹${parseFloat(o.amount||0).toLocaleString('en-IN')}</strong></td>
+      <td><span class="badge ${statusBadge[o.status]||'badge-gray'}">${o.status||'—'}</span></td>
+      <td style="color:var(--muted)">${o.date||'—'}</td>
+      <td>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-outline btn-sm" onclick='editOrder(${JSON.stringify(o)})'>Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteOrder('${o.id}')">Delete</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function filterOrders() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const s = document.getElementById('statusFilter').value;
+  let list = allOrders;
+  if (q) list = list.filter(o => `${o.id} ${o.customerName} ${o.product}`.toLowerCase().includes(q));
+  if (s) list = list.filter(o => o.status === s);
+  renderOrders(list);
+}
+
+function openModal(order = null) {
+  document.getElementById('modalTitle').textContent = order ? 'Edit Order' : 'Add Order';
+  document.getElementById('saveBtn').textContent = order ? 'Update Order' : 'Save Order';
+  document.getElementById('orderId').value = order?.id || '';
+  document.getElementById('customerName').value = order?.customerName || '';
+  document.getElementById('product').value = order?.product || '';
+  document.getElementById('qty').value = order?.qty || 1;
+  document.getElementById('amount').value = order?.amount || '';
+  document.getElementById('status').value = order?.status || 'Pending';
+  document.getElementById('payment').value = order?.payment || 'COD';
+  document.getElementById('notes').value = order?.notes || '';
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+function editOrder(o) { openModal(o); }
+
+async function saveOrder(e) {
+  e.preventDefault();
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  const id = document.getElementById('orderId').value;
+  const order = {
+    customerName: document.getElementById('customerName').value.trim(),
+    product: document.getElementById('product').value.trim(),
+    qty: document.getElementById('qty').value,
+    amount: document.getElementById('amount').value,
+    status: document.getElementById('status').value,
+    payment: document.getElementById('payment').value,
+    notes: document.getElementById('notes').value.trim(),
+  };
+  try {
+    if (id) {
+      await Sheets.updateOrder(id, order);
+      toast('Order updated!', 'success');
+    } else {
+      order.date = new Date().toLocaleDateString('en-IN');
+      await Sheets.addOrder(order);
+      toast('Order added!', 'success');
+    }
+    closeModal();
+    await loadOrders();
+  } catch(err) {
+    toast(err.message, 'error');
+  }
+  btn.disabled = false;
+  btn.textContent = id ? 'Update Order' : 'Save Order';
+}
+
+async function deleteOrder(id) {
+  if (!confirm('Delete this order? This cannot be undone.')) return;
+  try {
+    await Sheets.deleteOrder(id);
+    toast('Order deleted', 'success');
+    await loadOrders();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = type ? `show ${type}` : 'show';
+  setTimeout(() => el.className = '', 3000);
+}
+
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+loadOrders();
+</script>
+</body>
+</html>
