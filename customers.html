@@ -11,87 +11,136 @@
     body { overflow: hidden; }
     .crm-wrap { display: flex; height: calc(100vh - 61px); overflow: hidden; }
 
-    /* Left panel */
-    .crm-list-panel { width: 310px; min-width: 310px; border-right: 1px solid var(--border); display: flex; flex-direction: column; background: var(--surface); overflow: hidden; }
+    /* ── Left panel ── */
+    .crm-list-panel { width: 320px; min-width: 320px; border-right: 1px solid var(--border); display: flex; flex-direction: column; background: var(--surface); overflow: hidden; }
     .crm-filters { padding: 10px 12px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
     .search-full { border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 14px; width: 100%; outline: none; background: var(--bg); font-family: inherit; }
     .search-full:focus { border-color: var(--primary); }
     .chips { display: flex; gap: 5px; flex-wrap: wrap; }
-    .chip { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; border: 1px solid var(--border); background: var(--bg); color: var(--muted); cursor: pointer; transition: all .15s; }
+    .chip { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; border: 1px solid var(--border); background: var(--bg); color: var(--muted); cursor: pointer; transition: all .15s; white-space: nowrap; }
     .chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
     .filter-row { display: flex; gap: 6px; }
     .sel { flex: 1; border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font-size: 13px; background: var(--surface); cursor: pointer; font-family: inherit; }
     .list-count { font-size: 12px; color: var(--muted); }
     .crm-list { flex: 1; overflow-y: auto; }
 
-    /* Customer item */
-    .ci { padding: 11px 14px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; gap: 10px; align-items: flex-start; transition: background .1s; }
+    /* Quick-update mic bar */
+    .qmic-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: #fafafa; }
+    .qmic-btn { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: linear-gradient(135deg,#4f46e5,#7c3aed); color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 12px; font-family: inherit; font-weight: 600; transition: opacity .15s; flex-shrink: 0; }
+    .qmic-btn:hover { opacity:.88; }
+    .qmic-btn.rec { background: linear-gradient(135deg,#dc2626,#b91c1c); animation: pulse .9s infinite; }
+    .qmic-st { font-size: 11px; color: var(--muted); flex: 1; }
+
+    /* Customer list item */
+    .ci { padding: 10px 12px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; gap: 9px; align-items: flex-start; transition: background .1s; }
     .ci:hover { background: var(--bg); }
-    .ci.sel { background: #eef2ff; border-left: 3px solid var(--primary); }
-    .ci-av { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .ci.sel { background: #eef2ff; border-left: 3px solid var(--primary); padding-left: 9px; }
+    .ci-av { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; margin-top: 1px; }
     .ci-body { flex: 1; min-width: 0; }
-    .ci-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .ci-co { font-size: 12px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .ci-row { display: flex; align-items: center; gap: 5px; margin-top: 5px; flex-wrap: wrap; }
-    .ci-phone { font-size: 11px; color: var(--muted); margin-top: 3px; }
-    .ci-due { font-size: 11px; font-weight: 500; color: var(--warning); }
+    .ci-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ci-co { font-size: 11px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ci-row { display: flex; align-items: center; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+    .ci-phone { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .ci-req { font-size: 11px; color: #475569; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-style: italic; }
+    .ci-due { font-size: 10px; font-weight: 600; color: var(--warning); }
     .ci-due.overdue { color: var(--danger); }
 
-    /* Right panel */
+    /* ── Right panel ── */
     .crm-detail-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
     .crm-empty { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 10px; color: var(--muted); }
     .crm-empty svg { width: 44px; height: 44px; opacity: .25; }
-    .detail-scroll { flex: 1; overflow-y: auto; padding: 20px; }
+    .detail-scroll { flex: 1; overflow-y: auto; padding: 16px 20px; }
 
-    /* Detail header card */
-    .dh { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; margin-bottom: 14px; }
-    .dh-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-    .dh-name { font-size: 21px; font-weight: 700; }
-    .dh-sub { font-size: 13px; color: var(--muted); margin-top: 3px; }
-    .dh-selects { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
-    .inline-sel { border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-size: 13px; background: var(--surface); cursor: pointer; font-family: inherit; }
-    .dh-contact { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
-    .dh-contact a { font-size: 14px; color: var(--text); text-decoration: none; display: flex; align-items: center; gap: 5px; }
-    .dh-contact a:hover { color: var(--primary); }
+    /* Header card */
+    .dh { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
+    .dh-row1 { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .dh-name { font-size: 19px; font-weight: 700; line-height: 1.2; }
+    .dh-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
     .dh-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .dh-row2 { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+    .inline-sel { border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-size: 12px; background: var(--surface); cursor: pointer; font-family: inherit; }
+    .dh-contact { display: flex; gap: 14px; margin-top: 8px; flex-wrap: wrap; }
+    .dh-contact a { font-size: 13px; color: var(--text); text-decoration: none; display: flex; align-items: center; gap: 4px; }
+    .dh-contact a:hover { color: var(--primary); }
 
-    /* Info grid */
-    .info-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
-    .ic { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
-    .ic-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
-    .ic-val { font-size: 14px; color: var(--text); line-height: 1.5; min-height: 20px; cursor: pointer; }
-    .ic-val:hover { color: var(--primary); }
-    .ic-edit { display: none; }
-    .ic-edit textarea { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; font-size: 14px; font-family: inherit; resize: none; outline: none; margin-top: 6px; }
-    .ic-edit textarea:focus { border-color: var(--primary); }
-    .ic-btns { display: flex; gap: 6px; margin-top: 6px; }
+    /* Prominent sections */
+    .sec { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
+    .sec-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .sec-title { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+    .sec-action { font-size: 12px; color: var(--primary); cursor: pointer; font-weight: 500; }
+
+    /* Requirement */
+    .req-text { font-size: 14px; line-height: 1.6; color: var(--text); cursor: pointer; min-height: 24px; }
+    .req-text.empty { color: var(--muted); font-style: italic; }
+    .req-text:hover { color: var(--primary); }
+    .req-edit { display: none; }
+    .req-edit textarea { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; font-size: 14px; font-family: inherit; resize: vertical; outline: none; min-height: 72px; }
+    .req-edit textarea:focus { border-color: var(--primary); }
+    .req-btns { display: flex; gap: 6px; margin-top: 6px; }
 
     /* Follow-up */
-    .fu-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .fu-date { font-size: 15px; font-weight: 600; }
+    .fu-date { font-size: 18px; font-weight: 700; }
     .fu-date.overdue { color: var(--danger); }
     .fu-date.today { color: var(--warning); }
     .fu-date.future { color: #16a34a; }
-    .fu-date.none { color: var(--muted); font-weight: 400; font-size: 14px; }
+    .fu-date.none { color: var(--muted); font-size: 14px; font-weight: 400; font-style: italic; }
+    .fu-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
     input[type=date].fu-input { border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-size: 13px; font-family: inherit; }
-    .quick-d { display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
-    .qd-btn { padding: 3px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; cursor: pointer; background: var(--bg); color: var(--muted); font-family: inherit; transition: all .15s; }
+    .quick-d { display: flex; gap: 5px; flex-wrap: wrap; }
+    .qd-btn { padding: 3px 9px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; cursor: pointer; background: var(--bg); color: var(--muted); font-family: inherit; transition: all .15s; }
     .qd-btn:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
 
-    /* Interests */
-    .interest-wrap { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-    .itag { background: #eef2ff; color: var(--primary); padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; display: inline-flex; align-items: center; gap: 4px; }
-    .itag button { background: none; border: none; cursor: pointer; color: var(--primary); padding: 0 0 0 2px; font-size: 14px; line-height: 1; }
-    .add-itag { font-size: 12px; color: var(--primary); font-weight: 500; cursor: pointer; padding: 3px 8px; border: 1px dashed #a5b4fc; border-radius: 20px; }
-    .add-itag:hover { background: #eef2ff; }
-    .itag-input-row { display: flex; gap: 6px; margin-top: 8px; }
-    .itag-input-row input { flex: 1; border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; font-size: 13px; font-family: inherit; outline: none; }
-    .itag-input-row input:focus { border-color: var(--primary); }
+    /* Remark */
+    .remark-text { font-size: 13px; line-height: 1.5; color: var(--muted); cursor: pointer; min-height: 20px; }
+    .remark-text:hover { color: var(--primary); }
+    .remark-edit { display: none; }
+    .remark-edit textarea { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 13px; font-family: inherit; resize: none; outline: none; }
+    .remark-edit textarea:focus { border-color: var(--primary); }
+
+    /* ── Product interests redesign ── */
+    .int-list { display: flex; flex-direction: column; gap: 7px; margin-bottom: 10px; }
+    .int-row { display: flex; align-items: center; gap: 8px; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 8px; padding: 7px 10px; }
+    .int-sku { font-size: 10px; color: #7c3aed; font-weight: 700; background: #ede9fe; padding: 2px 6px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; }
+    .int-name { flex: 1; font-size: 13px; font-weight: 500; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .int-qty { width: 90px; border: 1px solid #ddd6fe; border-radius: 6px; padding: 4px 7px; font-size: 12px; font-family: inherit; outline: none; background: #fff; flex-shrink: 0; }
+    .int-qty:focus { border-color: var(--primary); }
+    .int-del { background: none; border: none; cursor: pointer; color: #a78bfa; font-size: 16px; line-height: 1; padding: 0 2px; flex-shrink: 0; }
+    .int-del:hover { color: var(--danger); }
+    .int-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+    /* Product picker */
+    .prod-picker-wrap { position: relative; }
+    .prod-picker-btn { display: flex; align-items: center; gap: 5px; padding: 5px 12px; border: 1px dashed #a5b4fc; border-radius: 8px; font-size: 12px; color: var(--primary); cursor: pointer; background: none; font-family: inherit; font-weight: 600; transition: background .15s; }
+    .prod-picker-btn:hover { background: #eef2ff; }
+    .prod-picker-drop { position: absolute; bottom: calc(100% + 4px); left: 0; width: 320px; max-height: 300px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.14); z-index: 300; overflow: hidden; display: flex; flex-direction: column; }
+    .prod-picker-drop.above { bottom: auto; top: calc(100% + 4px); }
+    .ppd-search { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+    .ppd-search input { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; font-size: 13px; font-family: inherit; outline: none; }
+    .ppd-search input:focus { border-color: var(--primary); }
+    .ppd-list { overflow-y: auto; flex: 1; }
+    .ppd-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; display: flex; gap: 8px; align-items: center; }
+    .ppd-item:last-child { border: none; }
+    .ppd-item:hover { background: #f5f3ff; }
+    .ppd-sku { font-size: 10px; color: var(--primary); font-weight: 700; background: #eef2ff; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
+    .ppd-name { font-size: 13px; flex: 1; }
+    .ppd-cat { font-size: 10px; color: var(--muted); }
+    .ppd-empty { padding: 20px; text-align: center; font-size: 13px; color: var(--muted); }
+    .ppd-cat-head { padding: 5px 12px; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; background: #f8fafc; border-bottom: 1px solid var(--border); }
+
+    /* AI confirm panel */
+    .ai-confirm { background: #f5f3ff; border: 1px solid #c4b5fd; border-radius: 12px; padding: 14px 16px; margin-top: 8px; }
+    .ai-confirm h4 { font-size: 12px; font-weight: 700; color: #6d28d9; margin-bottom: 10px; text-transform: uppercase; letter-spacing: .4px; }
+    .ai-field { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; border-bottom: 1px solid #ede9fe; }
+    .ai-field:last-child { border: none; }
+    .ai-field input[type=checkbox] { margin-top: 2px; accent-color: var(--primary); width: 15px; height: 15px; flex-shrink: 0; cursor: pointer; }
+    .ai-flabel { font-size: 10px; font-weight: 700; color: var(--muted); width: 90px; flex-shrink: 0; text-transform: uppercase; padding-top: 2px; }
+    .ai-fval { font-size: 13px; flex: 1; line-height: 1.4; }
+    .ai-confirm-actions { display: flex; gap: 8px; margin-top: 10px; }
 
     /* Discussion */
     .disc-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
-    .disc-head { padding: 13px 16px; border-bottom: 1px solid var(--border); font-size: 14px; font-weight: 600; }
-    .note-compose { padding: 14px 16px; background: var(--bg); border-bottom: 1px solid var(--border); }
+    .disc-head { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+    .note-compose { padding: 12px 14px; background: var(--bg); border-bottom: 1px solid var(--border); }
     .nc-top { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
     .type-sel { border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font-size: 13px; background: var(--surface); font-family: inherit; }
     .mic-sm { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center; transition: all .15s; flex-shrink: 0; }
@@ -103,28 +152,27 @@
     .nc-textarea:focus { border-color: var(--primary); }
     .nc-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
     .transcript-area { margin-top: 8px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 12px; font-size: 13px; color: #78350f; min-height: 40px; display: none; }
-    .disc-list {}
-    .disc-item { padding: 13px 16px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; }
+    .disc-item { padding: 12px 14px; border-bottom: 1px solid var(--border); display: flex; gap: 9px; }
     .disc-item:last-child { border-bottom: none; }
-    .disc-av { width: 30px; height: 30px; border-radius: 50%; background: #eef2ff; color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+    .disc-av { width: 28px; height: 28px; border-radius: 50%; background: #eef2ff; color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
     .disc-body { flex: 1; min-width: 0; }
-    .disc-meta { display: flex; align-items: center; gap: 7px; margin-bottom: 4px; flex-wrap: wrap; }
-    .disc-author { font-size: 13px; font-weight: 600; }
-    .disc-type { font-size: 11px; padding: 2px 6px; border-radius: 4px; background: var(--bg); color: var(--muted); }
-    .disc-time { font-size: 12px; color: var(--muted); margin-left: auto; }
+    .disc-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap; }
+    .disc-author { font-size: 12px; font-weight: 600; }
+    .disc-type { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: var(--bg); color: var(--muted); }
+    .disc-time { font-size: 11px; color: var(--muted); margin-left: auto; }
     .disc-del { background: none; border: none; cursor: pointer; color: var(--muted); padding: 1px 4px; border-radius: 4px; }
     .disc-del:hover { color: var(--danger); background: #fef2f2; }
-    .disc-note { font-size: 14px; line-height: 1.5; }
-    .disc-empty { padding: 20px; text-align: center; color: var(--muted); font-size: 14px; }
+    .disc-note { font-size: 13px; line-height: 1.5; }
+    .disc-empty { padding: 20px; text-align: center; color: var(--muted); font-size: 13px; }
 
-    /* Badge extras */
+    /* Badges & assignee */
     .badge-orange { background: #ffedd5; color: #c2410c; }
-    .asgn { font-size: 12px; padding: 3px 9px; border-radius: 20px; font-weight: 500; }
+    .asgn { font-size: 11px; padding: 2px 7px; border-radius: 20px; font-weight: 500; }
     .asgn-rohan { background: #dbeafe; color: #1d4ed8; }
     .asgn-saurabh { background: #dcfce7; color: #15803d; }
     .asgn-unassigned { background: #f1f5f9; color: #475569; }
 
-    /* Modal */
+    /* Add modal */
     .modal-lg { width: 580px; max-width: 95vw; max-height: 90vh; overflow-y: auto; }
     .modal-close { background: none; border: none; cursor: pointer; font-size: 22px; color: var(--muted); line-height: 1; }
     .tab-row { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 18px; }
@@ -139,6 +187,9 @@
     .nav-sec { padding: 10px 12px 4px; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .7px; }
     .empty-list { padding: 28px; text-align: center; color: var(--muted); font-size: 14px; }
     .loading-msg { padding: 20px; text-align: center; color: var(--muted); font-size: 14px; }
+    .mobile-back-bar { display: none; align-items: center; gap: 10px; padding: 10px 14px; background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
+    .mobile-back-bar button { background: none; border: none; font-size: 14px; color: var(--primary); font-weight: 600; cursor: pointer; padding: 4px 0; }
+    .mobile-back-bar span { font-size: 14px; font-weight: 600; }
   </style>
 </head>
 <body>
@@ -169,8 +220,16 @@
   </div>
 
   <div class="crm-wrap">
-    <!-- LEFT: list -->
+    <!-- LEFT panel -->
     <div class="crm-list-panel">
+      <!-- Quick-update mic -->
+      <div class="qmic-bar">
+        <button class="qmic-btn" id="quickMicBtn" onclick="toggleQuickMic()" title="Record a voice note — AI will suggest all updates for the selected customer">
+          🎤 AI Quick Update
+        </button>
+        <span class="qmic-st" id="quickMicSt">Select a customer first</span>
+      </div>
+      <!-- Filters -->
       <div class="crm-filters">
         <input class="search-full" id="searchQ" placeholder="Search name, company, phone…" oninput="applyFilters()" />
         <div class="chips" id="aChips">
@@ -198,7 +257,7 @@
       <div class="crm-list" id="crmList"><div class="loading-msg">Loading…</div></div>
     </div>
 
-    <!-- RIGHT: detail -->
+    <!-- RIGHT detail panel -->
     <div class="crm-detail-panel">
       <div class="crm-empty" id="emptyState">
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
@@ -209,6 +268,22 @@
         <span id="mobileBackName"></span>
       </div>
       <div class="detail-scroll" id="detailContent" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- AI Confirm overlay (for quick-update) -->
+<div class="modal-overlay" id="aiConfirmModal">
+  <div class="modal" style="width:500px;max-width:95vw;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3 style="font-size:16px">AI Suggestions</h3>
+      <button class="modal-close" onclick="document.getElementById('aiConfirmModal').classList.remove('open')">×</button>
+    </div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Check the updates you want to apply, then click Confirm.</p>
+    <div id="aiFieldsList"></div>
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="document.getElementById('aiConfirmModal').classList.remove('open')">Cancel</button>
+      <button class="btn btn-primary" onclick="applyAIUpdate()">✓ Confirm Selected</button>
     </div>
   </div>
 </div>
@@ -224,7 +299,6 @@
       <button class="tab-btn2 on" id="tabM" onclick="switchTab('manual')">Fill Manually</button>
       <button class="tab-btn2" id="tabV" onclick="switchTab('voice')">🎤 Voice Input</button>
     </div>
-    <!-- Voice tab -->
     <div id="voiceTab" style="display:none">
       <p class="voice-hint">Click the mic and describe the customer — name, company, phone number, what they need, when to follow up…</p>
       <div style="text-align:center">
@@ -235,7 +309,6 @@
       <div id="addVoiceErr" style="color:var(--danger);font-size:13px;margin-top:8px;display:none"></div>
       <button id="addExtractBtn" class="btn btn-primary" style="width:100%;margin-top:12px;display:none" onclick="extractAndFill()">✨ Auto-fill with AI</button>
     </div>
-    <!-- Manual tab -->
     <div id="manualTab">
       <form id="addForm" onsubmit="saveAdd(event)">
         <div class="form-grid">
@@ -245,19 +318,13 @@
           <div class="form-group"><label>Email</label><input type="email" id="a_email" placeholder="email@example.com" /></div>
           <div class="form-group"><label>City</label><input id="a_city" placeholder="City" /></div>
           <div class="form-group"><label>Source</label><input id="a_src" placeholder="Expo, referral, online…" /></div>
-          <div class="form-group">
-            <label>Status</label>
-            <select id="a_status"><option>Lead</option><option>Contacted</option><option>Contacted but No Response</option><option>Onboarded</option></select>
-          </div>
-          <div class="form-group">
-            <label>Assigned To</label>
-            <select id="a_assigned"><option>Unassigned</option><option>Rohan</option><option>Saurabh</option></select>
-          </div>
+          <div class="form-group"><label>Status</label><select id="a_status"><option>Lead</option><option>Contacted</option><option>Contacted but No Response</option><option>Onboarded</option></select></div>
+          <div class="form-group"><label>Assigned To</label><select id="a_assigned"><option>Unassigned</option><option>Rohan</option><option>Saurabh</option></select></div>
           <div class="form-group"><label>Next Follow-up</label><input type="date" id="a_followup" /></div>
           <div class="form-group full"><label>Requirement</label><textarea id="a_req" rows="2" placeholder="What does the customer need?"></textarea></div>
           <div class="form-group full"><label>Remark</label><textarea id="a_remark" rows="2" placeholder="Any notes or context…"></textarea></div>
         </div>
-        <div class="modal-footer" style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">
+        <div class="modal-footer" style="margin-top:16px">
           <button type="button" class="btn btn-outline" onclick="closeAdd()">Cancel</button>
           <button type="submit" class="btn btn-primary" id="addSaveBtn">Save Customer</button>
         </div>
@@ -274,7 +341,7 @@
       <button class="modal-close" onclick="closeEdit()">×</button>
     </div>
     <div class="form-grid" id="editFields"></div>
-    <div class="modal-footer" style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">
+    <div class="modal-footer" style="margin-top:16px">
       <button class="btn btn-outline" onclick="closeEdit()">Cancel</button>
       <button class="btn btn-primary" onclick="saveEdit()">Save Changes</button>
     </div>
@@ -292,27 +359,30 @@ const T_ICON = { call:'📞', note:'📝', meeting:'🤝', message:'💬' };
 const COLORS = ['#6366f1','#8b5cf6','#06b6d4','#10b981','#f59e0b','#ef4444','#ec4899','#0ea5e9'];
 
 let all = [], selId = null, selC = null, fA = '';
-let addRec = null, noteRec = null, addText = '';
+let addRec = null, noteRec = null, quickRec = null, addText = '';
+let allProducts = [], pickerOpen = false, pendingAI = null;
 
+// ── Init ──────────────────────────────────────────────────────
 async function init() {
-  await loadAll();
+  await Promise.all([loadAll(), loadProducts()]);
   const p = new URLSearchParams(location.search).get('id');
   if (p) selectC(parseInt(p));
 }
-
 async function loadAll() {
   const r = await fetch('/api/crm/customers');
   all = (await r.json()).data || [];
   applyFilters();
 }
-
-function setA(el, val) {
-  document.querySelectorAll('#aChips .chip').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-  fA = val;
-  applyFilters();
+async function loadProducts() {
+  const r = await fetch('/api/products');
+  allProducts = (await r.json()).data || [];
 }
 
+// ── Filters ───────────────────────────────────────────────────
+function setA(el, val) {
+  document.querySelectorAll('#aChips .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active'); fA = val; applyFilters();
+}
 function applyFilters() {
   const q = document.getElementById('searchQ').value.toLowerCase();
   const st = document.getElementById('statusF').value;
@@ -326,7 +396,6 @@ function applyFilters() {
   document.getElementById('listCount').textContent = `${list.length} customer${list.length!==1?'s':''}`;
   renderList(list);
 }
-
 function renderList(list) {
   const el = document.getElementById('crmList');
   if (!list.length) { el.innerHTML='<div class="empty-list">No customers found</div>'; return; }
@@ -338,154 +407,161 @@ function renderList(list) {
       const ov = c.next_followup < today, td = c.next_followup === today;
       dueHtml = `<span class="ci-due${ov?' overdue':''}">${ov?'⚠ Overdue':td?'⚠ Today':'📅 '+fmtD(c.next_followup)}</span>`;
     }
+    const reqPreview = c.requirement ? esc(c.requirement.slice(0, 55)) + (c.requirement.length > 55 ? '…' : '') : '';
     return `<div class="ci${c.id===selId?' sel':''}" onclick="selectC(${c.id})">
       <div class="ci-av" style="background:${avatarCol(c.name)}">${initials(c.name)}</div>
       <div class="ci-body">
         <div class="ci-name">${esc(c.name)}</div>
-        <div class="ci-co">${[c.company,c.city].filter(Boolean).map(esc).join(' • ')||'&nbsp;'}</div>
+        ${(c.company||c.city) ? `<div class="ci-co">${[c.company,c.city].filter(Boolean).map(esc).join(' • ')}</div>` : ''}
         <div class="ci-row">
-          <span class="badge ${S_BADGE[c.status]||'badge-gray'}" style="font-size:11px;padding:2px 6px">${c.status||'—'}</span>
-          <span class="asgn ${ac}" style="font-size:11px">${c.assigned_to||'Unassigned'}</span>
+          <span class="badge ${S_BADGE[c.status]||'badge-gray'}" style="font-size:10px;padding:2px 6px">${c.status||'—'}</span>
+          <span class="asgn ${ac}">${c.assigned_to||'Unassigned'}</span>
           ${dueHtml}
         </div>
-        ${c.phone?`<div class="ci-phone">📱 ${esc(c.phone)}</div>`:''}
+        ${c.phone ? `<div class="ci-phone">📱 ${esc(c.phone)}</div>` : ''}
+        ${reqPreview ? `<div class="ci-req">📋 ${reqPreview}</div>` : ''}
       </div>
     </div>`;
   }).join('');
 }
 
+// ── Select customer ───────────────────────────────────────────
 async function selectC(id) {
   selId = id;
   history.replaceState(null,'',`?id=${id}`);
   applyFilters();
   document.getElementById('emptyState').style.display = 'none';
   const dc = document.getElementById('detailContent');
-  dc.style.display = '';
-  dc.innerHTML = '<div class="loading-msg">Loading…</div>';
+  dc.style.display = ''; dc.innerHTML = '<div class="loading-msg">Loading…</div>';
   const r = await fetch(`/api/crm/customers/${id}`);
   selC = await r.json();
-  // Mobile: slide in detail panel
   document.querySelector('.crm-wrap').classList.add('detail-open');
   document.getElementById('mobileBackBar').style.display = '';
   document.getElementById('mobileBackName').textContent = selC.name || '';
+  document.getElementById('quickMicSt').textContent = selC.name;
   renderDetail();
 }
-
 function closeMobileDetail() {
   document.querySelector('.crm-wrap').classList.remove('detail-open');
   document.getElementById('mobileBackBar').style.display = 'none';
   document.getElementById('detailContent').style.display = 'none';
   document.getElementById('emptyState').style.display = '';
-  selC = null; selId = null;
-  applyFilters();
+  selC = null; selId = null; applyFilters();
   history.replaceState(null, '', location.pathname);
+  document.getElementById('quickMicSt').textContent = 'Select a customer first';
 }
 
+// ── Render Detail ─────────────────────────────────────────────
 function renderDetail() {
   const c = selC;
   const today = todayISO();
-  let fuHtml = '';
+  // Follow-up display
+  let fuLabel = '', fuCls = 'none';
   if (c.next_followup) {
     const ov = c.next_followup < today, td = c.next_followup === today;
-    const cls = ov ? 'overdue' : td ? 'today' : 'future';
-    fuHtml = `<span class="fu-date ${cls}">${ov?'⚠ Overdue ('+fmtD(c.next_followup)+')':td?'⚠ Today':fmtD(c.next_followup)}</span>`;
-  } else {
-    fuHtml = `<span class="fu-date none">Not set</span>`;
-  }
+    fuCls = ov ? 'overdue' : td ? 'today' : 'future';
+    fuLabel = ov ? `⚠ Overdue — ${fmtD(c.next_followup)}` : td ? `⚠ Today — ${fmtD(c.next_followup)}` : fmtD(c.next_followup);
+  } else { fuLabel = 'Not set'; }
+
   const sopts = STATUSES.map(s=>`<option${c.status===s?' selected':''}>${s}</option>`).join('');
   const aopts = ASSIGNEES.map(a=>`<option${c.assigned_to===a?' selected':''}>${a}</option>`).join('');
-  const interests = c.interests || [];
   const discussions = c.discussions || [];
+  const interests = c.interests || [];
 
   document.getElementById('detailContent').innerHTML = `
+    <!-- Header -->
     <div class="dh">
-      <div class="dh-top">
-        <div>
+      <div class="dh-row1">
+        <div style="flex:1;min-width:0">
           <div class="dh-name">${esc(c.name)}</div>
           <div class="dh-sub">${[c.company,c.city,c.source].filter(Boolean).map(esc).join(' • ')||'&nbsp;'}</div>
-          <div class="dh-selects">
-            <select class="inline-sel" onchange="qupdate('status',this.value)">${sopts}</select>
-            <select class="inline-sel" onchange="qupdate('assigned_to',this.value)">${aopts}</select>
-          </div>
         </div>
         <div class="dh-actions">
           <button class="btn btn-outline btn-sm" onclick="openEdit()">Edit</button>
           <button class="btn btn-danger btn-sm" onclick="delC(${c.id})">Delete</button>
         </div>
       </div>
+      <div class="dh-row2">
+        <select class="inline-sel" onchange="qupdate('status',this.value)">${sopts}</select>
+        <select class="inline-sel" onchange="qupdate('assigned_to',this.value)">${aopts}</select>
+      </div>
       <div class="dh-contact">
         ${c.phone?`<a href="tel:${c.phone}">📱 ${esc(c.phone)}</a>`:''}
         ${c.email?`<a href="mailto:${c.email}">✉️ ${esc(c.email)}</a>`:''}
-        ${!c.phone&&!c.email?'<span style="color:var(--muted);font-size:13px">No contact info</span>':''}
+        ${!c.phone&&!c.email?'<span style="color:var(--muted);font-size:12px">No contact info</span>':''}
       </div>
     </div>
 
-    <div class="info-2col">
-      <div class="ic">
-        <div class="ic-label">Requirement</div>
-        <div class="ic-val" id="req-view" onclick="editIC('req')" title="Click to edit">${c.requirement||'<span style="color:var(--muted)">Click to add…</span>'}</div>
-        <div class="ic-edit" id="req-edit">
-          <textarea id="req-inp" rows="3">${esc(c.requirement||'')}</textarea>
-          <div class="ic-btns">
-            <button class="btn btn-primary btn-sm" onclick="saveIC('req','requirement')">Save</button>
-            <button class="btn btn-outline btn-sm" onclick="cancelIC('req')">Cancel</button>
+    <!-- Requirement -->
+    <div class="sec">
+      <div class="sec-head">
+        <span class="sec-title">📋 Requirement</span>
+        <span class="sec-action" onclick="editReq()">Edit</span>
+      </div>
+      <div class="req-text${!c.requirement?' empty':''}" id="req-view" onclick="editReq()">${c.requirement ? esc(c.requirement) : 'Click to add requirement…'}</div>
+      <div class="req-edit" id="req-edit">
+        <textarea id="req-inp" rows="3" placeholder="What does the customer need?">${esc(c.requirement||'')}</textarea>
+        <div class="req-btns">
+          <button class="btn btn-primary btn-sm" onclick="saveReq()">Save</button>
+          <button class="btn btn-outline btn-sm" onclick="cancelReq()">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Follow-up -->
+    <div class="sec">
+      <div class="sec-head"><span class="sec-title">📅 Next Follow-up</span></div>
+      <div class="fu-row">
+        <span class="fu-date ${fuCls}">${fuLabel}</span>
+        <input type="date" class="fu-input" id="fuDate" value="${c.next_followup||''}" onchange="qupdate('next_followup',this.value);refreshFU(this.value)" />
+      </div>
+      <div class="quick-d">
+        <button class="qd-btn" onclick="addDays(1)">+1 day</button>
+        <button class="qd-btn" onclick="addDays(3)">+3 days</button>
+        <button class="qd-btn" onclick="addDays(7)">+1 week</button>
+        <button class="qd-btn" onclick="addDays(30)">+1 month</button>
+      </div>
+    </div>
+
+    <!-- Remark -->
+    <div class="sec">
+      <div class="sec-head">
+        <span class="sec-title">💬 Remark</span>
+        <span class="sec-action" onclick="editRemark()">Edit</span>
+      </div>
+      <div class="remark-text${!c.remark?' empty':''}" onclick="editRemark()" id="remark-view">${c.remark ? esc(c.remark) : 'Click to add a remark…'}</div>
+      <div class="remark-edit" id="remark-edit">
+        <textarea id="remark-inp" rows="2">${esc(c.remark||'')}</textarea>
+        <div class="req-btns">
+          <button class="btn btn-primary btn-sm" onclick="saveRemark()">Save</button>
+          <button class="btn btn-outline btn-sm" onclick="cancelRemark()">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Product Interests -->
+    <div class="sec">
+      <div class="sec-head">
+        <span class="sec-title">📦 Product Interests</span>
+        <button class="btn btn-outline btn-sm" id="suggestBtn" onclick="suggestInterests(${c.id})" style="font-size:11px">✨ AI Suggest</button>
+      </div>
+      <div class="int-list" id="interestList">${renderIntList(interests, c.id)}</div>
+      <div class="int-actions">
+        <div class="prod-picker-wrap" id="pickerWrap">
+          <button class="prod-picker-btn" onclick="togglePicker(${c.id})">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Add Product
+          </button>
+          <div class="prod-picker-drop" id="prodPickerDrop" style="display:none">
+            <div class="ppd-search"><input id="pickerSearch" placeholder="Search SKU or name…" oninput="renderPicker(${c.id})" /></div>
+            <div class="ppd-list" id="pickerList"></div>
           </div>
         </div>
       </div>
-      <div class="ic">
-        <div class="ic-label">Next Follow-up</div>
-        <div class="fu-row">
-          ${fuHtml}
-          <input type="date" class="fu-input" id="fuDate" value="${c.next_followup||''}" onchange="qupdate('next_followup',this.value);refreshFU(this.value)" />
-        </div>
-        <div class="quick-d">
-          <button class="qd-btn" onclick="addDays(1)">+1 day</button>
-          <button class="qd-btn" onclick="addDays(3)">+3 days</button>
-          <button class="qd-btn" onclick="addDays(7)">+1 week</button>
-          <button class="qd-btn" onclick="addDays(30)">+1 month</button>
-        </div>
-      </div>
+      <div id="suggestResult" style="display:none;margin-top:8px;padding:10px;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:8px;font-size:13px"></div>
     </div>
 
-    <div class="ic" style="margin-bottom:14px">
-      <div class="ic-label">Remark</div>
-      <div class="ic-val" id="remark-view" onclick="editIC('remark')" title="Click to edit">${c.remark||'<span style="color:var(--muted)">Click to add…</span>'}</div>
-      <div class="ic-edit" id="remark-edit">
-        <textarea id="remark-inp" rows="2">${esc(c.remark||'')}</textarea>
-        <div class="ic-btns">
-          <button class="btn btn-primary btn-sm" onclick="saveIC('remark','remark')">Save</button>
-          <button class="btn btn-outline btn-sm" onclick="cancelIC('remark')">Cancel</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="ic" style="margin-bottom:14px">
-      <div class="ic-label">Product Interests</div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <span style="font-size:12px;color:var(--muted)">From discussions &amp; calls</span>
-        <button class="btn btn-outline btn-sm" id="suggestBtn" onclick="suggestInterests(${c.id})" style="font-size:11px;padding:3px 10px">
-          ✨ Suggest from Notes
-        </button>
-      </div>
-      <div id="suggestResult" style="display:none;margin-bottom:8px;padding:10px;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:8px;font-size:13px"></div>
-      <div class="interest-wrap" id="interestList">
-        ${interests.map(t=>`<span class="itag">${esc(t.interest)}<button onclick="removeInt(${c.id},${t.id},this)">×</button></span>`).join('')}
-        <span class="add-itag" id="addIntBtn" onclick="showAddInt()">+ Add</span>
-      </div>
-      <div id="addIntRow" style="display:none">
-        <div class="itag-input-row">
-          <input id="intInput" placeholder="e.g. 18650 Cells, Nickel Strip…" list="intSugg"
-            onkeydown="if(event.key==='Enter'){event.preventDefault();saveInt(${c.id})}" />
-          <datalist id="intSugg">
-            <option>18650 Cells</option><option>Nickel Strip Plated</option><option>Nickel Strip Pure</option>
-            <option>Copper Bus Bar</option><option>Battery Pack</option><option>Li-ion Cells</option>
-          </datalist>
-          <button class="btn btn-primary btn-sm" onclick="saveInt(${c.id})">Add</button>
-          <button class="btn btn-outline btn-sm" onclick="hideAddInt()">Cancel</button>
-        </div>
-      </div>
-    </div>
-
+    <!-- Discussion Timeline -->
     <div class="disc-card">
       <div class="disc-head">Discussion Timeline</div>
       <div class="note-compose">
@@ -494,7 +570,7 @@ function renderDetail() {
           <button class="mic-sm" id="noteMic" onclick="toggleNoteMic()" title="Record voice note">🎤</button>
           <span class="rec-status" id="noteRecSt"></span>
         </div>
-        <textarea class="nc-textarea" id="noteText" placeholder="What happened? What's the outcome? What's the plan?…" rows="2"></textarea>
+        <textarea class="nc-textarea" id="noteText" placeholder="What happened? Outcome? Next steps?…" rows="2"></textarea>
         <div class="transcript-area" id="noteTranscript"></div>
         <div class="nc-bottom">
           <span style="font-size:12px;color:var(--muted)">🎤 Mic → speak → AI writes the note</span>
@@ -503,8 +579,199 @@ function renderDetail() {
       </div>
       <div class="disc-list" id="discList">${renderDiscs(discussions)}</div>
     </div>`;
+
+  // Close picker when clicking outside
+  document.addEventListener('click', pickerOutside);
 }
 
+// ── Requirement ───────────────────────────────────────────────
+function editReq() {
+  document.getElementById('req-view').style.display = 'none';
+  document.getElementById('req-edit').style.display = '';
+  document.getElementById('req-inp').focus();
+}
+function cancelReq() {
+  document.getElementById('req-view').style.display = '';
+  document.getElementById('req-edit').style.display = 'none';
+}
+async function saveReq() {
+  const val = document.getElementById('req-inp').value.trim();
+  await qupdate('requirement', val);
+  const el = document.getElementById('req-view');
+  el.innerHTML = val || 'Click to add requirement…';
+  el.className = 'req-text' + (val ? '' : ' empty');
+  cancelReq();
+}
+
+// ── Remark ────────────────────────────────────────────────────
+function editRemark() {
+  document.getElementById('remark-view').style.display = 'none';
+  document.getElementById('remark-edit').style.display = '';
+  document.getElementById('remark-inp').focus();
+}
+function cancelRemark() {
+  document.getElementById('remark-view').style.display = '';
+  document.getElementById('remark-edit').style.display = 'none';
+}
+async function saveRemark() {
+  const val = document.getElementById('remark-inp').value.trim();
+  await qupdate('remark', val);
+  const el = document.getElementById('remark-view');
+  el.textContent = val || 'Click to add a remark…';
+  el.className = 'remark-text' + (val ? '' : ' empty');
+  cancelRemark();
+}
+
+// ── Follow-up ─────────────────────────────────────────────────
+function refreshFU(val) {
+  selC.next_followup = val;
+  const li = all.find(x => x.id === selC.id);
+  if (li) li.next_followup = val;
+  applyFilters();
+}
+function addDays(n) {
+  const d = new Date(); d.setDate(d.getDate() + n);
+  const iso = d.toISOString().split('T')[0];
+  document.getElementById('fuDate').value = iso;
+  qupdate('next_followup', iso); refreshFU(iso);
+}
+
+// ── General field update ──────────────────────────────────────
+async function qupdate(field, val) {
+  if (!selC) return;
+  const body = { ...selC, [field]: val };
+  delete body.discussions; delete body.interests;
+  await fetch(`/api/crm/customers/${selC.id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  selC[field] = val;
+  const li = all.find(x => x.id === selC.id);
+  if (li) li[field] = val;
+  applyFilters();
+  toast('Updated','success');
+}
+
+// ── Product interests ─────────────────────────────────────────
+function renderIntList(interests, cid) {
+  if (!interests.length) return '<div style="color:var(--muted);font-size:13px;padding:4px 0">No products added yet</div>';
+  return interests.map(t => {
+    const parts = t.interest.match(/^\[([^\]]+)\]\s(.+)$/);
+    const sku = parts ? parts[1] : '';
+    const name = parts ? parts[2] : t.interest;
+    return `<div class="int-row" id="ir-${t.id}">
+      ${sku ? `<span class="int-sku">SKU ${sku}</span>` : ''}
+      <span class="int-name" title="${esc(name)}">${esc(name)}</span>
+      <input class="int-qty" type="text" placeholder="Qty" value="${esc(t.quantity||'')}"
+        onchange="updateIntQty(${t.id},this.value)" title="Expected quantity (e.g. 100 pcs, 5 kg)" />
+      <button class="int-del" onclick="removeInt(${cid},${t.id})">×</button>
+    </div>`;
+  }).join('');
+}
+
+async function updateIntQty(id, qty) {
+  await fetch(`/api/crm/interests/${id}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({quantity:qty}) });
+  if (selC && selC.interests) {
+    const t = selC.interests.find(x => x.id === id);
+    if (t) t.quantity = qty;
+  }
+}
+
+async function removeInt(cid, iid) {
+  await fetch(`/api/crm/interests/${iid}`, {method:'DELETE'});
+  document.getElementById(`ir-${iid}`)?.remove();
+  if (selC) selC.interests = (selC.interests||[]).filter(t => t.id !== iid);
+  if (!(selC?.interests?.length)) {
+    document.getElementById('interestList').innerHTML = '<div style="color:var(--muted);font-size:13px;padding:4px 0">No products added yet</div>';
+  }
+  toast('Removed','success');
+}
+
+// Product picker
+function togglePicker(cid) {
+  const drop = document.getElementById('prodPickerDrop');
+  if (drop.style.display === 'none') {
+    drop.style.display = 'flex';
+    drop.style.flexDirection = 'column';
+    pickerOpen = true;
+    renderPicker(cid);
+    setTimeout(() => document.getElementById('pickerSearch')?.focus(), 50);
+  } else {
+    closePicker();
+  }
+}
+function closePicker() {
+  const drop = document.getElementById('prodPickerDrop');
+  if (drop) drop.style.display = 'none';
+  pickerOpen = false;
+}
+function pickerOutside(e) {
+  if (!pickerOpen) return;
+  const wrap = document.getElementById('pickerWrap');
+  if (wrap && !wrap.contains(e.target)) closePicker();
+}
+function renderPicker(cid) {
+  const q = (document.getElementById('pickerSearch')?.value || '').toLowerCase();
+  let list = allProducts;
+  if (q) list = list.filter(p => ((p.sku||'')+(p.name||'')+(p.category||'')).toLowerCase().includes(q));
+  const el = document.getElementById('pickerList');
+  if (!list.length) { el.innerHTML = '<div class="ppd-empty">No products found</div>'; return; }
+  // Group by category
+  const cats = [...new Set(list.map(p => p.category))];
+  el.innerHTML = cats.map(cat => {
+    const items = list.filter(p => p.category === cat);
+    return `<div class="ppd-cat-head">${esc(cat)}</div>` +
+      items.map(p => `<div class="ppd-item" onclick="addIntFromPicker(${cid},${p.id},'${esc(p.sku||'')}','${esc(p.name||'')}')">
+        ${p.sku ? `<span class="ppd-sku">${esc(p.sku)}</span>` : ''}
+        <span class="ppd-name">${esc(p.name)}</span>
+      </div>`).join('');
+  }).join('');
+}
+async function addIntFromPicker(cid, pid, sku, name) {
+  closePicker();
+  const r = await fetch(`/api/crm/customers/${cid}/interests`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ interest: name, sku, quantity: '' })
+  });
+  const d = await r.json();
+  if (!selC.interests) selC.interests = [];
+  selC.interests.push({ id: d.id, interest: `[${sku}] ${name}`, quantity: '' });
+  document.getElementById('interestList').innerHTML = renderIntList(selC.interests, cid);
+  toast('Product added','success');
+}
+
+// AI suggest interests
+async function suggestInterests(cid) {
+  const btn = document.getElementById('suggestBtn');
+  const resultEl = document.getElementById('suggestResult');
+  btn.disabled = true; btn.textContent = '⏳ Analysing…';
+  resultEl.style.display = 'none';
+  try {
+    const res = await fetch('/api/ai/suggest-interests', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({customerId:cid}) });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    if (!data.suggestions?.length) {
+      resultEl.style.display = 'block';
+      resultEl.innerHTML = '<em style="color:var(--muted)">No product interests detected from notes.</em>';
+    } else {
+      resultEl.style.display = 'block';
+      resultEl.innerHTML = '<strong style="font-size:12px;color:#6d28d9">AI Suggestions — click to add:</strong><div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">' +
+        data.suggestions.map(s => `<span style="background:#ede9fe;color:#5b21b6;padding:5px 12px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid #c4b5fd" title="${esc(s.reason||'')}" onclick="addSuggestedInt(${cid},'${esc(s.sku||'')}','${esc(s.name||'')}',this)">${esc(s.name)} ${s.sku?`<span style="opacity:.6">(${esc(s.sku)})</span>`:''}</span>`).join('') + '</div>';
+    }
+  } catch(e) {
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = `<span style="color:var(--danger)">${e.message}</span>`;
+  }
+  btn.disabled = false; btn.textContent = '✨ AI Suggest';
+}
+async function addSuggestedInt(cid, sku, name, el) {
+  el.style.opacity = '0.4'; el.style.pointerEvents = 'none';
+  const r = await fetch(`/api/crm/customers/${cid}/interests`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({interest:name,sku,quantity:''})});
+  const d = await r.json();
+  if (!selC.interests) selC.interests = [];
+  selC.interests.push({id: d.id, interest: sku ? `[${sku}] ${name}` : name, quantity: ''});
+  document.getElementById('interestList').innerHTML = renderIntList(selC.interests, cid);
+  el.textContent = '✓ Added';
+}
+
+// ── Notes / Discussions ───────────────────────────────────────
 function renderDiscs(discs) {
   if (!discs.length) return '<div class="disc-empty">No notes yet — add the first one above!</div>';
   return discs.map(d => `
@@ -521,50 +788,6 @@ function renderDiscs(discs) {
       </div>
     </div>`).join('');
 }
-
-async function qupdate(field, val) {
-  if (!selC) return;
-  const body = { ...selC, [field]: val };
-  delete body.discussions; delete body.interests;
-  await fetch(`/api/crm/customers/${selC.id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
-  selC[field] = val;
-  const li = all.find(x => x.id === selC.id);
-  if (li) li[field] = val;
-  applyFilters();
-  toast('Updated','success');
-}
-
-function refreshFU(val) {
-  selC.next_followup = val;
-  const li = all.find(x => x.id === selC.id);
-  if (li) li.next_followup = val;
-  applyFilters();
-}
-
-function addDays(n) {
-  const d = new Date(); d.setDate(d.getDate() + n);
-  const iso = d.toISOString().split('T')[0];
-  document.getElementById('fuDate').value = iso;
-  qupdate('next_followup', iso);
-  refreshFU(iso);
-}
-
-function editIC(f) {
-  document.getElementById(`${f}-view`).style.display = 'none';
-  document.getElementById(`${f}-edit`).style.display = '';
-  document.getElementById(`${f}-inp`).focus();
-}
-function cancelIC(f) {
-  document.getElementById(`${f}-view`).style.display = '';
-  document.getElementById(`${f}-edit`).style.display = 'none';
-}
-async function saveIC(f, apiKey) {
-  const val = document.getElementById(`${f}-inp`).value.trim();
-  await qupdate(apiKey, val);
-  document.getElementById(`${f}-view`).innerHTML = val || '<span style="color:var(--muted)">Click to add…</span>';
-  cancelIC(f);
-}
-
 async function saveNote(cid) {
   const text = document.getElementById('noteText').value.trim();
   if (!text) return toast('Please write a note first','error');
@@ -579,82 +802,157 @@ async function saveNote(cid) {
   document.getElementById('discList').innerHTML = renderDiscs(selC.discussions||[]);
   toast('Note saved','success');
 }
-
 async function delDisc(id) {
   if (!confirm('Delete this note?')) return;
   await fetch(`/api/crm/discussions/${id}`,{method:'DELETE'});
-  document.getElementById(`di-${id}`).remove();
+  document.getElementById(`di-${id}`)?.remove();
   toast('Note deleted','success');
 }
 
-function showAddInt() {
-  document.getElementById('addIntBtn').style.display='none';
-  document.getElementById('addIntRow').style.display='';
-  document.getElementById('intInput').focus();
-}
-function hideAddInt() {
-  document.getElementById('addIntBtn').style.display='';
-  document.getElementById('addIntRow').style.display='none';
-}
-async function saveInt(cid) {
-  const val = document.getElementById('intInput').value.trim();
-  if (!val) return;
-  await fetch(`/api/crm/customers/${cid}/interests`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({interest:val})});
-  document.getElementById('intInput').value='';
-  const r = await fetch(`/api/crm/customers/${cid}`);
-  selC = await r.json();
-  document.getElementById('interestList').innerHTML =
-    (selC.interests||[]).map(t=>`<span class="itag">${esc(t.interest)}<button onclick="removeInt(${cid},${t.id},this)">×</button></span>`).join('')+
-    `<span class="add-itag" id="addIntBtn" onclick="showAddInt()">+ Add</span>`;
-  document.getElementById('addIntRow').style.display='none';
-  toast('Added','success');
-}
-async function suggestInterests(cid) {
-  const btn = document.getElementById('suggestBtn');
-  const resultEl = document.getElementById('suggestResult');
-  btn.disabled = true; btn.textContent = '⏳ Analysing…';
-  resultEl.style.display = 'none';
-  try {
-    const res = await fetch('/api/ai/suggest-interests', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({customerId:cid}) });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    if (!data.suggestions || !data.suggestions.length) {
-      resultEl.style.display = 'block';
-      resultEl.innerHTML = '<em style="color:var(--muted)">No product interests detected from notes.</em>';
-    } else {
-      resultEl.style.display = 'block';
-      resultEl.innerHTML = '<strong style="font-size:12px;color:#6d28d9">AI Suggestions — click to add:</strong><div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">' +
-        data.suggestions.map(s => `<span style="background:#ede9fe;color:#5b21b6;padding:4px 10px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid #c4b5fd" title="${s.reason}" onclick="addSuggestedInt(${cid},'${s.name.replace(/'/g,"\\'")}',this)">${s.name} <span style="opacity:.6;font-size:10px">(${s.sku||''})</span></span>`).join('') + '</div>';
+// ── Voice: note mic ───────────────────────────────────────────
+function toggleNoteMic() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return toast('Voice requires Chrome or Edge','error');
+  if (noteRec) { noteRec.stop(); return; }
+  const ta = document.getElementById('noteTranscript');
+  ta.style.display = ''; ta.textContent = '';
+  noteRec = new SR(); noteRec.continuous = true; noteRec.interimResults = true; noteRec.lang = 'en-IN';
+  let final = '';
+  noteRec.onresult = e => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript + ' ';
+      else interim += e.results[i][0].transcript;
     }
-  } catch(e) {
-    resultEl.style.display = 'block';
-    resultEl.innerHTML = `<span style="color:var(--danger)">${e.message}</span>`;
+    ta.textContent = final + interim;
+  };
+  noteRec.onstart = () => { document.getElementById('noteMic').classList.add('rec'); document.getElementById('noteRecSt').textContent = 'Recording…'; };
+  noteRec.onend = async () => {
+    noteRec = null; document.getElementById('noteMic').classList.remove('rec');
+    const transcript = final.trim();
+    if (!transcript) { ta.style.display = 'none'; document.getElementById('noteRecSt').textContent = ''; return; }
+    document.getElementById('noteRecSt').textContent = '⏳ AI writing…';
+    try {
+      const r = await fetch('/api/ai/extract-note', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({transcript,customerName:selC?.name})});
+      const d = await r.json();
+      document.getElementById('noteText').value = d.note || transcript;
+      ta.style.display = 'none';
+      toast('Note written by AI — edit if needed','success');
+    } catch(err) { document.getElementById('noteText').value = transcript; ta.style.display = 'none'; }
+    document.getElementById('noteRecSt').textContent = '';
+  };
+  noteRec.start();
+}
+
+// ── Voice: AI Quick Update mic ────────────────────────────────
+function toggleQuickMic() {
+  if (!selC) return toast('Please select a customer first','error');
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return toast('Voice requires Chrome or Edge on HTTPS','error');
+  if (quickRec) { quickRec.stop(); return; }
+  const btn = document.getElementById('quickMicBtn');
+  const st = document.getElementById('quickMicSt');
+  quickRec = new SR(); quickRec.continuous = true; quickRec.interimResults = true; quickRec.lang = 'en-IN';
+  let final = '';
+  quickRec.onresult = e => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript + ' ';
+      else interim += e.results[i][0].transcript;
+    }
+    st.textContent = (final + interim).slice(-60) + '…';
+  };
+  quickRec.onstart = () => { btn.classList.add('rec'); btn.textContent = '⏹ Stop Recording'; st.textContent = 'Listening…'; };
+  quickRec.onend = async () => {
+    quickRec = null; btn.classList.remove('rec'); btn.textContent = '🎤 AI Quick Update';
+    const transcript = final.trim();
+    if (!transcript) { st.textContent = selC?.name || 'Select a customer'; return; }
+    st.textContent = '⏳ AI analysing…';
+    try {
+      const r = await fetch('/api/ai/quick-update', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ transcript, customer: selC, products: allProducts.slice(0,50) })
+      });
+      const suggestions = await r.json();
+      if (suggestions.error) throw new Error(suggestions.error);
+      pendingAI = suggestions;
+      showAIConfirm(suggestions);
+    } catch(e) {
+      toast('AI error: ' + e.message, 'error');
+    }
+    st.textContent = selC?.name || '';
+  };
+  quickRec.onerror = ev => { st.textContent = 'Error: ' + ev.error; };
+  quickRec.start();
+}
+
+function showAIConfirm(s) {
+  const LABELS = {
+    status: 'Status', next_followup: 'Follow-up', requirement: 'Requirement',
+    note: 'Note', note_type: 'Note type', product_interests: 'Products'
+  };
+  const fields = [];
+  if (s.status && STATUSES.includes(s.status)) fields.push({ key:'status', label:'Status', val: s.status });
+  if (s.next_followup) fields.push({ key:'next_followup', label:'Follow-up', val: s.next_followup });
+  if (s.requirement) fields.push({ key:'requirement', label:'Requirement', val: s.requirement });
+  if (s.note) fields.push({ key:'note', label:'Add Note', val: `[${s.note_type||'note'}] ${s.note}` });
+  if (s.product_interests?.length) fields.push({ key:'product_interests', label:'Products', val: s.product_interests.map(p=>`${p.sku?'['+p.sku+'] ':''}${p.name}${p.quantity?' × '+p.quantity:''}`).join(', ') });
+
+  if (!fields.length) { toast('No updates detected from voice note','error'); return; }
+
+  document.getElementById('aiFieldsList').innerHTML = fields.map(f => `
+    <div class="ai-field">
+      <input type="checkbox" id="ai_chk_${f.key}" checked />
+      <label class="ai-flabel" for="ai_chk_${f.key}">${f.label}</label>
+      <span class="ai-fval">${esc(String(f.val))}</span>
+    </div>`).join('');
+  document.getElementById('aiConfirmModal').classList.add('open');
+}
+
+async function applyAIUpdate() {
+  const s = pendingAI;
+  if (!s || !selC) return;
+  document.getElementById('aiConfirmModal').classList.remove('open');
+  let updated = false;
+
+  if (document.getElementById('ai_chk_status')?.checked && s.status) {
+    await qupdate('status', s.status); updated = true;
   }
-  btn.disabled = false; btn.textContent = '✨ Suggest from Notes';
-}
-
-async function addSuggestedInt(cid, name, el) {
-  el.style.opacity = '0.4'; el.style.pointerEvents = 'none';
-  await fetch(`/api/crm/customers/${cid}/interests`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({interest:name})});
-  if (selC) {
-    selC.interests = selC.interests || [];
-    const newId = Date.now();
-    selC.interests.push({id: newId, interest: name});
-    document.getElementById('interestList').innerHTML =
-      selC.interests.map(t=>`<span class="itag">${esc(t.interest)}<button onclick="removeInt(${cid},${t.id},this)">×</button></span>`).join('') +
-      `<span class="add-itag" id="addIntBtn" onclick="showAddInt()">+ Add</span>`;
-    document.getElementById('addIntRow').style.display='none';
+  if (document.getElementById('ai_chk_next_followup')?.checked && s.next_followup) {
+    await qupdate('next_followup', s.next_followup); refreshFU(s.next_followup); updated = true;
   }
-  el.textContent = '✓ Added';
+  if (document.getElementById('ai_chk_requirement')?.checked && s.requirement) {
+    await qupdate('requirement', s.requirement); updated = true;
+  }
+  if (document.getElementById('ai_chk_note')?.checked && s.note) {
+    await fetch(`/api/crm/customers/${selC.id}/discussions`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ note: s.note, author: selC.assigned_to||'Team', type: s.note_type||'note' })
+    }); updated = true;
+  }
+  if (document.getElementById('ai_chk_product_interests')?.checked && s.product_interests?.length) {
+    for (const p of s.product_interests) {
+      const r = await fetch(`/api/crm/customers/${selC.id}/interests`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ interest: p.name, sku: p.sku||'', quantity: p.quantity||'' })
+      });
+      const d = await r.json();
+      if (!selC.interests) selC.interests = [];
+      selC.interests.push({ id: d.id, interest: p.sku ? `[${p.sku}] ${p.name}` : p.name, quantity: p.quantity||'' });
+    }
+    updated = true;
+  }
+
+  pendingAI = null;
+  if (updated) {
+    const r = await fetch(`/api/crm/customers/${selC.id}`);
+    selC = await r.json();
+    renderDetail();
+    toast('Customer updated by AI!','success');
+  }
 }
 
-async function removeInt(cid, iid, btn) {
-  await fetch(`/api/crm/interests/${iid}`,{method:'DELETE'});
-  btn.closest('.itag').remove();
-  if (selC) selC.interests=(selC.interests||[]).filter(t=>t.id!==iid);
-  toast('Removed','success');
-}
-
+// ── Edit modal ────────────────────────────────────────────────
 function openEdit() {
   const c = selC;
   const sopts = STATUSES.map(s=>`<option${c.status===s?' selected':''}>${s}</option>`).join('');
@@ -690,28 +988,30 @@ async function saveEdit() {
     followup_action:selC.followup_action||''
   };
   await fetch(`/api/crm/customers/${selC.id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(upd)});
-  Object.assign(selC,upd);
-  const li=all.find(x=>x.id===selC.id);
-  if(li)Object.assign(li,upd);
+  Object.assign(selC, upd);
+  const li = all.find(x => x.id === selC.id);
+  if (li) Object.assign(li, upd);
   closeEdit(); applyFilters(); renderDetail();
   toast('Updated','success');
 }
 
+// ── Delete ────────────────────────────────────────────────────
 async function delC(id) {
   if (!confirm('Delete this customer and all their notes? Cannot be undone.')) return;
   await fetch(`/api/crm/customers/${id}`,{method:'DELETE'});
-  all=all.filter(c=>c.id!==id); selId=null; selC=null;
-  document.getElementById('detailContent').style.display='none';
-  document.getElementById('emptyState').style.display='';
+  all = all.filter(c => c.id !== id); selId = null; selC = null;
+  document.getElementById('detailContent').style.display = 'none';
+  document.getElementById('emptyState').style.display = '';
   document.querySelector('.crm-wrap').classList.remove('detail-open');
-  document.getElementById('mobileBackBar').style.display='none';
+  document.getElementById('mobileBackBar').style.display = 'none';
+  document.getElementById('quickMicSt').textContent = 'Select a customer first';
   history.replaceState(null,'',location.pathname);
   applyFilters(); toast('Deleted','success');
 }
 
+// ── Add Customer ──────────────────────────────────────────────
 function openAdd() {
-  document.getElementById('addForm').reset();
-  addText='';
+  document.getElementById('addForm').reset(); addText = '';
   document.getElementById('addTranscript').innerHTML='<span class="t-placeholder">Your speech appears here…</span>';
   document.getElementById('addExtractBtn').style.display='none';
   document.getElementById('addVoiceErr').style.display='none';
@@ -721,21 +1021,18 @@ function openAdd() {
   switchTab('manual');
   document.getElementById('addModal').classList.add('open');
 }
-function closeAdd() {
-  if(addRec){addRec.stop();addRec=null;}
-  document.getElementById('addModal').classList.remove('open');
-}
+function closeAdd() { if(addRec){addRec.stop();addRec=null;} document.getElementById('addModal').classList.remove('open'); }
 function switchTab(t) {
-  document.getElementById('voiceTab').style.display=t==='voice'?'':'none';
-  document.getElementById('manualTab').style.display=t==='manual'?'':'none';
-  document.getElementById('tabM').classList.toggle('on',t==='manual');
-  document.getElementById('tabV').classList.toggle('on',t==='voice');
+  document.getElementById('voiceTab').style.display = t==='voice'?'':'none';
+  document.getElementById('manualTab').style.display = t==='manual'?'':'none';
+  document.getElementById('tabM').classList.toggle('on', t==='manual');
+  document.getElementById('tabV').classList.toggle('on', t==='voice');
 }
 async function saveAdd(e) {
   e.preventDefault();
-  const btn=document.getElementById('addSaveBtn');
-  btn.disabled=true; btn.textContent='Saving…';
-  const body={
+  const btn = document.getElementById('addSaveBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  const body = {
     name:document.getElementById('a_name').value.trim(),
     company:document.getElementById('a_co').value.trim(),
     phone:document.getElementById('a_phone').value.trim(),
@@ -748,86 +1045,57 @@ async function saveAdd(e) {
     requirement:document.getElementById('a_req').value.trim(),
     remark:document.getElementById('a_remark').value.trim()
   };
-  const r=await fetch('/api/crm/customers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  const d=await r.json();
+  const r = await fetch('/api/crm/customers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d = await r.json();
   closeAdd(); await loadAll();
-  if(d.id)selectC(d.id);
+  if (d.id) selectC(d.id);
   toast('Customer added!','success');
-  btn.disabled=false; btn.textContent='Save Customer';
+  btn.disabled = false; btn.textContent = 'Save Customer';
 }
 
+// ── Add voice mic ─────────────────────────────────────────────
 function toggleAddMic() {
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){document.getElementById('addVoiceErr').textContent='Voice requires Chrome or Edge.';document.getElementById('addVoiceErr').style.display='';return;}
-  if(addRec){addRec.stop();return;}
-  addRec=new SR(); addRec.continuous=true; addRec.interimResults=true; addRec.lang='en-IN';
-  let final='';
-  addRec.onresult=e=>{
-    let interim='';
-    for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)final+=e.results[i][0].transcript+' ';else interim+=e.results[i][0].transcript;}
-    addText=final+interim;
-    document.getElementById('addTranscript').textContent=addText;
-    if(addText.trim())document.getElementById('addExtractBtn').style.display='';
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { document.getElementById('addVoiceErr').textContent='Voice requires Chrome or Edge.'; document.getElementById('addVoiceErr').style.display=''; return; }
+  if (addRec) { addRec.stop(); return; }
+  addRec = new SR(); addRec.continuous = true; addRec.interimResults = true; addRec.lang = 'en-IN';
+  let final = '';
+  addRec.onresult = e => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) { if (e.results[i].isFinal) final += e.results[i][0].transcript+' '; else interim += e.results[i][0].transcript; }
+    addText = final + interim;
+    document.getElementById('addTranscript').textContent = addText;
+    if (addText.trim()) document.getElementById('addExtractBtn').style.display = '';
   };
-  addRec.onstart=()=>{document.getElementById('addMic').classList.add('rec');document.getElementById('addMic').textContent='⏹';document.getElementById('addMicStatus').textContent='Recording… click to stop';};
-  addRec.onend=()=>{addRec=null;document.getElementById('addMic').classList.remove('rec');document.getElementById('addMic').textContent='🎤';document.getElementById('addMicStatus').textContent=addText.trim()?'Done! Click Auto-fill.':'Click to start';};
-  addRec.onerror=ev=>{document.getElementById('addVoiceErr').textContent=`Error: ${ev.error}. Try again.`;document.getElementById('addVoiceErr').style.display='';};
+  addRec.onstart = () => { document.getElementById('addMic').classList.add('rec'); document.getElementById('addMic').textContent='⏹'; document.getElementById('addMicStatus').textContent='Recording… click to stop'; };
+  addRec.onend = () => { addRec=null; document.getElementById('addMic').classList.remove('rec'); document.getElementById('addMic').textContent='🎤'; document.getElementById('addMicStatus').textContent=addText.trim()?'Done! Click Auto-fill.':'Click to start'; };
+  addRec.onerror = ev => { document.getElementById('addVoiceErr').textContent=`Error: ${ev.error}`; document.getElementById('addVoiceErr').style.display=''; };
   addRec.start();
 }
 async function extractAndFill() {
-  const t=addText.trim();
-  if(!t)return toast('Please record something first','error');
-  const btn=document.getElementById('addExtractBtn');
-  btn.disabled=true; btn.textContent='⏳ Extracting…';
-  try{
-    const r=await fetch('/api/ai/extract-customer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({transcript:t})});
-    const d=await r.json();
+  const t = addText.trim();
+  if (!t) return toast('Please record something first','error');
+  const btn = document.getElementById('addExtractBtn');
+  btn.disabled = true; btn.textContent = '⏳ Extracting…';
+  try {
+    const r = await fetch('/api/ai/extract-customer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({transcript:t})});
+    const d = await r.json();
     switchTab('manual');
-    if(d.name)document.getElementById('a_name').value=d.name;
-    if(d.company)document.getElementById('a_co').value=d.company;
-    if(d.phone)document.getElementById('a_phone').value=d.phone;
-    if(d.email)document.getElementById('a_email').value=d.email;
-    if(d.city)document.getElementById('a_city').value=d.city;
-    if(d.requirement)document.getElementById('a_req').value=d.requirement;
-    if(d.remark)document.getElementById('a_remark').value=d.remark;
-    if(d.next_followup)document.getElementById('a_followup').value=d.next_followup;
-    if(d.status&&STATUSES.includes(d.status))document.getElementById('a_status').value=d.status;
+    if (d.name) document.getElementById('a_name').value = d.name;
+    if (d.company) document.getElementById('a_co').value = d.company;
+    if (d.phone) document.getElementById('a_phone').value = d.phone;
+    if (d.email) document.getElementById('a_email').value = d.email;
+    if (d.city) document.getElementById('a_city').value = d.city;
+    if (d.requirement) document.getElementById('a_req').value = d.requirement;
+    if (d.remark) document.getElementById('a_remark').value = d.remark;
+    if (d.next_followup) document.getElementById('a_followup').value = d.next_followup;
+    if (d.status && STATUSES.includes(d.status)) document.getElementById('a_status').value = d.status;
     toast('Fields filled by AI — review before saving','success');
-  }catch(err){toast('AI error: '+err.message,'error');}
-  btn.disabled=false; btn.textContent='✨ Auto-fill with AI';
+  } catch(err) { toast('AI error: '+err.message,'error'); }
+  btn.disabled = false; btn.textContent = '✨ Auto-fill with AI';
 }
 
-function toggleNoteMic() {
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR)return toast('Voice requires Chrome or Edge','error');
-  if(noteRec){noteRec.stop();return;}
-  const ta=document.getElementById('noteTranscript');
-  ta.style.display=''; ta.textContent='';
-  noteRec=new SR(); noteRec.continuous=true; noteRec.interimResults=true; noteRec.lang='en-IN';
-  let final='';
-  noteRec.onresult=e=>{
-    let interim='';
-    for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)final+=e.results[i][0].transcript+' ';else interim+=e.results[i][0].transcript;}
-    ta.textContent=final+interim;
-  };
-  noteRec.onstart=()=>{document.getElementById('noteMic').classList.add('rec');document.getElementById('noteRecSt').textContent='Recording…';};
-  noteRec.onend=async()=>{
-    noteRec=null; document.getElementById('noteMic').classList.remove('rec');
-    const transcript=final.trim();
-    if(!transcript){ta.style.display='none';document.getElementById('noteRecSt').textContent='';return;}
-    document.getElementById('noteRecSt').textContent='⏳ AI writing your note…';
-    try{
-      const r=await fetch('/api/ai/extract-note',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({transcript,customerName:selC?.name})});
-      const d=await r.json();
-      document.getElementById('noteText').value=d.note||transcript;
-      ta.style.display='none';
-      toast('Note written by AI — edit if needed','success');
-    }catch(err){document.getElementById('noteText').value=transcript;ta.style.display='none';}
-    document.getElementById('noteRecSt').textContent='';
-  };
-  noteRec.start();
-}
-
+// ── Utilities ─────────────────────────────────────────────────
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function initials(n){return(n||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();}
 function avatarCol(n){let h=0;for(const c of(n||''))h=(h*31+c.charCodeAt(0))%COLORS.length;return COLORS[h];}
@@ -838,6 +1106,8 @@ function toast(msg,type=''){const el=document.getElementById('toast');el.textCon
 
 document.getElementById('addModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAdd();});
 document.getElementById('editModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeEdit();});
+document.getElementById('aiConfirmModal').addEventListener('click',e=>{if(e.target===e.currentTarget)document.getElementById('aiConfirmModal').classList.remove('open');});
+
 init();
 </script>
 <script src="js/product-panel.js"></script>

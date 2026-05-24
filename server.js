@@ -71,6 +71,9 @@ db.exec(`
   );
 `);
 
+// ── Idempotent schema migrations ─────────────────────────────
+try { db.exec("ALTER TABLE customer_interests ADD COLUMN quantity TEXT DEFAULT ''"); } catch(e) {}
+
 // ── Idempotent data migrations ────────────────────────────────
 try {
   db.exec([
@@ -161,7 +164,7 @@ app.get('/api/crm/customers/:id', (req, res) => {
   const c = db.prepare('SELECT * FROM customers_v2 WHERE id=?').get(req.params.id);
   if (!c) return res.status(404).json({ error: 'Not found' });
   const discussions = db.prepare('SELECT * FROM discussions WHERE customer_id=? ORDER BY created_at DESC').all(req.params.id);
-  const interests = db.prepare('SELECT id, interest FROM customer_interests WHERE customer_id=?').all(req.params.id);
+  const interests = db.prepare('SELECT id, interest, quantity FROM customer_interests WHERE customer_id=?').all(req.params.id);
   res.json({ ...c, discussions, interests });
 });
 
@@ -206,8 +209,15 @@ app.delete('/api/crm/discussions/:id', (req, res) => {
 
 // Interests
 app.post('/api/crm/customers/:id/interests', (req, res) => {
-  const { interest } = req.body;
-  db.prepare('INSERT INTO customer_interests (customer_id,interest) VALUES (?,?)').run(req.params.id, interest);
+  const { interest, quantity, sku } = req.body;
+  const label = sku ? `[${sku}] ${interest}` : interest;
+  const r = db.prepare('INSERT INTO customer_interests (customer_id,interest,quantity) VALUES (?,?,?)').run(req.params.id, label, quantity||'');
+  res.json({ success: true, id: r.lastInsertRowid });
+});
+
+app.patch('/api/crm/interests/:id', (req, res) => {
+  const { quantity } = req.body;
+  db.prepare('UPDATE customer_interests SET quantity=? WHERE id=?').run(quantity||'', req.params.id);
   res.json({ success: true });
 });
 
@@ -439,6 +449,36 @@ app.post('/api/ai/suggest-interests', async (req, res) => {
     });
     const match = msg.content[0].text.match(/\[[\s\S]*\]/);
     res.json({ suggestions: match ? JSON.parse(match[0]) : [] });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── AI: quick update from voice transcript ────────────────────
+app.post('/api/ai/quick-update', async (req, res) => {
+  try {
+    const { transcript, customer, products } = req.body;
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const msg = await client.messages.create({
+      model: 'claude-sonnet-4-6', max_tokens: 700,
+      system: 'You are a CRM assistant. Based on a voice note about a customer call, suggest updates. Return ONLY valid JSON, no markdown.',
+      messages: [{ role: 'user', content: `Customer record: ${JSON.stringify({name:customer.name,status:customer.status,assigned_to:customer.assigned_to,requirement:customer.requirement,next_followup:customer.next_followup})}
+
+Voice note: "${transcript}"
+
+Available products (for product_interests): ${JSON.stringify((products||[]).slice(0,40).map(p=>({id:p.id,sku:p.sku,name:p.name,category:p.category})))}
+
+Extract from the voice note and return JSON with ONLY the fields clearly mentioned:
+{
+  "status": "Lead|Contacted|Contacted but No Response|Onboarded",
+  "next_followup": "YYYY-MM-DD",
+  "requirement": "full requirement text",
+  "note": "discussion note to add",
+  "note_type": "call|note|meeting|message",
+  "product_interests": [{"id": 1, "sku": "123", "name": "Product Name", "quantity": "100 pcs"}]
+}
+Omit any field not clearly mentioned in the transcript. Today is ${new Date().toISOString().slice(0,10)}.` }]
+    });
+    const match = msg.content[0].text.match(/\{[\s\S]*\}/);
+    res.json(match ? JSON.parse(match[0]) : {});
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
