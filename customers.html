@@ -204,6 +204,10 @@
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
         <p>Select a customer to view details</p>
       </div>
+      <div class="mobile-back-bar" id="mobileBackBar" style="display:none">
+        <button onclick="closeMobileDetail()">&#8592; Back</button>
+        <span id="mobileBackName"></span>
+      </div>
       <div class="detail-scroll" id="detailContent" style="display:none"></div>
     </div>
   </div>
@@ -360,7 +364,21 @@ async function selectC(id) {
   dc.innerHTML = '<div class="loading-msg">Loading…</div>';
   const r = await fetch(`/api/crm/customers/${id}`);
   selC = await r.json();
+  // Mobile: slide in detail panel
+  document.querySelector('.crm-wrap').classList.add('detail-open');
+  document.getElementById('mobileBackBar').style.display = '';
+  document.getElementById('mobileBackName').textContent = selC.name || '';
   renderDetail();
+}
+
+function closeMobileDetail() {
+  document.querySelector('.crm-wrap').classList.remove('detail-open');
+  document.getElementById('mobileBackBar').style.display = 'none';
+  document.getElementById('detailContent').style.display = 'none';
+  document.getElementById('emptyState').style.display = '';
+  selC = null; selId = null;
+  applyFilters();
+  history.replaceState(null, '', location.pathname);
 }
 
 function renderDetail() {
@@ -685,6 +703,8 @@ async function delC(id) {
   all=all.filter(c=>c.id!==id); selId=null; selC=null;
   document.getElementById('detailContent').style.display='none';
   document.getElementById('emptyState').style.display='';
+  document.querySelector('.crm-wrap').classList.remove('detail-open');
+  document.getElementById('mobileBackBar').style.display='none';
   history.replaceState(null,'',location.pathname);
   applyFilters(); toast('Deleted','success');
 }
@@ -821,5 +841,6 @@ document.getElementById('editModal').addEventListener('click',e=>{if(e.target===
 init();
 </script>
 <script src="js/product-panel.js"></script>
+<script src="js/nav.js"></script>
 </body>
 </html>

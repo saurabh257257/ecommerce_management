@@ -127,10 +127,135 @@ textarea { resize: vertical; min-height: 70px; }
 
 .loading-row td { text-align: center; padding: 40px; color: var(--muted); }
 
+/* ── Missing badge ── */
+.badge-orange { background: #ffedd5; color: #c2410c; }
+
+/* ── Hamburger button ── */
+.hamburger {
+  display: none; flex-direction: column; justify-content: center; gap: 5px;
+  cursor: pointer; padding: 6px; border: none; background: none;
+  border-radius: 6px; flex-shrink: 0;
+}
+.hamburger span { display: block; width: 20px; height: 2px; background: var(--text); border-radius: 2px; transition: all .2s; }
+
+/* ── Sidebar overlay (mobile) ── */
+.sidebar-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 99;
+}
+.sidebar-overlay.show { display: block; }
+
+/* ── Table horizontal scroll wrapper ── */
+.tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
+  /* Sidebar hidden off-screen by default */
   .sidebar { transform: translateX(-100%); transition: transform .25s; }
   .sidebar.open { transform: translateX(0); }
   .main { margin-left: 0; }
+
+  /* Show hamburger */
+  .hamburger { display: flex; }
+
+  /* Topbar */
+  .topbar { padding: 11px 14px; gap: 8px; }
+  .topbar h2 { font-size: 16px; flex: 1; }
+  .topbar-actions { gap: 6px; flex-wrap: wrap; }
+  .search-box input { width: 100px; }
+
+  /* Content */
+  .content { padding: 14px; }
+
+  /* Stats — 2 columns on mobile */
+  .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .stat-card { padding: 14px; }
+  .stat-card .value { font-size: 22px; }
+
+  /* Cards */
+  .card-header { padding: 12px 14px; flex-wrap: wrap; gap: 6px; }
+
+  /* Table — allow horizontal scroll */
+  table { min-width: 500px; }
+
+  /* Form */
   .form-grid { grid-template-columns: 1fr; }
+
+  /* Modal */
+  .modal { padding: 20px 16px; border-radius: 12px; max-height: 92vh; overflow-y: auto; }
+  .modal-footer { flex-wrap: wrap; gap: 8px; padding-top: 12px; }
+
+  /* Toast */
+  #toast { left: 12px; right: 12px; bottom: 12px; text-align: center; }
+
+  /* Button text — hide label on very small screens when needed */
+  .btn-hide-sm { display: none; }
+
+  /* Topbar — allow actions to wrap to second line */
+  .topbar { flex-wrap: wrap; }
+  .topbar-actions { width: 100%; justify-content: flex-end; }
+
+  /* Products grid — 1 column on small phones */
+  .product-grid { grid-template-columns: 1fr !important; }
+
+  /* Wider modal for products (has tabs) */
+  .modal.modal-lg { width: 100%; max-width: 100%; border-radius: 0; max-height: 100vh; margin: 0; align-self: flex-end; }
+  .modal-overlay { align-items: flex-end; }
+
+  /* Stats grid — single column on very narrow screens */
+}
+
+/* ── CRM two-panel mobile ── */
+@media (max-width: 768px) {
+  body { overflow: auto !important; }
+  .crm-wrap { flex-direction: column; height: auto; overflow: visible; }
+  .crm-list-panel { width: 100% !important; min-width: unset !important; border-right: none; border-bottom: 1px solid var(--border); max-height: 100vh; }
+  .crm-detail-panel {
+    position: fixed; inset: 0; top: 57px; z-index: 90;
+    background: var(--bg); transform: translateX(100%);
+    transition: transform .28s cubic-bezier(.4,0,.2,1);
+    overflow-y: auto;
+  }
+  .crm-wrap.detail-open .crm-detail-panel { transform: translateX(0); }
+  .detail-scroll { padding: 14px !important; }
+  .mobile-back-bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; background: var(--surface); border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .mobile-back-bar button {
+    background: none; border: none; font-size: 14px; color: var(--primary);
+    font-weight: 600; cursor: pointer; padding: 4px 0;
+  }
+  .mobile-back-bar span { font-size: 14px; font-weight: 600; }
+  .dh-top { flex-wrap: wrap; }
+  .dh-actions { flex-wrap: wrap; }
+}
+@media (min-width: 769px) {
+  .mobile-back-bar { display: none !important; }
+}
+
+/* ── Rohan/Saurabh page mobile ── */
+@media (max-width: 768px) {
+  .priority-grid { grid-template-columns: 1fr !important; }
+  .pc-actions { flex-wrap: wrap; }
+}
+
+/* ── Admin dashboard mobile ── */
+@media (max-width: 768px) {
+  .team-split { grid-template-columns: 1fr !important; }
+  .dl-grid { grid-template-columns: 1fr 1fr !important; }
+  .pb-seg { font-size: 9px; }
+}
+
+/* ── Product sidecar mobile ── */
+@media (max-width: 768px) {
+  .pp-drawer { width: 100vw !important; right: -100vw !important; }
+  .pp-drawer.open { right: 0 !important; }
+}
+
+/* ── Database page mobile ── */
+@media (max-width: 768px) {
+  .query-grid { grid-template-columns: 1fr !important; }
+  .table-tabs { gap: 6px; }
+  .tab-btn { font-size: 12px; padding: 6px 10px; }
 }
