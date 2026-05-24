@@ -19,6 +19,36 @@ db.exec(`
     phone TEXT, city TEXT, address TEXT,
     status TEXT DEFAULT 'Active', notes TEXT, joined TEXT
   );
+  CREATE TABLE IF NOT EXISTS customers_v2 (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    company TEXT DEFAULT '',
+    phone TEXT DEFAULT '',
+    email TEXT DEFAULT '',
+    city TEXT DEFAULT '',
+    assigned_to TEXT DEFAULT '',
+    status TEXT DEFAULT 'Lead',
+    source TEXT DEFAULT '',
+    requirement TEXT DEFAULT '',
+    followup_action TEXT DEFAULT '',
+    next_followup TEXT DEFAULT '',
+    remark TEXT DEFAULT '',
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+  CREATE TABLE IF NOT EXISTS discussions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id INTEGER NOT NULL,
+    note TEXT NOT NULL,
+    author TEXT DEFAULT '',
+    type TEXT DEFAULT 'note',
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+  CREATE TABLE IF NOT EXISTS customer_interests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id INTEGER NOT NULL,
+    interest TEXT NOT NULL
+  );
   CREATE TABLE IF NOT EXISTS orders (
     id TEXT PRIMARY KEY,
     customerName TEXT, product TEXT,
@@ -98,6 +128,78 @@ app.put('/api/orders/:id', (req, res) => {
 });
 app.delete('/api/orders/:id', (req, res) => {
   db.prepare('DELETE FROM orders WHERE id=?').run(req.params.id);
+  res.json({ success: true });
+});
+
+// ── Customers V2 (CRM) ───────────────────────────────────────
+app.get('/api/crm/customers', (req, res) => {
+  const { assigned_to, status, search } = req.query;
+  let sql = 'SELECT * FROM customers_v2';
+  const params = [], conds = [];
+  if (assigned_to) { conds.push('assigned_to = ?'); params.push(assigned_to); }
+  if (status) { conds.push('status = ?'); params.push(status); }
+  if (search) { conds.push('(name LIKE ? OR company LIKE ? OR phone LIKE ?)'); params.push(...Array(3).fill(`%${search}%`)); }
+  if (conds.length) sql += ' WHERE ' + conds.join(' AND ');
+  sql += ' ORDER BY updated_at DESC';
+  res.json({ data: db.prepare(sql).all(...params) });
+});
+
+app.get('/api/crm/customers/:id', (req, res) => {
+  const c = db.prepare('SELECT * FROM customers_v2 WHERE id=?').get(req.params.id);
+  if (!c) return res.status(404).json({ error: 'Not found' });
+  const discussions = db.prepare('SELECT * FROM discussions WHERE customer_id=? ORDER BY created_at DESC').all(req.params.id);
+  const interests = db.prepare('SELECT interest FROM customer_interests WHERE customer_id=?').all(req.params.id).map(r => r.interest);
+  res.json({ ...c, discussions, interests });
+});
+
+app.post('/api/crm/customers', (req, res) => {
+  const c = req.body;
+  const r = db.prepare(`INSERT INTO customers_v2 (name,company,phone,email,city,assigned_to,status,source,requirement,followup_action,next_followup,remark) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`)
+    .run(c.name, c.company||'', c.phone||'', c.email||'', c.city||'', c.assigned_to||'', c.status||'Lead', c.source||'', c.requirement||'', c.followup_action||'', c.next_followup||'', c.remark||'');
+  res.json({ success: true, id: r.lastInsertRowid });
+});
+
+app.put('/api/crm/customers/:id', (req, res) => {
+  const c = req.body;
+  db.prepare(`UPDATE customers_v2 SET name=?,company=?,phone=?,email=?,city=?,assigned_to=?,status=?,requirement=?,followup_action=?,next_followup=?,remark=?,updated_at=datetime('now') WHERE id=?`)
+    .run(c.name, c.company||'', c.phone||'', c.email||'', c.city||'', c.assigned_to||'', c.status||'Lead', c.requirement||'', c.followup_action||'', c.next_followup||'', c.remark||'', req.params.id);
+  res.json({ success: true });
+});
+
+app.delete('/api/crm/customers/:id', (req, res) => {
+  db.prepare('DELETE FROM discussions WHERE customer_id=?').run(req.params.id);
+  db.prepare('DELETE FROM customer_interests WHERE customer_id=?').run(req.params.id);
+  db.prepare('DELETE FROM customers_v2 WHERE id=?').run(req.params.id);
+  res.json({ success: true });
+});
+
+// Discussions
+app.get('/api/crm/customers/:id/discussions', (req, res) => {
+  const rows = db.prepare('SELECT * FROM discussions WHERE customer_id=? ORDER BY created_at DESC').all(req.params.id);
+  res.json({ data: rows });
+});
+
+app.post('/api/crm/customers/:id/discussions', (req, res) => {
+  const { note, author, type } = req.body;
+  const r = db.prepare('INSERT INTO discussions (customer_id,note,author,type) VALUES (?,?,?,?)').run(req.params.id, note, author||'', type||'note');
+  db.prepare("UPDATE customers_v2 SET updated_at=datetime('now') WHERE id=?").run(req.params.id);
+  res.json({ success: true, id: r.lastInsertRowid });
+});
+
+app.delete('/api/crm/discussions/:id', (req, res) => {
+  db.prepare('DELETE FROM discussions WHERE id=?').run(req.params.id);
+  res.json({ success: true });
+});
+
+// Interests
+app.post('/api/crm/customers/:id/interests', (req, res) => {
+  const { interest } = req.body;
+  db.prepare('INSERT INTO customer_interests (customer_id,interest) VALUES (?,?)').run(req.params.id, interest);
+  res.json({ success: true });
+});
+
+app.delete('/api/crm/interests/:id', (req, res) => {
+  db.prepare('DELETE FROM customer_interests WHERE id=?').run(req.params.id);
   res.json({ success: true });
 });
 

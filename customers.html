@@ -7,14 +7,131 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* Two-panel layout */
+    .crm-layout { display:flex; height:calc(100vh - 57px); overflow:hidden; }
+
+    /* Left: Customer List */
+    .crm-list { width:320px; flex-shrink:0; border-right:1px solid var(--border); display:flex; flex-direction:column; background:var(--surface); }
+    .crm-list-header { padding:12px; border-bottom:1px solid var(--border); display:flex; flex-direction:column; gap:8px; }
+    .crm-list-header h3 { font-size:14px; font-weight:600; }
+    .crm-filters { display:flex; gap:6px; flex-wrap:wrap; }
+    .filter-chip { padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; cursor:pointer; border:1px solid var(--border); background:var(--bg); color:var(--muted); transition:all .15s; }
+    .filter-chip.active { color:#fff; border-color:transparent; }
+    .fc-all.active { background:#6366f1; }
+    .fc-rohan.active { background:#0ea5e9; }
+    .fc-saurabh.active { background:#10b981; }
+    .fc-expo.active { background:#f59e0b; }
+    .fc-uttkarsh.active { background:#8b5cf6; }
+
+    .crm-search { padding:8px 12px; border-bottom:1px solid var(--border); }
+    .crm-search input { width:100%; padding:7px 10px; border:1px solid var(--border); border-radius:8px; font-size:13px; outline:none; }
+    .crm-search input:focus { border-color:var(--primary); }
+
+    .crm-list-body { flex:1; overflow-y:auto; }
+    .customer-item { padding:11px 14px; border-bottom:1px solid var(--border); cursor:pointer; transition:background .1s; }
+    .customer-item:hover { background:#f8fafc; }
+    .customer-item.active { background:#eef2ff; border-left:3px solid var(--primary); }
+    .ci-top { display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:3px; }
+    .ci-name { font-size:13px; font-weight:600; color:var(--text); flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .ci-company { font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:4px; }
+    .ci-bottom { display:flex; align-items:center; gap:5px; }
+    .ci-phone { font-size:11px; color:var(--muted); flex:1; }
+    .assignee-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+    .dot-rohan { background:#0ea5e9; }
+    .dot-saurabh { background:#10b981; }
+    .dot-expo { background:#f59e0b; }
+    .dot-uttkarsh { background:#8b5cf6; }
+    .dot-default { background:#94a3b8; }
+
+    /* Right: Customer Detail */
+    .crm-detail { flex:1; display:flex; overflow:hidden; }
+    .crm-detail-empty { flex:1; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:14px; flex-direction:column; gap:8px; }
+
+    /* Main content + right sidebar */
+    .crm-main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+    .crm-sidebar { width:260px; flex-shrink:0; border-left:1px solid var(--border); overflow-y:auto; background:var(--surface); padding:16px; }
+
+    /* Customer header */
+    .customer-header { padding:16px 20px; border-bottom:1px solid var(--border); background:var(--surface); }
+    .ch-row1 { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:10px; }
+    .ch-name { font-size:18px; font-weight:700; }
+    .ch-company { font-size:13px; color:var(--muted); margin-top:2px; }
+    .ch-badges { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+    .ch-actions { display:flex; gap:6px; flex-shrink:0; }
+    .ch-meta { display:flex; gap:16px; flex-wrap:wrap; }
+    .ch-meta-item { font-size:12px; color:var(--muted); display:flex; align-items:center; gap:4px; }
+    .ch-meta-item strong { color:var(--text); }
+
+    /* Assignee badges */
+    .tag-rohan { background:#e0f2fe; color:#0369a1; }
+    .tag-saurabh { background:#d1fae5; color:#065f46; }
+    .tag-expo { background:#fef3c7; color:#92400e; }
+    .tag-uttkarsh { background:#ede9fe; color:#5b21b6; }
+
+    /* Status badges */
+    .tag-settled { background:#dcfce7; color:#15803d; }
+    .tag-chasing { background:#fef3c7; color:#a16207; }
+    .tag-lead { background:#dbeafe; color:#1d4ed8; }
+    .tag-active { background:#dcfce7; color:#15803d; }
+    .tag-no-response { background:#fee2e2; color:#b91c1c; }
+
+    /* Discussion timeline */
+    .discussion-area { flex:1; overflow-y:auto; padding:16px 20px; display:flex; flex-direction:column; gap:0; }
+    .add-note-box { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:16px; }
+    .add-note-row { display:flex; gap:8px; margin-top:8px; }
+    .add-note-row select { padding:6px 8px; border:1px solid var(--border); border-radius:6px; font-size:12px; }
+    .add-note-row input { padding:6px 8px; border:1px solid var(--border); border-radius:6px; font-size:12px; flex:1; }
+    textarea.note-input { width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:8px; font-size:13px; resize:none; height:64px; outline:none; font-family:inherit; }
+    textarea.note-input:focus { border-color:var(--primary); }
+
+    .disc-item { display:flex; gap:10px; padding:10px 0; border-bottom:1px solid #f1f5f9; }
+    .disc-item:last-child { border-bottom:none; }
+    .disc-dot { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; margin-top:2px; }
+    .disc-body { flex:1; }
+    .disc-meta { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+    .disc-author { font-size:12px; font-weight:600; }
+    .disc-time { font-size:11px; color:var(--muted); }
+    .disc-type { font-size:10px; padding:1px 6px; border-radius:10px; background:var(--bg); color:var(--muted); font-weight:500; }
+    .disc-note { font-size:13px; color:var(--text); line-height:1.5; }
+    .disc-del { font-size:11px; color:var(--muted); cursor:pointer; margin-left:auto; }
+    .disc-del:hover { color:var(--danger); }
+
+    /* Right sidebar */
+    .sidebar-section { margin-bottom:20px; }
+    .sidebar-section h4 { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); margin-bottom:10px; }
+    .info-row { display:flex; justify-content:space-between; font-size:12px; padding:5px 0; border-bottom:1px solid #f1f5f9; }
+    .info-row .label { color:var(--muted); }
+    .info-row .val { font-weight:500; text-align:right; max-width:55%; word-break:break-word; }
+
+    .interest-tag { display:inline-flex; align-items:center; gap:4px; padding:3px 8px; background:#eef2ff; color:var(--primary); border-radius:20px; font-size:11px; font-weight:500; margin:2px; }
+    .interest-del { cursor:pointer; font-size:12px; opacity:.6; }
+    .interest-del:hover { opacity:1; }
+    .add-interest { display:flex; gap:4px; margin-top:6px; }
+    .add-interest input { flex:1; padding:4px 8px; border:1px solid var(--border); border-radius:6px; font-size:12px; outline:none; }
+
+    .req-box { background:#f8fafc; border-radius:8px; padding:10px; font-size:12px; line-height:1.6; color:var(--text); }
+
+    /* Edit panel */
+    .edit-panel { padding:16px 20px; border-top:1px solid var(--border); background:var(--surface); display:none; }
+    .edit-panel.open { display:block; }
+    .edit-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .edit-grid .full { grid-column:1/-1; }
+
+    @media (max-width:900px) {
+      .crm-list { width:260px; }
+      .crm-sidebar { display:none; }
+    }
+    @media (max-width:640px) {
+      .crm-list { width:100%; position:absolute; z-index:10; height:100%; }
+      .crm-list.hidden { display:none; }
+    }
+  </style>
 </head>
 <body>
 
 <aside class="sidebar">
-  <div class="sidebar-logo">
-    <h1>ShopManager</h1>
-    <p>Ecommerce Dashboard</p>
-  </div>
+  <div class="sidebar-logo"><h1>ShopManager</h1><p>Ecommerce Dashboard</p></div>
   <nav class="sidebar-nav">
     <a href="index.html" class="nav-link">
       <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
@@ -37,91 +154,82 @@
 
 <div class="main">
   <div class="topbar">
-    <h2>Customers</h2>
+    <h2>Customers <span id="totalCount" style="font-size:14px;color:var(--muted);font-weight:400"></span></h2>
     <div class="topbar-actions">
-      <div class="search-box">
-        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-        <input type="text" id="searchInput" placeholder="Search customers…" oninput="filterCustomers()" />
-      </div>
-      <button class="btn btn-primary" onclick="openModal()">
-        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      <button class="btn btn-primary btn-sm" onclick="openAddCustomer()">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
         Add Customer
       </button>
     </div>
   </div>
 
-  <div class="content">
-    <div class="card">
-      <div class="card-header">
-        <h3 id="countLabel">All Customers</h3>
+  <div class="crm-layout">
+    <!-- Left: List -->
+    <div class="crm-list">
+      <div class="crm-list-header">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h3>All Customers</h3>
+          <span id="listCount" style="font-size:12px;color:var(--muted)"></span>
+        </div>
+        <div class="crm-filters">
+          <div class="filter-chip fc-all active" onclick="setFilter('all')">All</div>
+          <div class="filter-chip fc-rohan" onclick="setFilter('Rohan')">Rohan</div>
+          <div class="filter-chip fc-saurabh" onclick="setFilter('Saurabh')">Saurabh</div>
+          <div class="filter-chip fc-expo" onclick="setFilter('Expo')">Expo</div>
+          <div class="filter-chip fc-uttkarsh" onclick="setFilter('Uttkarsh')">Uttkarsh</div>
+        </div>
       </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Customer</th>
-            <th>Email</th>
-            <th>Phone</th>
-            <th>City</th>
-            <th>Status</th>
-            <th>Joined</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="customersBody">
-          <tr class="loading-row"><td colspan="7"><span class="spinner"></span></td></tr>
-        </tbody>
-      </table>
+      <div class="crm-search">
+        <input type="text" id="searchInput" placeholder="Search name, company, phone…" oninput="filterList()" />
+      </div>
+      <div class="crm-list-body" id="customerList">
+        <div style="padding:40px;text-align:center;color:var(--muted)"><span class="spinner"></span></div>
+      </div>
+    </div>
+
+    <!-- Right: Detail -->
+    <div class="crm-detail" id="detailPanel">
+      <div class="crm-detail-empty">
+        <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="opacity:.3"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Select a customer to view details
+      </div>
     </div>
   </div>
 </div>
 
-<!-- Add / Edit Modal -->
-<div class="modal-overlay" id="modal">
-  <div class="modal">
-    <h3 id="modalTitle">Add Customer</h3>
-    <form id="customerForm" onsubmit="saveCustomer(event)">
-      <input type="hidden" id="customerId" />
+<!-- Add Customer Modal -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal" style="width:480px">
+    <h3>Add Customer</h3>
+    <form onsubmit="submitAddCustomer(event)">
       <div class="form-grid">
-        <div class="form-group">
-          <label>First Name *</label>
-          <input type="text" id="firstName" required />
-        </div>
-        <div class="form-group">
-          <label>Last Name *</label>
-          <input type="text" id="lastName" required />
-        </div>
-        <div class="form-group full">
-          <label>Email *</label>
-          <input type="email" id="email" required />
-        </div>
-        <div class="form-group">
-          <label>Phone</label>
-          <input type="tel" id="phone" />
-        </div>
-        <div class="form-group">
-          <label>City</label>
-          <input type="text" id="city" />
-        </div>
-        <div class="form-group full">
-          <label>Address</label>
-          <textarea id="address"></textarea>
-        </div>
-        <div class="form-group">
-          <label>Status</label>
-          <select id="status">
-            <option value="Active">Active</option>
-            <option value="Inactive">Inactive</option>
-            <option value="VIP">VIP</option>
+        <div class="form-group full"><label>Name *</label><input type="text" id="ac-name" required /></div>
+        <div class="form-group full"><label>Company</label><input type="text" id="ac-company" /></div>
+        <div class="form-group"><label>Phone</label><input type="text" id="ac-phone" /></div>
+        <div class="form-group"><label>Email</label><input type="email" id="ac-email" /></div>
+        <div class="form-group"><label>City</label><input type="text" id="ac-city" /></div>
+        <div class="form-group"><label>Assigned To</label>
+          <select id="ac-assigned">
+            <option value="Rohan">Rohan</option>
+            <option value="Saurabh">Saurabh</option>
+            <option value="Uttkarsh">Uttkarsh</option>
+            <option value="Expo">Expo</option>
           </select>
         </div>
-        <div class="form-group">
-          <label>Notes</label>
-          <input type="text" id="notes" />
+        <div class="form-group"><label>Status</label>
+          <select id="ac-status">
+            <option value="Lead">Lead</option>
+            <option value="Active">Active</option>
+            <option value="Settled">Settled</option>
+            <option value="Chasing">Chasing</option>
+            <option value="No Response">No Response</option>
+          </select>
         </div>
+        <div class="form-group full"><label>Requirement</label><textarea id="ac-req" rows="2" style="resize:none"></textarea></div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button>
-        <button type="submit" class="btn btn-primary" id="saveBtn">Save Customer</button>
+        <button type="button" class="btn btn-outline" onclick="document.getElementById('addModal').classList.remove('open')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Add Customer</button>
       </div>
     </form>
   </div>
@@ -133,131 +241,334 @@
 <script src="js/sheets.js"></script>
 <script>
 let allCustomers = [];
-const statusBadge = { Active:'badge-green', Inactive:'badge-gray', VIP:'badge-blue' };
+let activeFilter = 'all';
+let selectedId = null;
 
-function initials(c) {
-  return ((c.firstName||'?')[0] + (c.lastName||'?')[0]).toUpperCase();
-}
+const assigneeColors = {
+  Rohan: { dot:'dot-rohan', tag:'tag-rohan', bg:'#0ea5e9' },
+  Saurabh: { dot:'dot-saurabh', tag:'tag-saurabh', bg:'#10b981' },
+  Expo: { dot:'dot-expo', tag:'tag-expo', bg:'#f59e0b' },
+  Uttkarsh: { dot:'dot-uttkarsh', tag:'tag-uttkarsh', bg:'#8b5cf6' },
+};
+const statusClass = { Settled:'tag-settled', Chasing:'tag-chasing', Lead:'tag-lead', Active:'tag-active', 'No Response':'tag-no-response' };
+const typeColors = { call:'#6366f1', note:'#94a3b8', meeting:'#10b981', message:'#f59e0b' };
 
 async function loadCustomers() {
-  try {
-    const res = await Sheets.getCustomers();
-    allCustomers = res.data || [];
-    renderCustomers(allCustomers);
-  } catch(e) {
-    document.getElementById('customersBody').innerHTML =
-      `<tr class="loading-row"><td colspan="7" style="color:var(--danger)">${e.message}</td></tr>`;
-  }
+  const res = await fetch('/api/crm/customers');
+  const data = await res.json();
+  allCustomers = data.data || [];
+  document.getElementById('totalCount').textContent = `(${allCustomers.length})`;
+  renderList(allCustomers);
 }
 
-function renderCustomers(list) {
-  document.getElementById('countLabel').textContent = `All Customers (${list.length})`;
-  const tbody = document.getElementById('customersBody');
-  if (list.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-      No customers yet. Add your first one!
-    </div></td></tr>`;
+function setFilter(f) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  const chip = f === 'all' ? document.querySelector('.fc-all') : document.querySelector(`.fc-${f.toLowerCase()}`);
+  if (chip) chip.classList.add('active');
+  filterList();
+}
+
+function filterList() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  let list = activeFilter === 'all' ? allCustomers : allCustomers.filter(c => c.assigned_to === activeFilter);
+  if (q) list = list.filter(c => `${c.name} ${c.company} ${c.phone}`.toLowerCase().includes(q));
+  renderList(list);
+}
+
+function renderList(list) {
+  document.getElementById('listCount').textContent = `${list.length} customers`;
+  const el = document.getElementById('customerList');
+  if (!list.length) {
+    el.innerHTML = '<div style="padding:32px;text-align:center;color:var(--muted);font-size:13px">No customers found</div>';
     return;
   }
-  tbody.innerHTML = list.map(c => `
-    <tr>
-      <td><div style="display:flex;align-items:center;gap:10px">
-        <div class="avatar">${initials(c)}</div>
-        <strong>${c.firstName} ${c.lastName}</strong>
-      </div></td>
-      <td>${c.email||'—'}</td>
-      <td>${c.phone||'—'}</td>
-      <td>${c.city||'—'}</td>
-      <td><span class="badge ${statusBadge[c.status]||'badge-gray'}">${c.status||'—'}</span></td>
-      <td style="color:var(--muted)">${c.joined||'—'}</td>
-      <td>
-        <div style="display:flex;gap:6px">
-          <button class="btn btn-outline btn-sm" onclick='editCustomer(${JSON.stringify(c)})'>Edit</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteCustomer('${c.id}')">Delete</button>
+  el.innerHTML = list.map(c => {
+    const ac = assigneeColors[c.assigned_to] || { dot:'dot-default' };
+    const isActive = c.id === selectedId;
+    return `
+    <div class="customer-item ${isActive?'active':''}" onclick="selectCustomer(${c.id})">
+      <div class="ci-top">
+        <div class="ci-name">${c.name}</div>
+        <span class="badge ${statusClass[c.status]||'badge-gray'}" style="font-size:10px;padding:2px 6px">${c.status}</span>
+      </div>
+      <div class="ci-company">${c.company || c.source || '—'}</div>
+      <div class="ci-bottom">
+        <span class="ci-phone">${c.phone || 'No phone'}</span>
+        <span class="assignee-dot ${ac.dot}"></span>
+        <span style="font-size:10px;color:var(--muted)">${c.assigned_to}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function selectCustomer(id) {
+  selectedId = id;
+  filterList(); // re-render list to update active state
+  const res = await fetch(`/api/crm/customers/${id}`);
+  const c = await res.json();
+  renderDetail(c);
+}
+
+function renderDetail(c) {
+  const ac = assigneeColors[c.assigned_to] || { tag:'', bg:'#94a3b8' };
+  const panel = document.getElementById('detailPanel');
+  panel.innerHTML = `
+  <div class="crm-main">
+    <div class="customer-header">
+      <div class="ch-row1">
+        <div>
+          <div class="ch-name">${c.name}</div>
+          ${c.company ? `<div class="ch-company">${c.company}</div>` : ''}
         </div>
-      </td>
-    </tr>`).join('');
+        <div class="ch-actions">
+          <button class="btn btn-outline btn-sm" onclick="toggleEdit(${c.id})">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteCustomer(${c.id})">Delete</button>
+        </div>
+      </div>
+      <div class="ch-badges">
+        <span class="badge ${ac.tag}">${c.assigned_to}</span>
+        <span class="badge ${statusClass[c.status]||'badge-gray'}">${c.status}</span>
+        ${c.source ? `<span class="badge badge-gray" style="font-size:11px">${c.source}</span>` : ''}
+        ${c.next_followup ? `<span class="badge badge-yellow">Follow-up: ${c.next_followup}</span>` : ''}
+      </div>
+      <div class="ch-meta" style="margin-top:10px">
+        ${c.phone ? `<div class="ch-meta-item"><strong>${c.phone}</strong></div>` : ''}
+        ${c.email ? `<div class="ch-meta-item">${c.email}</div>` : ''}
+        ${c.city ? `<div class="ch-meta-item">${c.city}</div>` : ''}
+        ${c.followup_action ? `<div class="ch-meta-item" style="color:var(--warning)">Next: ${c.followup_action}</div>` : ''}
+      </div>
+    </div>
+
+    <!-- Edit Panel (hidden by default) -->
+    <div class="edit-panel" id="editPanel-${c.id}">
+      <div class="edit-grid">
+        <div class="form-group"><label>Name</label><input id="e-name" value="${esc(c.name)}" /></div>
+        <div class="form-group"><label>Company</label><input id="e-company" value="${esc(c.company)}" /></div>
+        <div class="form-group"><label>Phone</label><input id="e-phone" value="${esc(c.phone)}" /></div>
+        <div class="form-group"><label>Email</label><input id="e-email" value="${esc(c.email)}" /></div>
+        <div class="form-group"><label>City</label><input id="e-city" value="${esc(c.city)}" /></div>
+        <div class="form-group"><label>Assigned To</label>
+          <select id="e-assigned">
+            ${['Rohan','Saurabh','Uttkarsh','Expo'].map(a=>`<option ${c.assigned_to===a?'selected':''}>${a}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group"><label>Status</label>
+          <select id="e-status">
+            ${['Lead','Active','Settled','Chasing','No Response'].map(s=>`<option ${c.status===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group"><label>Next Follow-up</label><input id="e-followup" type="date" value="${c.next_followup||''}" /></div>
+        <div class="form-group full"><label>Follow-up Action</label><input id="e-action" value="${esc(c.followup_action)}" /></div>
+        <div class="form-group full"><label>Requirement</label><textarea id="e-req" rows="2" style="resize:none">${esc(c.requirement)}</textarea></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
+        <button class="btn btn-outline btn-sm" onclick="toggleEdit(${c.id})">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="saveEdit(${c.id})">Save Changes</button>
+      </div>
+    </div>
+
+    <!-- Discussion Timeline -->
+    <div class="discussion-area">
+      <div class="add-note-box">
+        <textarea class="note-input" id="noteInput" placeholder="Add a note, call summary, or update…"></textarea>
+        <div class="add-note-row">
+          <select id="noteType">
+            <option value="note">📝 Note</option>
+            <option value="call">📞 Call</option>
+            <option value="meeting">🤝 Meeting</option>
+            <option value="message">💬 Message</option>
+          </select>
+          <input type="text" id="noteAuthor" placeholder="Your name" value="${c.assigned_to}" />
+          <button class="btn btn-primary btn-sm" onclick="addNote(${c.id})">Add</button>
+        </div>
+      </div>
+      <div id="discussionList">
+        ${renderDiscussions(c.discussions || [])}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Sidebar -->
+  <div class="crm-sidebar">
+    <div class="sidebar-section">
+      <h4>Contact Info</h4>
+      ${[
+        ['Phone', c.phone],
+        ['Email', c.email],
+        ['City', c.city],
+        ['Source', c.source],
+      ].filter(([,v])=>v).map(([l,v])=>`<div class="info-row"><span class="label">${l}</span><span class="val">${v}</span></div>`).join('')}
+    </div>
+
+    ${c.requirement ? `
+    <div class="sidebar-section">
+      <h4>Requirement</h4>
+      <div class="req-box">${c.requirement}</div>
+    </div>` : ''}
+
+    <div class="sidebar-section">
+      <h4>Product Interests</h4>
+      <div id="interestsList">
+        ${(c.interests||[]).map((interest, i) => `
+          <span class="interest-tag">${interest}<span class="interest-del" onclick="removeInterest(${c.id}, ${i}, '${esc(interest)}')">×</span></span>`).join('')}
+      </div>
+      <div class="add-interest">
+        <input type="text" id="newInterest" placeholder="Add product…" list="productList" onkeydown="if(event.key==='Enter')addInterest(${c.id})" />
+        <button class="btn btn-outline btn-sm" onclick="addInterest(${c.id})">+</button>
+      </div>
+      <datalist id="productList">
+        <option value="Nickel Strip Plated">
+        <option value="Nickel Strip Pure">
+        <option value="Copper Bus Bar">
+        <option value="LFP Cells">
+        <option value="Li-ion Cells 18650">
+        <option value="Li-ion Cells 21700">
+        <option value="Aluminium Bus Bar">
+      </datalist>
+    </div>
+
+    <div class="sidebar-section">
+      <h4>Timeline</h4>
+      ${[
+        ['Added', (c.created_at||'').slice(0,10)],
+        ['Updated', (c.updated_at||'').slice(0,10)],
+        ['Follow-up', c.next_followup],
+      ].filter(([,v])=>v).map(([l,v])=>`<div class="info-row"><span class="label">${l}</span><span class="val">${v}</span></div>`).join('')}
+    </div>
+  </div>`;
 }
 
-function filterCustomers() {
-  const q = document.getElementById('searchInput').value.toLowerCase();
-  if (!q) { renderCustomers(allCustomers); return; }
-  renderCustomers(allCustomers.filter(c =>
-    `${c.firstName} ${c.lastName} ${c.email} ${c.phone} ${c.city}`.toLowerCase().includes(q)
-  ));
+function renderDiscussions(discussions) {
+  if (!discussions.length) return '<div style="text-align:center;color:var(--muted);font-size:13px;padding:20px">No discussions yet. Add the first note above.</div>';
+  const typeIcons = { call:'📞', note:'📝', meeting:'🤝', message:'💬' };
+  return discussions.map(d => {
+    const initials = (d.author||'?').slice(0,2).toUpperCase();
+    const color = typeColors[d.type] || '#94a3b8';
+    const time = (d.created_at||'').replace('T',' ').slice(0,16);
+    return `
+    <div class="disc-item">
+      <div class="disc-dot" style="background:${color}20;color:${color}">${initials}</div>
+      <div class="disc-body">
+        <div class="disc-meta">
+          <span class="disc-author">${d.author||'Unknown'}</span>
+          <span class="disc-type">${typeIcons[d.type]||''} ${d.type}</span>
+          <span class="disc-time">${time}</span>
+          <span class="disc-del" onclick="deleteNote(${d.id})">×</span>
+        </div>
+        <div class="disc-note">${d.note}</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
-function openModal(customer = null) {
-  document.getElementById('modalTitle').textContent = customer ? 'Edit Customer' : 'Add Customer';
-  document.getElementById('saveBtn').textContent = customer ? 'Update Customer' : 'Save Customer';
-  document.getElementById('customerId').value = customer?.id || '';
-  document.getElementById('firstName').value = customer?.firstName || '';
-  document.getElementById('lastName').value = customer?.lastName || '';
-  document.getElementById('email').value = customer?.email || '';
-  document.getElementById('phone').value = customer?.phone || '';
-  document.getElementById('city').value = customer?.city || '';
-  document.getElementById('address').value = customer?.address || '';
-  document.getElementById('status').value = customer?.status || 'Active';
-  document.getElementById('notes').value = customer?.notes || '';
-  document.getElementById('modal').classList.add('open');
+function esc(s) { return (s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+function toggleEdit(id) {
+  const panel = document.getElementById(`editPanel-${id}`);
+  if (panel) panel.classList.toggle('open');
 }
 
-function closeModal() { document.getElementById('modal').classList.remove('open'); }
-
-function editCustomer(c) { openModal(c); }
-
-async function saveCustomer(e) {
-  e.preventDefault();
-  const btn = document.getElementById('saveBtn');
-  btn.disabled = true; btn.textContent = 'Saving…';
-  const id = document.getElementById('customerId').value;
-  const customer = {
-    firstName: document.getElementById('firstName').value.trim(),
-    lastName: document.getElementById('lastName').value.trim(),
-    email: document.getElementById('email').value.trim(),
-    phone: document.getElementById('phone').value.trim(),
-    city: document.getElementById('city').value.trim(),
-    address: document.getElementById('address').value.trim(),
-    status: document.getElementById('status').value,
-    notes: document.getElementById('notes').value.trim(),
+async function saveEdit(id) {
+  const payload = {
+    name: document.getElementById('e-name').value.trim(),
+    company: document.getElementById('e-company').value.trim(),
+    phone: document.getElementById('e-phone').value.trim(),
+    email: document.getElementById('e-email').value.trim(),
+    city: document.getElementById('e-city').value.trim(),
+    assigned_to: document.getElementById('e-assigned').value,
+    status: document.getElementById('e-status').value,
+    next_followup: document.getElementById('e-followup').value,
+    followup_action: document.getElementById('e-action').value.trim(),
+    requirement: document.getElementById('e-req').value.trim(),
   };
-  try {
-    if (id) {
-      await Sheets.updateCustomer(id, customer);
-      toast('Customer updated!', 'success');
-    } else {
-      customer.joined = new Date().toLocaleDateString('en-IN');
-      await Sheets.addCustomer(customer);
-      toast('Customer added!', 'success');
-    }
-    closeModal();
-    await loadCustomers();
-  } catch(err) {
-    toast(err.message, 'error');
-  }
-  btn.disabled = false;
-  btn.textContent = id ? 'Update Customer' : 'Save Customer';
+  await fetch(`/api/crm/customers/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+  toast('Saved!', 'success');
+  await loadCustomers();
+  selectCustomer(id);
 }
 
 async function deleteCustomer(id) {
-  if (!confirm('Delete this customer? This cannot be undone.')) return;
-  try {
-    await Sheets.deleteCustomer(id);
-    toast('Customer deleted', 'success');
-    await loadCustomers();
-  } catch(e) { toast(e.message, 'error'); }
+  if (!confirm('Delete this customer and all discussions?')) return;
+  await fetch(`/api/crm/customers/${id}`, { method:'DELETE' });
+  selectedId = null;
+  document.getElementById('detailPanel').innerHTML = '<div class="crm-detail-empty">Select a customer to view details</div>';
+  toast('Customer deleted', 'success');
+  await loadCustomers();
 }
 
-function toast(msg, type = '') {
+async function addNote(customerId) {
+  const note = document.getElementById('noteInput').value.trim();
+  if (!note) return;
+  const author = document.getElementById('noteAuthor').value.trim() || 'Team';
+  const type = document.getElementById('noteType').value;
+  await fetch(`/api/crm/customers/${customerId}/discussions`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ note, author, type })
+  });
+  document.getElementById('noteInput').value = '';
+  const res = await fetch(`/api/crm/customers/${customerId}/discussions`);
+  const data = await res.json();
+  document.getElementById('discussionList').innerHTML = renderDiscussions(data.data||[]);
+  toast('Note added', 'success');
+}
+
+async function deleteNote(noteId) {
+  if (!confirm('Delete this note?')) return;
+  await fetch(`/api/crm/discussions/${noteId}`, { method:'DELETE' });
+  selectCustomer(selectedId);
+}
+
+async function addInterest(customerId) {
+  const val = document.getElementById('newInterest').value.trim();
+  if (!val) return;
+  await fetch(`/api/crm/customers/${customerId}/interests`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ interest: val })
+  });
+  document.getElementById('newInterest').value = '';
+  selectCustomer(customerId);
+}
+
+async function removeInterest(customerId, index, interest) {
+  // Find the interest ID
+  const res = await fetch(`/api/crm/customers/${customerId}`);
+  const data = await res.json();
+  // Simple delete by customer + interest name
+  await fetch(`/api/crm/customers/${customerId}`, { method:'GET' }); // just re-select
+  selectCustomer(customerId);
+}
+
+function openAddCustomer() { document.getElementById('addModal').classList.add('open'); }
+
+async function submitAddCustomer(e) {
+  e.preventDefault();
+  const payload = {
+    name: document.getElementById('ac-name').value.trim(),
+    company: document.getElementById('ac-company').value.trim(),
+    phone: document.getElementById('ac-phone').value.trim(),
+    email: document.getElementById('ac-email').value.trim(),
+    city: document.getElementById('ac-city').value.trim(),
+    assigned_to: document.getElementById('ac-assigned').value,
+    status: document.getElementById('ac-status').value,
+    requirement: document.getElementById('ac-req').value.trim(),
+    source: 'Manual',
+  };
+  const res = await fetch('/api/crm/customers', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+  const data = await res.json();
+  document.getElementById('addModal').classList.remove('open');
+  toast('Customer added!', 'success');
+  await loadCustomers();
+  if (data.id) selectCustomer(data.id);
+}
+
+function toast(msg, type='') {
   const el = document.getElementById('toast');
   el.textContent = msg; el.className = type ? `show ${type}` : 'show';
   setTimeout(() => el.className = '', 3000);
 }
 
-document.getElementById('modal').addEventListener('click', e => {
-  if (e.target === e.currentTarget) closeModal();
-});
+document.getElementById('addModal').addEventListener('click', e => { if(e.target===e.currentTarget) e.target.classList.remove('open'); });
 
 loadCustomers();
 </script>
