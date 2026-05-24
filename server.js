@@ -542,6 +542,23 @@ app.post('/api/products/:id/rename-images', (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── Download all product images as ZIP ───────────────────────
+app.get('/api/download/images.zip', (req, res) => {
+  const { execSync } = require('child_process');
+  try {
+    const imgs = fs.readdirSync(uploadsDir).filter(f => /\.(jpg|jpeg|png|gif|webp)$/i.test(f));
+    if (!imgs.length) return res.status(404).json({ error: 'No images found' });
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', 'attachment; filename="product-images.zip"');
+    // Stream zip using zip command (available on all Linux systems)
+    const { spawn } = require('child_process');
+    const zip = spawn('zip', ['-j', '-', ...imgs], { cwd: uploadsDir });
+    zip.stdout.pipe(res);
+    zip.stderr.on('data', () => {});
+    zip.on('error', () => res.status(500).end());
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 app.listen(PORT, () => console.log(`Arambhika Enablers running on http://localhost:${PORT}`));

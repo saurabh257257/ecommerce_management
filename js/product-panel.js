@@ -8,18 +8,18 @@
       font-size:12px; font-weight:600; letter-spacing:.5px; box-shadow:-2px 0 8px rgba(0,0,0,.15);
       transition:background .15s; }
     .pp-toggle:hover { background:#4338ca; }
-    .pp-drawer { position:fixed; right:-360px; top:0; height:100vh; width:360px; z-index:1000;
+    .pp-drawer { position:fixed; right:-380px; top:0; height:100vh; width:380px; z-index:1000;
       background:#fff; border-left:1px solid #e5e7eb; box-shadow:-4px 0 20px rgba(0,0,0,.12);
       display:flex; flex-direction:column; transition:right .28s cubic-bezier(.4,0,.2,1); }
     .pp-drawer.open { right:0; }
     .pp-head { padding:16px; border-bottom:1px solid #e5e7eb; display:flex; align-items:center; gap:10px; }
     .pp-head h4 { margin:0; font-size:15px; font-weight:700; flex:1; }
     .pp-head .pp-close { background:none; border:none; cursor:pointer; color:#6b7280; font-size:20px; padding:2px 6px; }
-    .pp-search { padding:10px 14px; border-bottom:1px solid #e5e7eb; display:flex; gap:8px; }
-    .pp-search input { flex:1; padding:8px 12px; border:1px solid #e5e7eb; border-radius:8px; font-size:13px; outline:none; }
-    .pp-search input:focus { border-color:var(--primary,#4f46e5); }
+    .pp-search { padding:10px 14px; border-bottom:1px solid #e5e7eb; }
+    .pp-search input { width:100%; padding:9px 12px; border:1px solid #e5e7eb; border-radius:8px; font-size:13px; outline:none; font-family:inherit; box-sizing:border-box; }
+    .pp-search input:focus { border-color:var(--primary,#4f46e5); box-shadow:0 0 0 3px #eef2ff; }
     .pp-cats { padding:8px 14px; display:flex; gap:6px; flex-wrap:wrap; border-bottom:1px solid #e5e7eb; }
-    .pp-cat { padding:4px 10px; border:1px solid #e5e7eb; border-radius:20px; font-size:11px; cursor:pointer; color:#6b7280; background:#f9fafb; white-space:nowrap; }
+    .pp-cat { padding:4px 10px; border:1px solid #e5e7eb; border-radius:20px; font-size:11px; cursor:pointer; color:#6b7280; background:#f9fafb; white-space:nowrap; transition:all .15s; }
     .pp-cat.active { background:var(--primary,#4f46e5); color:#fff; border-color:var(--primary,#4f46e5); }
     .pp-list { flex:1; overflow-y:auto; padding:10px; }
     .pp-card { border:1px solid #e5e7eb; border-radius:8px; padding:12px; margin-bottom:8px; cursor:pointer; transition:border-color .15s,background .15s; }
@@ -40,11 +40,23 @@
     .pp-detail h5 { font-size:16px; margin:0 0 4px; }
     .pp-detail .pd-sku { color:#6b7280; font-size:12px; margin-bottom:12px; }
     .pp-detail table { width:100%; border-collapse:collapse; font-size:13px; }
-    .pp-detail td { padding:5px 0; border-bottom:1px solid #f3f4f6; }
-    .pp-detail td:first-child { color:#6b7280; width:40%; }
-    .pp-detail .pd-imgs { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
-    .pp-detail .pd-imgs img { width:70px; height:70px; object-fit:cover; border-radius:6px; border:1px solid #e5e7eb; }
+    .pp-detail td { padding:5px 0; border-bottom:1px solid #f3f4f6; vertical-align:top; }
+    .pp-detail td:first-child { color:#6b7280; width:38%; }
+    .pp-detail .pd-imgs { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+    .pp-detail .pd-imgs img { width:80px; height:80px; object-fit:cover; border-radius:8px; border:1px solid #e5e7eb; cursor:pointer; transition:transform .15s,box-shadow .15s; }
+    .pp-detail .pd-imgs img:hover { transform:scale(1.05); box-shadow:0 4px 12px rgba(0,0,0,.15); }
     .pp-empty { text-align:center; padding:40px 20px; color:#9ca3af; font-size:13px; }
+    .pp-count { font-size:11px; color:#9ca3af; padding:4px 14px 0; }
+    /* Lightbox */
+    .pp-lightbox { position:fixed; inset:0; background:rgba(0,0,0,.88); z-index:9999; display:flex; align-items:center; justify-content:center; cursor:zoom-out; animation:lbIn .15s ease; }
+    @keyframes lbIn { from{opacity:0} to{opacity:1} }
+    .pp-lightbox img { max-width:90vw; max-height:90vh; object-fit:contain; border-radius:8px; box-shadow:0 20px 60px rgba(0,0,0,.5); cursor:default; }
+    .pp-lb-close { position:absolute; top:16px; right:20px; color:#fff; font-size:28px; cursor:pointer; line-height:1; opacity:.8; }
+    .pp-lb-close:hover { opacity:1; }
+    .pp-lb-nav { position:absolute; top:50%; transform:translateY(-50%); color:#fff; font-size:36px; cursor:pointer; padding:10px 16px; opacity:.7; user-select:none; }
+    .pp-lb-nav:hover { opacity:1; }
+    .pp-lb-prev { left:8px; }
+    .pp-lb-next { right:8px; }
   `;
   document.head.appendChild(style);
 
@@ -61,9 +73,10 @@
       <button class="pp-close" id="ppClose">&#x2715;</button>
     </div>
     <div class="pp-search">
-      <input type="text" id="ppSearch" placeholder="Search by name or SKU…" />
+      <input type="text" id="ppSearch" placeholder="Search anything — name, SKU, category, details…" />
     </div>
     <div class="pp-cats" id="ppCats"><span class="pp-cat active" data-cat="">All</span></div>
+    <div class="pp-count" id="ppCount"></div>
     <div class="pp-list" id="ppList"><div class="pp-empty">Loading products…</div></div>
     <div class="pp-detail" id="ppDetail">
       <button class="pp-back" id="ppBack">&#8592; Back to list</button>
@@ -75,6 +88,7 @@
   document.body.appendChild(drawer);
 
   let allProducts = [], activeCat = '', searchQ = '';
+  let lbImgs = [], lbIdx = 0;
 
   async function loadProducts() {
     try {
@@ -101,8 +115,22 @@
 
   function renderList() {
     let list = allProducts;
-    if (activeCat) list = list.filter(p => p.category === activeCat);
-    if (searchQ) list = list.filter(p => (p.name + p.sku + p.category + (p.details||'')).toLowerCase().includes(searchQ));
+    // When searching, ignore category filter so you find anything instantly
+    if (searchQ) {
+      list = list.filter(p =>
+        (p.name||'').toLowerCase().includes(searchQ) ||
+        (p.sku||'').toLowerCase().includes(searchQ) ||
+        (p.category||'').toLowerCase().includes(searchQ) ||
+        (p.details||'').toLowerCase().includes(searchQ) ||
+        (p.applications||'').toLowerCase().includes(searchQ) ||
+        (p.dimensions||'').toLowerCase().includes(searchQ) ||
+        String(p.price||'').includes(searchQ)
+      );
+    } else if (activeCat) {
+      list = list.filter(p => p.category === activeCat);
+    }
+    const countEl = document.getElementById('ppCount');
+    if (countEl) countEl.textContent = `${list.length} product${list.length !== 1 ? 's' : ''}`;
     const el = document.getElementById('ppList');
     if (!list.length) { el.innerHTML = '<div class="pp-empty">No products found</div>'; return; }
     el.innerHTML = list.map(p => `
@@ -130,7 +158,7 @@
     const price = p.new_price && p.new_price !== p.price
       ? `<span style="color:#dc2626;text-decoration:line-through;font-size:12px">₹${p.price}</span> <strong>₹${p.new_price}</strong>`
       : `<strong>${p.price ? '₹' + p.price : '—'}</strong>`;
-    const specRows = Object.entries(specs).map(([k,v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+    const specRows = Object.entries(specs).filter(([,v]) => v).map(([k,v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('');
     document.getElementById('ppDetailContent').innerHTML = `
       <h5>${p.name}</h5>
       <div class="pd-sku">SKU: ${p.sku || '—'} &bull; ${p.category}</div>
@@ -144,10 +172,49 @@
         ${p.applications ? `<tr><td>Applications</td><td>${p.applications}</td></tr>` : ''}
         ${specRows}
       </table>
-      ${imgs.length ? `<div class="pd-imgs">${imgs.map(f => `<img src="/uploads/${f}" onerror="this.style.display='none'">`).join('')}</div>` : ''}
+      ${imgs.length ? `<div class="pd-imgs">${imgs.map((f,i) => `<img src="/uploads/${f}" data-idx="${i}" onerror="this.style.display='none'" />`).join('')}</div>` : ''}
     `;
+    // Wire lightbox on images
+    lbImgs = imgs;
+    document.querySelectorAll('#ppDetailContent .pd-imgs img').forEach(img => {
+      img.addEventListener('click', () => openLightbox(parseInt(img.dataset.idx)));
+    });
     document.getElementById('ppList').classList.add('hide');
     document.getElementById('ppDetail').classList.add('show');
+  }
+
+  // ── Lightbox ──────────────────────────────────────────────────
+  function openLightbox(idx) {
+    lbIdx = idx;
+    const lb = document.createElement('div');
+    lb.className = 'pp-lightbox';
+    lb.id = 'ppLightbox';
+    lb.innerHTML = `
+      <span class="pp-lb-close" id="ppLbClose">&times;</span>
+      ${lbImgs.length > 1 ? `<span class="pp-lb-nav pp-lb-prev" id="ppLbPrev">&#8249;</span>` : ''}
+      <img id="ppLbImg" src="/uploads/${lbImgs[lbIdx]}" alt="" />
+      ${lbImgs.length > 1 ? `<span class="pp-lb-nav pp-lb-next" id="ppLbNext">&#8250;</span>` : ''}
+    `;
+    document.body.appendChild(lb);
+    lb.addEventListener('click', e => { if (e.target === lb) closeLightbox(); });
+    document.getElementById('ppLbClose').addEventListener('click', closeLightbox);
+    document.getElementById('ppLbPrev')?.addEventListener('click', e => { e.stopPropagation(); lbNav(-1); });
+    document.getElementById('ppLbNext')?.addEventListener('click', e => { e.stopPropagation(); lbNav(1); });
+    document.addEventListener('keydown', lbKeydown);
+  }
+  function lbNav(dir) {
+    lbIdx = (lbIdx + dir + lbImgs.length) % lbImgs.length;
+    const img = document.getElementById('ppLbImg');
+    if (img) img.src = '/uploads/' + lbImgs[lbIdx];
+  }
+  function closeLightbox() {
+    document.getElementById('ppLightbox')?.remove();
+    document.removeEventListener('keydown', lbKeydown);
+  }
+  function lbKeydown(e) {
+    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowLeft') lbNav(-1);
+    if (e.key === 'ArrowRight') lbNav(1);
   }
 
   document.getElementById('ppBack').addEventListener('click', () => {

@@ -568,14 +568,15 @@ function renderDetail() {
     </div>
   </div>
 
-  <!-- ── 2. Requirement ── -->
+  <!-- ── 2. Details ── -->
   <div class="sec">
     <div class="sec-head">
-      <span class="sec-title">📋 Requirement</span>
+      <span class="sec-title">📋 Details</span>
+      <span style="font-size:11px;color:var(--muted)">click to edit</span>
     </div>
-    <div class="req-display${!c.requirement?' empty':''}" id="reqDisplay" onclick="startReqEdit()">${c.requirement ? esc(c.requirement).replace(/\n/g,'<br>') : 'Click to describe what this customer needs…'}</div>
-    <textarea class="req-ta" id="reqTa" placeholder="What does the customer need?">${esc(c.requirement||'')}</textarea>
-    <div class="req-hint" id="reqHint" style="display:none">Press Esc to cancel • blur or Ctrl+Enter to save</div>
+    <div class="req-display${!c.requirement?' empty':''}" id="reqDisplay" onclick="startReqEdit()">${c.requirement ? esc(c.requirement).replace(/\n/g,'<br>') : 'Click to add customer details, requirement, what they need…'}</div>
+    <textarea class="req-ta" id="reqTa" placeholder="Customer details, requirement, what they need…">${esc(c.requirement||'')}</textarea>
+    <div class="req-hint" id="reqHint" style="display:none">Ctrl+Enter to save • Esc to cancel</div>
   </div>
 
   <!-- ── 3. Follow-up ── -->
@@ -697,20 +698,21 @@ async function commitEditEl(el) {
   }
 }
 
-// ── Requirement inline edit ───────────────────────────────────
+// ── Details inline edit ───────────────────────────────────────
 function startReqEdit() {
   const disp = document.getElementById('reqDisplay');
   const ta = document.getElementById('reqTa');
   const hint = document.getElementById('reqHint');
-  if (ta.style.display !== 'none') return;
+  if (!disp || disp.style.display === 'none') return; // already editing
   disp.style.display = 'none';
-  ta.style.display = '';
+  ta.style.display = 'block';
   hint.style.display = '';
   ta.focus();
   ta.selectionStart = ta.selectionEnd = ta.value.length;
 }
 function cancelReqInline() {
   const ta = document.getElementById('reqTa');
+  if (!ta) return;
   ta.value = selC.requirement || '';
   document.getElementById('reqDisplay').style.display = '';
   ta.style.display = 'none';
@@ -718,16 +720,16 @@ function cancelReqInline() {
 }
 async function saveReqInline() {
   const ta = document.getElementById('reqTa');
-  if (ta.style.display === 'none') return;
+  if (!ta || ta.style.display !== 'block') return;
   const val = ta.value.trim();
   ta.style.display = 'none';
   document.getElementById('reqHint').style.display = 'none';
   const disp = document.getElementById('reqDisplay');
   disp.style.display = '';
   if (val === (selC.requirement || '')) return;
-  disp.innerHTML = val ? esc(val).replace(/\n/g,'<br>') : 'Click to describe what this customer needs…';
+  disp.innerHTML = val ? esc(val).replace(/\n/g,'<br>') : 'Click to add customer details, requirement, what they need…';
   disp.className = 'req-display' + (val ? '' : ' empty');
-  await qupdateLog('requirement', val, 'Requirement updated');
+  await qupdateLog('requirement', val, 'Details updated');
 }
 
 // ── Follow-up ─────────────────────────────────────────────────
@@ -1124,7 +1126,18 @@ async function applyAIUpdate() {
     applied.push('requirement');
   }
   if (document.getElementById('ai_chk_note')?.checked && s.note) {
-    await saveNote(selC.id);
+    const noteType = s.note_type || 'call';
+    const author = selC.assigned_to || 'Team';
+    const r2 = await fetch(`/api/crm/customers/${selC.id}/discussions`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ note: s.note, author, type: noteType })
+    });
+    const d2 = await r2.json();
+    const entry = { id: d2.id, note: s.note, author, type: noteType, created_at: new Date().toISOString() };
+    if (!selC.discussions) selC.discussions = [];
+    selC.discussions.unshift(entry);
+    const dl = document.getElementById('discList');
+    if (dl) { const empty = dl.querySelector('.disc-empty'); if (empty) empty.remove(); dl.insertAdjacentHTML('afterbegin', renderDiscItem(entry)); }
     applied.push('note');
   }
   if (document.getElementById('ai_chk_product_interests')?.checked && s.product_interests?.length) {
