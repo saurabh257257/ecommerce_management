@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShopManager — Rohan's Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .badge-orange { background: #ffedd5; color: #c2410c; }
+    .nav-sec { padding: 10px 12px 4px; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .7px; }
+
+    /* Priority cards */
+    .priority-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-bottom: 8px; }
+    .pc { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+    .pc.overdue { border-left: 3px solid var(--danger); }
+    .pc.today { border-left: 3px solid var(--warning); }
+    .pc-name { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+    .pc-co { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+    .pc-phone { font-size: 13px; margin-bottom: 6px; }
+    .pc-note { font-size: 12px; color: var(--muted); background: var(--bg); border-radius: 6px; padding: 6px 8px; margin-bottom: 10px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .pc-due { font-size: 12px; font-weight: 600; margin-bottom: 10px; }
+    .pc-due.overdue { color: var(--danger); }
+    .pc-due.today { color: var(--warning); }
+    .pc-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .pc-actions .btn { font-size: 12px; padding: 5px 10px; }
+    .btn-green { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+    .btn-green:hover { background: #bbf7d0; }
+    .btn-amber { background: #fef9c3; color: #854d0e; border: 1px solid #fef08a; }
+    .btn-amber:hover { background: #fef08a; }
+
+    /* Section heading */
+    .sec-head { display: flex; align-items: center; justify-content: space-between; margin: 24px 0 14px; }
+    .sec-head h3 { font-size: 16px; font-weight: 600; }
+    .sec-badge { background: var(--danger); color: #fff; border-radius: 20px; font-size: 12px; font-weight: 600; padding: 2px 8px; }
+    .sec-badge.warn { background: var(--warning); }
+    .sec-badge.gray { background: var(--muted); }
+
+    /* Pipeline table */
+    .pipeline-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+    .ptab { padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: 500; border: 1px solid var(--border); background: var(--bg); color: var(--muted); cursor: pointer; transition: all .15s; }
+    .ptab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .pipeline-search { border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; font-size: 14px; width: 100%; margin-bottom: 14px; outline: none; font-family: inherit; }
+    .pipeline-search:focus { border-color: var(--primary); }
+
+    /* Unassigned pool row */
+    .pool-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .pool-item:last-child { border-bottom: none; }
+    .pool-av { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .pool-info { flex: 1; min-width: 0; }
+    .pool-name { font-size: 14px; font-weight: 600; }
+    .pool-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    /* Quick note modal */
+    .qn-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; z-index: 200; opacity: 0; pointer-events: none; transition: opacity .2s; }
+    .qn-overlay.open { opacity: 1; pointer-events: all; }
+    .qn-box { background: var(--surface); border-radius: 14px; padding: 24px; width: 440px; max-width: 95vw; }
+    .qn-box h4 { font-size: 16px; font-weight: 600; margin-bottom: 14px; }
+    .qn-box select, .qn-box textarea { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 14px; font-family: inherit; margin-bottom: 10px; outline: none; }
+    .qn-box textarea { resize: none; min-height: 80px; }
+
+    /* Followup picker modal */
+    .fu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; z-index: 200; opacity: 0; pointer-events: none; transition: opacity .2s; }
+    .fu-overlay.open { opacity: 1; pointer-events: all; }
+    .fu-box { background: var(--surface); border-radius: 14px; padding: 24px; width: 360px; max-width: 95vw; }
+    .fu-box h4 { font-size: 16px; font-weight: 600; margin-bottom: 14px; }
+    .quick-d { display: flex; gap: 6px; margin: 10px 0; flex-wrap: wrap; }
+    .qd { padding: 5px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; cursor: pointer; background: var(--bg); font-family: inherit; transition: all .15s; }
+    .qd:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    .empty-sec { padding: 20px; text-align: center; color: var(--muted); font-size: 14px; background: var(--surface); border-radius: 10px; border: 1px solid var(--border); }
+    .collapsible-body { }
+    .collapse-btn { background: none; border: none; cursor: pointer; font-size: 13px; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo"><h1>ShopManager</h1><p>Ecommerce Dashboard</p></div>
+  <nav class="sidebar-nav">
+    <a href="index.html" class="nav-link"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>Dashboard</a>
+    <a href="customers.html" class="nav-link"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>CRM</a>
+    <div class="nav-sec">Team</div>
+    <a href="rohan.html" class="nav-link active"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>Rohan</a>
+    <a href="saurabh.html" class="nav-link"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>Saurabh</a>
+    <a href="orders.html" class="nav-link"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>Orders</a>
+    <a href="products.html" class="nav-link"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>Products</a>
+  </nav>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div>
+      <h2 style="color:#1d4ed8">Rohan's Dashboard</h2>
+      <div style="font-size:13px;color:var(--muted)" id="todayLabel"></div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-outline btn-sm" onclick="location.reload()">↻ Refresh</button>
+      <a href="customers.html?assignee=Rohan" class="btn btn-outline btn-sm">All My Customers →</a>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="label">My Customers</div>
+        <div class="value" id="stTotal" style="color:var(--primary)">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">⚠ Overdue</div>
+        <div class="value" id="stOverdue" style="color:var(--danger)">—</div>
+        <div class="change" style="color:var(--danger)">Call them first</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">📅 Due Today</div>
+        <div class="value" id="stToday" style="color:var(--warning)">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">✅ Onboarded</div>
+        <div class="value" id="stOnboarded" style="color:var(--success)">—</div>
+      </div>
+    </div>
+
+    <!-- Priority: overdue + today -->
+    <div class="sec-head">
+      <h3>🔥 Today's Priority <span class="sec-badge" id="priBadge" style="display:none">0</span></h3>
+      <span style="font-size:13px;color:var(--muted)">Call these customers today</span>
+    </div>
+    <div class="priority-grid" id="priorityGrid">
+      <div class="empty-sec">Loading…</div>
+    </div>
+
+    <!-- Upcoming 3 days -->
+    <div class="sec-head">
+      <h3>📆 Upcoming (next 3 days) <span class="sec-badge warn" id="upBadge" style="display:none">0</span></h3>
+      <button class="collapse-btn" onclick="toggleSection('upcomingGrid', this)">▼ hide</button>
+    </div>
+    <div class="priority-grid" id="upcomingGrid"></div>
+
+    <!-- Unassigned pool -->
+    <div class="sec-head">
+      <h3>📥 Unassigned Pool <span class="sec-badge gray" id="poolBadge">0</span></h3>
+      <button class="collapse-btn" onclick="toggleSection('poolBody', this)">▼ hide</button>
+    </div>
+    <div class="card" style="margin-bottom:24px">
+      <div id="poolBody" style="padding:0 20px"></div>
+    </div>
+
+    <!-- My pipeline -->
+    <div class="sec-head">
+      <h3>👥 My Pipeline</h3>
+    </div>
+    <div class="card">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
+        <input class="pipeline-search" id="pSearch" placeholder="Search my customers…" oninput="renderPipeline()" />
+        <div class="pipeline-tabs">
+          <span class="ptab active" onclick="setPTab(this,'')">All</span>
+          <span class="ptab" onclick="setPTab(this,'Lead')">Lead</span>
+          <span class="ptab" onclick="setPTab(this,'Contacted')">Contacted</span>
+          <span class="ptab" onclick="setPTab(this,'Contacted but No Response')">No Response</span>
+          <span class="ptab" onclick="setPTab(this,'Onboarded')">Onboarded</span>
+        </div>
+      </div>
+      <table>
+        <thead><tr>
+          <th>Name</th><th>Company</th><th>Phone</th><th>Status</th><th>Next Follow-up</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="pipelineBody"><tr><td colspan="6" style="padding:20px;text-align:center;color:var(--muted)">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Quick note modal -->
+<div class="qn-overlay" id="qnModal">
+  <div class="qn-box">
+    <h4 id="qnTitle">Add Note</h4>
+    <input type="hidden" id="qnCid" />
+    <select id="qnType"><option value="call">📞 Call</option><option value="note">📝 Note</option><option value="meeting">🤝 Meeting</option><option value="message">💬 Message</option></select>
+    <textarea id="qnText" placeholder="What happened? Next steps?…"></textarea>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeQN()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveQN()">Save Note</button>
+    </div>
+  </div>
+</div>
+
+<!-- Follow-up picker modal -->
+<div class="fu-overlay" id="fuModal">
+  <div class="fu-box">
+    <h4>Set Next Follow-up</h4>
+    <input type="hidden" id="fuCid" />
+    <input type="date" id="fuDate" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:14px;font-family:inherit;margin-bottom:6px" />
+    <div class="quick-d">
+      <button class="qd" onclick="setFUDays(1)">+1 day</button>
+      <button class="qd" onclick="setFUDays(3)">+3 days</button>
+      <button class="qd" onclick="setFUDays(7)">+1 week</button>
+      <button class="qd" onclick="setFUDays(14)">+2 weeks</button>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+      <button class="btn btn-outline" onclick="closeFU()">Skip</button>
+      <button class="btn btn-primary" onclick="saveFU()">Set Date</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const PERSON = 'Rohan';
+const COLORS = ['#6366f1','#8b5cf6','#06b6d4','#10b981','#f59e0b','#ef4444','#ec4899','#0ea5e9'];
+const S_BADGE = { Lead:'badge-yellow', Contacted:'badge-blue', 'Contacted but No Response':'badge-orange', Onboarded:'badge-green' };
+
+let mine = [], unassigned = [], allPool = [];
+let pTabFilter = '';
+
+async function init() {
+  const today = new Date();
+  document.getElementById('todayLabel').textContent = today.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+  const r = await fetch('/api/crm/customers');
+  const all = (await r.json()).data || [];
+  mine = all.filter(c => c.assigned_to === PERSON);
+  unassigned = all.filter(c => c.assigned_to === 'Unassigned');
+
+  renderStats();
+  renderPriority();
+  renderPool();
+  renderPipeline();
+}
+
+function todayISO() { return new Date().toISOString().split('T')[0]; }
+function daysFromNow(n) { const d=new Date(); d.setDate(d.getDate()+n); return d.toISOString().split('T')[0]; }
+
+function renderStats() {
+  const today = todayISO();
+  document.getElementById('stTotal').textContent = mine.length;
+  document.getElementById('stOverdue').textContent = mine.filter(c=>c.next_followup&&c.next_followup<today).length;
+  document.getElementById('stToday').textContent = mine.filter(c=>c.next_followup===today).length;
+  document.getElementById('stOnboarded').textContent = mine.filter(c=>c.status==='Onboarded').length;
+}
+
+function renderPriority() {
+  const today = todayISO();
+  const in3 = daysFromNow(3);
+  const priority = mine.filter(c=>c.next_followup&&c.next_followup<=today).sort((a,b)=>a.next_followup<b.next_followup?-1:1);
+  const upcoming = mine.filter(c=>c.next_followup&&c.next_followup>today&&c.next_followup<=in3).sort((a,b)=>a.next_followup<b.next_followup?-1:1);
+
+  if(priority.length){
+    document.getElementById('priBadge').textContent=priority.length;
+    document.getElementById('priBadge').style.display='';
+  }
+  document.getElementById('priorityGrid').innerHTML = priority.length
+    ? priority.map(c=>pcCard(c,today)).join('')
+    : '<div class="empty-sec">🎉 No overdue or due-today follow-ups. Great work!</div>';
+
+  if(upcoming.length){
+    document.getElementById('upBadge').textContent=upcoming.length;
+    document.getElementById('upBadge').style.display='';
+  }
+  document.getElementById('upcomingGrid').innerHTML = upcoming.length
+    ? upcoming.map(c=>pcCard(c,today)).join('')
+    : '<div class="empty-sec">No follow-ups in the next 3 days.</div>';
+}
+
+function pcCard(c, today) {
+  const ov = c.next_followup < today, td = c.next_followup === today;
+  const dueLbl = ov ? `⚠ Overdue (${fmtD(c.next_followup)})` : td ? `📅 Due Today` : `📅 ${fmtD(c.next_followup)}`;
+  const dueClass = ov ? 'overdue' : td ? 'today' : '';
+  return `<div class="pc ${dueClass}">
+    <div class="pc-name">${esc(c.name)}</div>
+    <div class="pc-co">${esc(c.company||c.city||'—')}</div>
+    ${c.phone?`<div class="pc-phone"><a href="tel:${c.phone}" style="color:var(--text);text-decoration:none">📱 ${esc(c.phone)}</a></div>`:''}
+    <div class="pc-due ${dueClass}">${dueLbl}</div>
+    <div class="pc-actions">
+      <button class="btn btn-green" onclick="markCalled(${c.id},'${esc(c.name).replace(/'/g,"\\'")}')">✓ Called</button>
+      <button class="btn btn-amber" onclick="markNoAnswer(${c.id},'${esc(c.name).replace(/'/g,"\\'")}')">📵 No Answer</button>
+      <button class="btn btn-outline" onclick="openQN(${c.id},'${esc(c.name).replace(/'/g,"\\'")}')">📝 Note</button>
+      <a href="customers.html?id=${c.id}" class="btn btn-outline">View →</a>
+    </div>
+  </div>`;
+}
+
+function renderPool() {
+  document.getElementById('poolBadge').textContent = unassigned.length;
+  const el = document.getElementById('poolBody');
+  if (!unassigned.length) { el.innerHTML='<div style="padding:16px;text-align:center;color:var(--muted)">No unassigned customers — all leads are assigned!</div>'; return; }
+  el.innerHTML = unassigned.slice(0,20).map(c=>`
+    <div class="pool-item">
+      <div class="pool-av" style="background:${avatarCol(c.name)}">${initials(c.name)}</div>
+      <div class="pool-info">
+        <div class="pool-name">${esc(c.name)}</div>
+        <div class="pool-meta">${[c.company,c.city,c.status].filter(Boolean).map(esc).join(' • ')}</div>
+        ${c.requirement?`<div class="pool-meta" style="margin-top:2px">${esc(c.requirement.slice(0,60))}${c.requirement.length>60?'…':''}</div>`:''}
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="btn btn-primary btn-sm" onclick="claimCustomer(${c.id},this)">Claim →</button>
+        <a href="customers.html?id=${c.id}" class="btn btn-outline btn-sm">View</a>
+      </div>
+    </div>`).join('');
+  if(unassigned.length>20) el.innerHTML += `<div style="padding:12px;text-align:center;color:var(--muted);font-size:13px">+${unassigned.length-20} more — <a href="customers.html" style="color:var(--primary)">view all</a></div>`;
+}
+
+let pipelineFilter = '';
+function setPTab(el, val) {
+  document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  pipelineFilter = val;
+  renderPipeline();
+}
+
+function renderPipeline() {
+  const q = (document.getElementById('pSearch').value||'').toLowerCase();
+  let list = mine;
+  if (pipelineFilter) list = list.filter(c=>c.status===pipelineFilter);
+  if (q) list = list.filter(c=>((c.name||'')+(c.company||'')+(c.phone||'')).toLowerCase().includes(q));
+  const today = todayISO();
+  const tbody = document.getElementById('pipelineBody');
+  if (!list.length) { tbody.innerHTML='<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--muted)">No customers found</td></tr>'; return; }
+  tbody.innerHTML = list.map(c=>{
+    const fu = c.next_followup ? (c.next_followup<today?`<span style="color:var(--danger);font-weight:600">⚠ ${fmtD(c.next_followup)}</span>`:c.next_followup===today?`<span style="color:var(--warning);font-weight:600">Today</span>`:`<span style="color:#16a34a">${fmtD(c.next_followup)}</span>`):'<span style="color:var(--muted)">—</span>';
+    return `<tr>
+      <td><a href="customers.html?id=${c.id}" style="font-weight:600;color:var(--primary);text-decoration:none">${esc(c.name)}</a></td>
+      <td style="color:var(--muted)">${esc(c.company||'—')}</td>
+      <td>${c.phone?`<a href="tel:${c.phone}" style="color:var(--text);text-decoration:none">${esc(c.phone)}</a>`:'—'}</td>
+      <td><span class="badge ${S_BADGE[c.status]||'badge-gray'}">${c.status}</span></td>
+      <td>${fu}</td>
+      <td>
+        <div style="display:flex;gap:5px">
+          <button class="btn btn-outline btn-sm" onclick="openQN(${c.id},'${esc(c.name).replace(/'/g,"\\'")}')">Note</button>
+          <button class="btn btn-outline btn-sm" onclick="openFU(${c.id})">Set Date</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── Quick actions ── */
+async function markCalled(cid, name) {
+  const today = new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+  await fetch(`/api/crm/customers/${cid}/discussions`,{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({note:`Called on ${today}. Conversation noted.`, author:PERSON, type:'call'})
+  });
+  await patchCustomer(cid, {status:'Contacted'});
+  toast(`✓ Marked as Called — set next follow-up?`,'success');
+  openFU(cid);
+  const idx = mine.findIndex(c=>c.id===cid);
+  if(idx>-1) mine[idx].status='Contacted';
+  renderStats(); renderPipeline();
+}
+
+async function markNoAnswer(cid, name) {
+  const today = new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+  await fetch(`/api/crm/customers/${cid}/discussions`,{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({note:`Called on ${today} — no answer.`, author:PERSON, type:'call'})
+  });
+  await patchCustomer(cid, {status:'Contacted but No Response'});
+  toast('📵 No answer recorded — set next follow-up?','success');
+  openFU(cid);
+  const idx = mine.findIndex(c=>c.id===cid);
+  if(idx>-1) mine[idx].status='Contacted but No Response';
+  renderStats(); renderPipeline();
+}
+
+async function claimCustomer(cid, btn) {
+  btn.disabled=true; btn.textContent='Claiming…';
+  await patchCustomer(cid, {assigned_to: PERSON});
+  const idx = unassigned.findIndex(c=>c.id===cid);
+  if(idx>-1) {
+    const c = unassigned.splice(idx,1)[0];
+    c.assigned_to = PERSON;
+    mine.push(c);
+  }
+  renderStats(); renderPool(); renderPipeline();
+  toast('Claimed! Customer moved to your list.','success');
+}
+
+async function patchCustomer(cid, fields) {
+  const r = await fetch(`/api/crm/customers/${cid}`);
+  const c = await r.json();
+  const body = {...c, ...fields};
+  delete body.discussions; delete body.interests;
+  await fetch(`/api/crm/customers/${cid}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const idx = mine.findIndex(x=>x.id===cid);
+  if(idx>-1) Object.assign(mine[idx], fields);
+}
+
+/* ── Quick note ── */
+function openQN(cid, name) {
+  document.getElementById('qnCid').value = cid;
+  document.getElementById('qnTitle').textContent = `Note — ${name}`;
+  document.getElementById('qnText').value = '';
+  document.getElementById('qnModal').classList.add('open');
+  setTimeout(()=>document.getElementById('qnText').focus(),100);
+}
+function closeQN() { document.getElementById('qnModal').classList.remove('open'); }
+async function saveQN() {
+  const cid = document.getElementById('qnCid').value;
+  const note = document.getElementById('qnText').value.trim();
+  if (!note) return toast('Please write a note','error');
+  const type = document.getElementById('qnType').value;
+  await fetch(`/api/crm/customers/${cid}/discussions`,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({note,author:PERSON,type})
+  });
+  closeQN(); toast('Note saved','success');
+}
+
+/* ── Follow-up picker ── */
+let fuActiveCid = null;
+function openFU(cid) {
+  fuActiveCid = cid;
+  document.getElementById('fuCid').value = cid;
+  document.getElementById('fuDate').value = '';
+  document.getElementById('fuModal').classList.add('open');
+}
+function closeFU() { document.getElementById('fuModal').classList.remove('open'); fuActiveCid=null; }
+function setFUDays(n) {
+  const d=new Date(); d.setDate(d.getDate()+n);
+  document.getElementById('fuDate').value = d.toISOString().split('T')[0];
+}
+async function saveFU() {
+  const cid = document.getElementById('fuCid').value;
+  const date = document.getElementById('fuDate').value;
+  if (!date) return closeFU();
+  await patchCustomer(parseInt(cid), {next_followup: date});
+  const idx = mine.findIndex(c=>c.id===parseInt(cid));
+  if(idx>-1) mine[idx].next_followup=date;
+  closeFU(); renderPriority(); renderPipeline();
+  toast('Follow-up date set','success');
+}
+
+/* ── Toggle section ── */
+function toggleSection(id, btn) {
+  const el=document.getElementById(id);
+  const hidden=el.style.display==='none';
+  el.style.display=hidden?'':'none';
+  btn.textContent=hidden?'▼ hide':'▶ show';
+}
+
+/* ── Utils ── */
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function initials(n){return(n||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();}
+function avatarCol(n){let h=0;for(const c of(n||''))h=(h*31+c.charCodeAt(0))%COLORS.length;return COLORS[h];}
+function fmtD(iso){if(!iso)return'';const[y,m,d]=iso.split('-');return`${parseInt(d)} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1]}`;}
+function toast(msg,type=''){const el=document.getElementById('toast');el.textContent=msg;el.className=type?`show ${type}`:'show';setTimeout(()=>el.className='',3500);}
+
+document.getElementById('qnModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeQN();});
+document.getElementById('fuModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeFU();});
+
+init();
+</script>
+</body>
+</html>

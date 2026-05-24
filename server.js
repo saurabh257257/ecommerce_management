@@ -71,6 +71,19 @@ db.exec(`
   );
 `);
 
+// ── Idempotent data migrations ────────────────────────────────
+try {
+  db.exec([
+    "UPDATE customers_v2 SET status='Contacted' WHERE status='Chasing'",
+    "UPDATE customers_v2 SET status='Contacted but No Response' WHERE status='No Response'",
+    "UPDATE customers_v2 SET status='Onboarded' WHERE status IN ('Settled','Active')",
+    "UPDATE customers_v2 SET status='Lead' WHERE status NOT IN ('Lead','Contacted','Contacted but No Response','Onboarded')",
+    "UPDATE customers_v2 SET assigned_to='Rohan' WHERE LOWER(COALESCE(assigned_to,'')) LIKE '%rohan%'",
+    "UPDATE customers_v2 SET assigned_to='Saurabh' WHERE LOWER(COALESCE(assigned_to,'')) LIKE '%saurabh%'",
+    "UPDATE customers_v2 SET assigned_to='Unassigned' WHERE assigned_to NOT IN ('Rohan','Saurabh','Unassigned') OR assigned_to IS NULL OR assigned_to=''"
+  ].join(';'));
+} catch(e) { console.log('Migration note:', e.message); }
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
@@ -148,7 +161,7 @@ app.get('/api/crm/customers/:id', (req, res) => {
   const c = db.prepare('SELECT * FROM customers_v2 WHERE id=?').get(req.params.id);
   if (!c) return res.status(404).json({ error: 'Not found' });
   const discussions = db.prepare('SELECT * FROM discussions WHERE customer_id=? ORDER BY created_at DESC').all(req.params.id);
-  const interests = db.prepare('SELECT interest FROM customer_interests WHERE customer_id=?').all(req.params.id).map(r => r.interest);
+  const interests = db.prepare('SELECT id, interest FROM customer_interests WHERE customer_id=?').all(req.params.id);
   res.json({ ...c, discussions, interests });
 });
 
@@ -301,6 +314,35 @@ Products: ${JSON.stringify(products)}`
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
+});
+
+// ── AI: extract customer fields from voice transcript ─────────
+app.post('/api/ai/extract-customer', async (req, res) => {
+  try {
+    const { transcript } = req.body;
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const msg = await client.messages.create({
+      model: 'claude-sonnet-4-6', max_tokens: 512,
+      system: 'Extract customer info from a sales call transcript. Return ONLY valid JSON, no markdown or explanation.',
+      messages: [{ role: 'user', content: `Transcript: "${transcript}"\n\nReturn JSON with these keys (use empty string if not found): name, company, phone, email, city, requirement, next_followup (YYYY-MM-DD if a date is mentioned, else ""), remark, status ("Lead"|"Contacted"|"Contacted but No Response"|"Onboarded")` }]
+    });
+    const match = msg.content[0].text.match(/\{[\s\S]*\}/);
+    res.json(match ? JSON.parse(match[0]) : {});
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── AI: convert voice transcript into a clean CRM note ────────
+app.post('/api/ai/extract-note', async (req, res) => {
+  try {
+    const { transcript, customerName } = req.body;
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const msg = await client.messages.create({
+      model: 'claude-sonnet-4-6', max_tokens: 200,
+      system: 'Convert a raw voice note into a concise, professional CRM note. 1-3 sentences. Past tense. Capture key points: customer interest, objections, next steps.',
+      messages: [{ role: 'user', content: `Customer: ${customerName || 'unknown'}\nVoice note: "${transcript}"\n\nWrite the CRM note:` }]
+    });
+    res.json({ note: msg.content[0].text.trim() });
+  } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
