@@ -12,7 +12,7 @@
     .crm-wrap { display: flex; height: calc(100vh - 61px); overflow: hidden; }
 
     /* ── Left panel ── */
-    .crm-list-panel { width: 320px; min-width: 320px; border-right: 1px solid var(--border); display: flex; flex-direction: column; background: var(--surface); overflow: hidden; }
+    .crm-list-panel { width: 300px; min-width: 300px; border-right: 1px solid var(--border); display: flex; flex-direction: column; background: var(--surface); overflow: hidden; }
     .crm-filters { padding: 10px 12px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
     .search-full { border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 14px; width: 100%; outline: none; background: var(--bg); font-family: inherit; }
     .search-full:focus { border-color: var(--primary); }
@@ -24,18 +24,20 @@
     .list-count { font-size: 12px; color: var(--muted); }
     .crm-list { flex: 1; overflow-y: auto; }
 
-    /* Quick-update mic bar */
-    .qmic-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: #fafafa; }
-    .qmic-btn { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: linear-gradient(135deg,#4f46e5,#7c3aed); color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 12px; font-family: inherit; font-weight: 600; transition: opacity .15s; flex-shrink: 0; }
+    /* Mic bar — shown at bottom when customer selected */
+    .qmic-bar { display: none; padding: 10px 12px; border-top: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
+    .qmic-bar.on { display: block; }
+    .qmic-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 14px; background: linear-gradient(135deg,#4f46e5,#7c3aed); color: #fff; border: none; border-radius: 10px; cursor: pointer; font-size: 13px; font-family: inherit; font-weight: 700; transition: opacity .15s; }
     .qmic-btn:hover { opacity:.88; }
     .qmic-btn.rec { background: linear-gradient(135deg,#dc2626,#b91c1c); animation: pulse .9s infinite; }
-    .qmic-st { font-size: 11px; color: var(--muted); flex: 1; }
+    .qmic-name { font-size: 11px; color: var(--muted); text-align: center; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     /* Customer list item */
     .ci { padding: 10px 12px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; gap: 9px; align-items: flex-start; transition: background .1s; }
     .ci:hover { background: var(--bg); }
     .ci.sel { background: #eef2ff; border-left: 3px solid var(--primary); padding-left: 9px; }
-    .ci-av { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; margin-top: 1px; }
+    .ci-av { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; margin-top: 1px; overflow: hidden; }
+    .ci-av img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
     .ci-body { flex: 1; min-width: 0; }
     .ci-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .ci-co { font-size: 11px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -51,32 +53,57 @@
     .crm-empty svg { width: 44px; height: 44px; opacity: .25; }
     .detail-scroll { flex: 1; overflow-y: auto; padding: 16px 20px; }
 
-    /* Header card */
-    .dh { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
-    .dh-row1 { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-    .dh-name { font-size: 19px; font-weight: 700; line-height: 1.2; }
-    .dh-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
-    .dh-actions { display: flex; gap: 6px; flex-shrink: 0; }
-    .dh-row2 { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
-    .inline-sel { border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-size: 12px; background: var(--surface); cursor: pointer; font-family: inherit; }
-    .dh-contact { display: flex; gap: 14px; margin-top: 8px; flex-wrap: wrap; }
-    .dh-contact a { font-size: 13px; color: var(--text); text-decoration: none; display: flex; align-items: center; gap: 4px; }
-    .dh-contact a:hover { color: var(--primary); }
+    /* ── Header card ── */
+    .dh { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+    .dh-top { display: flex; gap: 14px; align-items: flex-start; }
 
-    /* Prominent sections */
+    /* Photo */
+    .dh-photo-wrap { position: relative; flex-shrink: 0; }
+    .dh-photo { width: 76px; height: 76px; border-radius: 50%; cursor: pointer; position: relative; overflow: hidden; }
+    .dh-photo-av { width: 76px; height: 76px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; color: #fff; }
+    .dh-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .dh-photo-overlay { position: absolute; inset: 0; border-radius: 50%; background: rgba(0,0,0,.45); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 22px; opacity: 0; transition: opacity .18s; }
+    .dh-photo:hover .dh-photo-overlay { opacity: 1; }
+    .photo-menu { position: absolute; top: 82px; left: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.14); z-index: 300; padding: 4px; min-width: 148px; }
+    .photo-menu button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 12px; border: none; background: none; cursor: pointer; font-size: 13px; font-family: inherit; border-radius: 6px; text-align: left; color: var(--text); }
+    .photo-menu button:hover { background: var(--bg); }
+
+    /* Inline editable field */
+    .ef { display: inline-flex; align-items: center; border-radius: 6px; padding: 2px 6px; cursor: pointer; transition: background .12s; max-width: 100%; }
+    .ef:hover:not(.editing) { background: #f0f0ff; }
+    .ef.editing { background: #eef2ff; cursor: text; box-shadow: 0 0 0 2px #a5b4fc; border-radius: 6px; }
+    .ef-val { line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
+    .ef-ph { color: var(--muted); font-style: italic; }
+    .ef-inp { display: none; border: none; outline: none; background: transparent; font-family: inherit; font-size: inherit; font-weight: inherit; color: var(--text); padding: 0; min-width: 60px; width: 100%; }
+    .ef.editing .ef-val { display: none; }
+    .ef.editing .ef-inp { display: block; }
+
+    /* Detail info */
+    .dh-info { flex: 1; min-width: 0; }
+    .dh-name-row { margin-bottom: 5px; }
+    .dh-name-ef .ef-val { font-size: 19px; font-weight: 700; }
+    .dh-name-ef .ef-inp { font-size: 19px; font-weight: 700; }
+    .dh-meta-row { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; margin-bottom: 8px; }
+    .dh-meta-ef .ef-val, .dh-meta-ef .ef-inp { font-size: 12px; color: var(--muted); }
+    .dh-contact-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+    .dh-contact-ef { display: inline-flex; align-items: center; gap: 4px; }
+    .dh-contact-ef .ef-val, .dh-contact-ef .ef-inp { font-size: 13px; }
+    .dh-selects { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .inline-sel { border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-size: 12px; background: var(--surface); cursor: pointer; font-family: inherit; }
+
+    /* ── Sections ── */
     .sec { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
     .sec-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
     .sec-title { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
-    .sec-action { font-size: 12px; color: var(--primary); cursor: pointer; font-weight: 500; }
+    .sec-btn { font-size: 12px; color: var(--primary); cursor: pointer; font-weight: 500; background: none; border: none; font-family: inherit; padding: 0; }
 
     /* Requirement */
-    .req-text { font-size: 14px; line-height: 1.6; color: var(--text); cursor: pointer; min-height: 24px; }
-    .req-text.empty { color: var(--muted); font-style: italic; }
-    .req-text:hover { color: var(--primary); }
-    .req-edit { display: none; }
-    .req-edit textarea { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; font-size: 14px; font-family: inherit; resize: vertical; outline: none; min-height: 72px; }
-    .req-edit textarea:focus { border-color: var(--primary); }
-    .req-btns { display: flex; gap: 6px; margin-top: 6px; }
+    .req-display { font-size: 14px; line-height: 1.65; color: var(--text); cursor: pointer; min-height: 28px; border-radius: 7px; padding: 6px 8px; transition: background .12s; }
+    .req-display:hover { background: #f0f0ff; }
+    .req-display.empty { color: var(--muted); font-style: italic; }
+    .req-ta { display: none; width: 100%; border: 1px solid #a5b4fc; border-radius: 8px; padding: 9px 12px; font-size: 14px; font-family: inherit; resize: vertical; outline: none; min-height: 80px; box-shadow: 0 0 0 3px #eef2ff; }
+    .req-ta:focus { border-color: var(--primary); }
+    .req-hint { font-size: 11px; color: var(--muted); margin-top: 5px; }
 
     /* Follow-up */
     .fu-date { font-size: 18px; font-weight: 700; }
@@ -90,14 +117,7 @@
     .qd-btn { padding: 3px 9px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; cursor: pointer; background: var(--bg); color: var(--muted); font-family: inherit; transition: all .15s; }
     .qd-btn:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
 
-    /* Remark */
-    .remark-text { font-size: 13px; line-height: 1.5; color: var(--muted); cursor: pointer; min-height: 20px; }
-    .remark-text:hover { color: var(--primary); }
-    .remark-edit { display: none; }
-    .remark-edit textarea { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 13px; font-family: inherit; resize: none; outline: none; }
-    .remark-edit textarea:focus { border-color: var(--primary); }
-
-    /* ── Product interests redesign ── */
+    /* Product interests */
     .int-list { display: flex; flex-direction: column; gap: 7px; margin-bottom: 10px; }
     .int-row { display: flex; align-items: center; gap: 8px; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 8px; padding: 7px 10px; }
     .int-sku { font-size: 10px; color: #7c3aed; font-weight: 700; background: #ede9fe; padding: 2px 6px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; }
@@ -107,13 +127,10 @@
     .int-del { background: none; border: none; cursor: pointer; color: #a78bfa; font-size: 16px; line-height: 1; padding: 0 2px; flex-shrink: 0; }
     .int-del:hover { color: var(--danger); }
     .int-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-
-    /* Product picker */
     .prod-picker-wrap { position: relative; }
     .prod-picker-btn { display: flex; align-items: center; gap: 5px; padding: 5px 12px; border: 1px dashed #a5b4fc; border-radius: 8px; font-size: 12px; color: var(--primary); cursor: pointer; background: none; font-family: inherit; font-weight: 600; transition: background .15s; }
     .prod-picker-btn:hover { background: #eef2ff; }
     .prod-picker-drop { position: absolute; bottom: calc(100% + 4px); left: 0; width: 320px; max-height: 300px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.14); z-index: 300; overflow: hidden; display: flex; flex-direction: column; }
-    .prod-picker-drop.above { bottom: auto; top: calc(100% + 4px); }
     .ppd-search { padding: 8px 10px; border-bottom: 1px solid var(--border); }
     .ppd-search input { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; font-size: 13px; font-family: inherit; outline: none; }
     .ppd-search input:focus { border-color: var(--primary); }
@@ -123,21 +140,21 @@
     .ppd-item:hover { background: #f5f3ff; }
     .ppd-sku { font-size: 10px; color: var(--primary); font-weight: 700; background: #eef2ff; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
     .ppd-name { font-size: 13px; flex: 1; }
-    .ppd-cat { font-size: 10px; color: var(--muted); }
     .ppd-empty { padding: 20px; text-align: center; font-size: 13px; color: var(--muted); }
     .ppd-cat-head { padding: 5px 12px; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; background: #f8fafc; border-bottom: 1px solid var(--border); }
 
-    /* AI confirm panel */
-    .ai-confirm { background: #f5f3ff; border: 1px solid #c4b5fd; border-radius: 12px; padding: 14px 16px; margin-top: 8px; }
-    .ai-confirm h4 { font-size: 12px; font-weight: 700; color: #6d28d9; margin-bottom: 10px; text-transform: uppercase; letter-spacing: .4px; }
-    .ai-field { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; border-bottom: 1px solid #ede9fe; }
+    /* AI Summary */
+    .ai-sum-text { font-size: 13px; line-height: 1.75; color: var(--text); white-space: pre-wrap; }
+    .ai-sum-ph { color: var(--muted); font-size: 13px; font-style: italic; }
+
+    /* AI Confirm modal */
+    .ai-field { display: flex; align-items: flex-start; gap: 8px; padding: 7px 0; border-bottom: 1px solid #ede9fe; }
     .ai-field:last-child { border: none; }
     .ai-field input[type=checkbox] { margin-top: 2px; accent-color: var(--primary); width: 15px; height: 15px; flex-shrink: 0; cursor: pointer; }
     .ai-flabel { font-size: 10px; font-weight: 700; color: var(--muted); width: 90px; flex-shrink: 0; text-transform: uppercase; padding-top: 2px; }
     .ai-fval { font-size: 13px; flex: 1; line-height: 1.4; }
-    .ai-confirm-actions { display: flex; gap: 8px; margin-top: 10px; }
 
-    /* Discussion */
+    /* Timeline */
     .disc-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
     .disc-head { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
     .note-compose { padding: 12px 14px; background: var(--bg); border-bottom: 1px solid var(--border); }
@@ -152,27 +169,28 @@
     .nc-textarea:focus { border-color: var(--primary); }
     .nc-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
     .transcript-area { margin-top: 8px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 12px; font-size: 13px; color: #78350f; min-height: 40px; display: none; }
-    .disc-item { padding: 12px 14px; border-bottom: 1px solid var(--border); display: flex; gap: 9px; }
+    .disc-list { max-height: 600px; overflow-y: auto; }
+    .disc-item { padding: 11px 14px; border-bottom: 1px solid var(--border); display: flex; gap: 9px; }
     .disc-item:last-child { border-bottom: none; }
     .disc-av { width: 28px; height: 28px; border-radius: 50%; background: #eef2ff; color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+    .disc-item.sys .disc-av { background: #f1f5f9; color: #64748b; font-size: 15px; }
     .disc-body { flex: 1; min-width: 0; }
-    .disc-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap; }
+    .disc-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; flex-wrap: wrap; }
     .disc-author { font-size: 12px; font-weight: 600; }
     .disc-type { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: var(--bg); color: var(--muted); }
     .disc-time { font-size: 11px; color: var(--muted); margin-left: auto; }
-    .disc-del { background: none; border: none; cursor: pointer; color: var(--muted); padding: 1px 4px; border-radius: 4px; }
-    .disc-del:hover { color: var(--danger); background: #fef2f2; }
     .disc-note { font-size: 13px; line-height: 1.5; }
-    .disc-empty { padding: 20px; text-align: center; color: var(--muted); font-size: 13px; }
+    .disc-item.sys .disc-note { font-size: 12px; color: var(--muted); }
+    .disc-empty { padding: 24px; text-align: center; color: var(--muted); font-size: 13px; }
 
-    /* Badges & assignee */
+    /* Badges */
     .badge-orange { background: #ffedd5; color: #c2410c; }
     .asgn { font-size: 11px; padding: 2px 7px; border-radius: 20px; font-weight: 500; }
     .asgn-rohan { background: #dbeafe; color: #1d4ed8; }
     .asgn-saurabh { background: #dcfce7; color: #15803d; }
     .asgn-unassigned { background: #f1f5f9; color: #475569; }
 
-    /* Add modal */
+    /* Add customer modal */
     .modal-lg { width: 580px; max-width: 95vw; max-height: 90vh; overflow-y: auto; }
     .modal-close { background: none; border: none; cursor: pointer; font-size: 22px; color: var(--muted); line-height: 1; }
     .tab-row { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 18px; }
@@ -190,6 +208,9 @@
     .mobile-back-bar { display: none; align-items: center; gap: 10px; padding: 10px 14px; background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
     .mobile-back-bar button { background: none; border: none; font-size: 14px; color: var(--primary); font-weight: 600; cursor: pointer; padding: 4px 0; }
     .mobile-back-bar span { font-size: 14px; font-weight: 600; }
+
+    /* Delete code modal */
+    .del-code-input { letter-spacing: 8px; font-size: 22px; text-align: center; font-weight: 700; }
   </style>
 </head>
 <body>
@@ -222,13 +243,6 @@
   <div class="crm-wrap">
     <!-- LEFT panel -->
     <div class="crm-list-panel">
-      <!-- Quick-update mic -->
-      <div class="qmic-bar">
-        <button class="qmic-btn" id="quickMicBtn" onclick="toggleQuickMic()" title="Record a voice note — AI will suggest all updates for the selected customer">
-          🎤 AI Quick Update
-        </button>
-        <span class="qmic-st" id="quickMicSt">Select a customer first</span>
-      </div>
       <!-- Filters -->
       <div class="crm-filters">
         <input class="search-full" id="searchQ" placeholder="Search name, company, phone…" oninput="applyFilters()" />
@@ -255,6 +269,11 @@
         <div class="list-count" id="listCount"></div>
       </div>
       <div class="crm-list" id="crmList"><div class="loading-msg">Loading…</div></div>
+      <!-- Mic — shown when customer is selected -->
+      <div class="qmic-bar" id="qmicBar">
+        <button class="qmic-btn" id="quickMicBtn" onclick="toggleQuickMic()">🎤 AI Quick Update</button>
+        <div class="qmic-name" id="qmicName"></div>
+      </div>
     </div>
 
     <!-- RIGHT detail panel -->
@@ -272,23 +291,45 @@
   </div>
 </div>
 
-<!-- AI Confirm overlay (for quick-update) -->
-<div class="modal-overlay" id="aiConfirmModal">
-  <div class="modal" style="width:500px;max-width:95vw;max-height:90vh;overflow-y:auto">
+<!-- ── Delete Code Modal ── -->
+<div class="modal-overlay" id="deleteCodeModal">
+  <div class="modal" style="width:340px;max-width:95vw">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <h3 style="font-size:16px">AI Suggestions</h3>
-      <button class="modal-close" onclick="document.getElementById('aiConfirmModal').classList.remove('open')">×</button>
+      <h3 style="color:var(--danger)">🗑 Delete Customer</h3>
+      <button class="modal-close" onclick="document.getElementById('deleteCodeModal').classList.remove('open')">×</button>
     </div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Check the updates you want to apply, then click Confirm.</p>
-    <div id="aiFieldsList"></div>
-    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
-      <button class="btn btn-outline" onclick="document.getElementById('aiConfirmModal').classList.remove('open')">Cancel</button>
-      <button class="btn btn-primary" onclick="applyAIUpdate()">✓ Confirm Selected</button>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.5">This will permanently delete the customer and all their data. Enter the security code to confirm.</p>
+    <div class="form-group" style="margin-bottom:10px">
+      <label>Security Code</label>
+      <input type="password" id="delCodeInput" class="del-code-input" placeholder="• • • •" maxlength="10"
+        oninput="document.getElementById('delCodeErr').style.display='none'"
+        onkeydown="if(event.key==='Enter')confirmDel()" />
+    </div>
+    <div id="delCodeErr" style="display:none;color:var(--danger);font-size:13px;margin-bottom:10px">⚠ Incorrect code. Try again.</div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button class="btn btn-outline" onclick="document.getElementById('deleteCodeModal').classList.remove('open')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDel()">Delete</button>
     </div>
   </div>
 </div>
 
-<!-- Add Customer Modal -->
+<!-- ── AI Confirm Modal ── -->
+<div class="modal-overlay" id="aiConfirmModal">
+  <div class="modal" style="width:500px;max-width:95vw;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3 style="font-size:16px">✨ AI Suggestions</h3>
+      <button class="modal-close" onclick="document.getElementById('aiConfirmModal').classList.remove('open')">×</button>
+    </div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Check what you want to apply, then confirm.</p>
+    <div id="aiFieldsList"></div>
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="document.getElementById('aiConfirmModal').classList.remove('open')">Cancel</button>
+      <button class="btn btn-primary" onclick="applyAIUpdate()">✓ Apply Selected</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Add Customer Modal ── -->
 <div class="modal-overlay" id="addModal">
   <div class="modal modal-lg">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -300,7 +341,7 @@
       <button class="tab-btn2" id="tabV" onclick="switchTab('voice')">🎤 Voice Input</button>
     </div>
     <div id="voiceTab" style="display:none">
-      <p class="voice-hint">Click the mic and describe the customer — name, company, phone number, what they need, when to follow up…</p>
+      <p class="voice-hint">Click the mic and describe the customer — name, company, phone, what they need, when to follow up…</p>
       <div style="text-align:center">
         <button class="mic-big" id="addMic" onclick="toggleAddMic()">🎤</button>
         <div id="addMicStatus" style="font-size:13px;color:var(--muted);margin-bottom:12px">Click to start</div>
@@ -322,7 +363,6 @@
           <div class="form-group"><label>Assigned To</label><select id="a_assigned"><option>Unassigned</option><option>Rohan</option><option>Saurabh</option></select></div>
           <div class="form-group"><label>Next Follow-up</label><input type="date" id="a_followup" /></div>
           <div class="form-group full"><label>Requirement</label><textarea id="a_req" rows="2" placeholder="What does the customer need?"></textarea></div>
-          <div class="form-group full"><label>Remark</label><textarea id="a_remark" rows="2" placeholder="Any notes or context…"></textarea></div>
         </div>
         <div class="modal-footer" style="margin-top:16px">
           <button type="button" class="btn btn-outline" onclick="closeAdd()">Cancel</button>
@@ -333,20 +373,9 @@
   </div>
 </div>
 
-<!-- Edit Modal -->
-<div class="modal-overlay" id="editModal">
-  <div class="modal modal-lg">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
-      <h3>Edit Customer</h3>
-      <button class="modal-close" onclick="closeEdit()">×</button>
-    </div>
-    <div class="form-grid" id="editFields"></div>
-    <div class="modal-footer" style="margin-top:16px">
-      <button class="btn btn-outline" onclick="closeEdit()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveEdit()">Save Changes</button>
-    </div>
-  </div>
-</div>
+<!-- Hidden photo inputs (global, reused) -->
+<input type="file" id="photoFileInput" accept="image/*" style="display:none" onchange="uploadPhoto(this)">
+<input type="file" id="photoCamInput" accept="image/*" capture="environment" style="display:none" onchange="uploadPhoto(this)">
 
 <div id="toast"></div>
 
@@ -355,12 +384,13 @@ const STATUSES = ['Lead','Contacted','Contacted but No Response','Onboarded'];
 const ASSIGNEES = ['Unassigned','Rohan','Saurabh'];
 const S_BADGE = { Lead:'badge-yellow', Contacted:'badge-blue', 'Contacted but No Response':'badge-orange', Onboarded:'badge-green' };
 const A_CLASS = { Rohan:'asgn-rohan', Saurabh:'asgn-saurabh', Unassigned:'asgn-unassigned' };
-const T_ICON = { call:'📞', note:'📝', meeting:'🤝', message:'💬' };
+const T_ICON = { call:'📞', note:'📝', meeting:'🤝', message:'💬', activity:'⚡' };
+const FIELD_LABELS = { name:'Name', company:'Company', phone:'Phone', email:'Email', city:'City', source:'Source', status:'Status', assigned_to:'Assigned to', requirement:'Requirement', next_followup:'Follow-up' };
 const COLORS = ['#6366f1','#8b5cf6','#06b6d4','#10b981','#f59e0b','#ef4444','#ec4899','#0ea5e9'];
 
 let all = [], selId = null, selC = null, fA = '';
 let addRec = null, noteRec = null, quickRec = null, addText = '';
-let allProducts = [], pickerOpen = false, pendingAI = null;
+let allProducts = [], pickerOpen = false, pendingAI = null, delPendingId = null;
 
 // ── Init ──────────────────────────────────────────────────────
 async function init() {
@@ -407,19 +437,22 @@ function renderList(list) {
       const ov = c.next_followup < today, td = c.next_followup === today;
       dueHtml = `<span class="ci-due${ov?' overdue':''}">${ov?'⚠ Overdue':td?'⚠ Today':'📅 '+fmtD(c.next_followup)}</span>`;
     }
-    const reqPreview = c.requirement ? esc(c.requirement.slice(0, 55)) + (c.requirement.length > 55 ? '…' : '') : '';
+    const reqPrev = c.requirement ? esc(c.requirement.slice(0,55)) + (c.requirement.length>55?'…':'') : '';
+    const avHtml = c.photo
+      ? `<img src="/uploads/${esc(c.photo)}" alt="" />`
+      : initials(c.name);
     return `<div class="ci${c.id===selId?' sel':''}" onclick="selectC(${c.id})">
-      <div class="ci-av" style="background:${avatarCol(c.name)}">${initials(c.name)}</div>
+      <div class="ci-av" style="${c.photo?'':('background:'+avatarCol(c.name))}">${avHtml}</div>
       <div class="ci-body">
         <div class="ci-name">${esc(c.name)}</div>
-        ${(c.company||c.city) ? `<div class="ci-co">${[c.company,c.city].filter(Boolean).map(esc).join(' • ')}</div>` : ''}
+        ${(c.company||c.city)?`<div class="ci-co">${[c.company,c.city].filter(Boolean).map(esc).join(' • ')}</div>`:''}
         <div class="ci-row">
           <span class="badge ${S_BADGE[c.status]||'badge-gray'}" style="font-size:10px;padding:2px 6px">${c.status||'—'}</span>
           <span class="asgn ${ac}">${c.assigned_to||'Unassigned'}</span>
           ${dueHtml}
         </div>
-        ${c.phone ? `<div class="ci-phone">📱 ${esc(c.phone)}</div>` : ''}
-        ${reqPreview ? `<div class="ci-req">📋 ${reqPreview}</div>` : ''}
+        ${c.phone?`<div class="ci-phone">📱 ${esc(c.phone)}</div>`:''}
+        ${reqPrev?`<div class="ci-req">📋 ${reqPrev}</div>`:''}
       </div>
     </div>`;
   }).join('');
@@ -438,7 +471,9 @@ async function selectC(id) {
   document.querySelector('.crm-wrap').classList.add('detail-open');
   document.getElementById('mobileBackBar').style.display = '';
   document.getElementById('mobileBackName').textContent = selC.name || '';
-  document.getElementById('quickMicSt').textContent = selC.name;
+  // Show mic bar
+  document.getElementById('qmicBar').classList.add('on');
+  document.getElementById('qmicName').textContent = selC.name;
   renderDetail();
 }
 function closeMobileDetail() {
@@ -446,16 +481,16 @@ function closeMobileDetail() {
   document.getElementById('mobileBackBar').style.display = 'none';
   document.getElementById('detailContent').style.display = 'none';
   document.getElementById('emptyState').style.display = '';
+  document.getElementById('qmicBar').classList.remove('on');
   selC = null; selId = null; applyFilters();
-  history.replaceState(null, '', location.pathname);
-  document.getElementById('quickMicSt').textContent = 'Select a customer first';
+  history.replaceState(null,'',location.pathname);
 }
 
 // ── Render Detail ─────────────────────────────────────────────
 function renderDetail() {
   const c = selC;
   const today = todayISO();
-  // Follow-up display
+
   let fuLabel = '', fuCls = 'none';
   if (c.next_followup) {
     const ov = c.next_followup < today, td = c.next_followup === today;
@@ -468,176 +503,260 @@ function renderDetail() {
   const discussions = c.discussions || [];
   const interests = c.interests || [];
 
+  const photoHtml = c.photo
+    ? `<img src="/uploads/${esc(c.photo)}" alt="Photo" />`
+    : `<div class="dh-photo-av" style="background:${avatarCol(c.name)}">${initials(c.name)}</div>`;
+
   document.getElementById('detailContent').innerHTML = `
-    <!-- Header -->
-    <div class="dh">
-      <div class="dh-row1">
-        <div style="flex:1;min-width:0">
-          <div class="dh-name">${esc(c.name)}</div>
-          <div class="dh-sub">${[c.company,c.city,c.source].filter(Boolean).map(esc).join(' • ')||'&nbsp;'}</div>
-        </div>
-        <div class="dh-actions">
-          <button class="btn btn-outline btn-sm" onclick="openEdit()">Edit</button>
-          <button class="btn btn-danger btn-sm" onclick="delC(${c.id})">Delete</button>
-        </div>
-      </div>
-      <div class="dh-row2">
-        <select class="inline-sel" onchange="qupdate('status',this.value)">${sopts}</select>
-        <select class="inline-sel" onchange="qupdate('assigned_to',this.value)">${aopts}</select>
-      </div>
-      <div class="dh-contact">
-        ${c.phone?`<a href="tel:${c.phone}">📱 ${esc(c.phone)}</a>`:''}
-        ${c.email?`<a href="mailto:${c.email}">✉️ ${esc(c.email)}</a>`:''}
-        ${!c.phone&&!c.email?'<span style="color:var(--muted);font-size:12px">No contact info</span>':''}
-      </div>
-    </div>
 
-    <!-- Requirement -->
-    <div class="sec">
-      <div class="sec-head">
-        <span class="sec-title">📋 Requirement</span>
-        <span class="sec-action" onclick="editReq()">Edit</span>
-      </div>
-      <div class="req-text${!c.requirement?' empty':''}" id="req-view" onclick="editReq()">${c.requirement ? esc(c.requirement) : 'Click to add requirement…'}</div>
-      <div class="req-edit" id="req-edit">
-        <textarea id="req-inp" rows="3" placeholder="What does the customer need?">${esc(c.requirement||'')}</textarea>
-        <div class="req-btns">
-          <button class="btn btn-primary btn-sm" onclick="saveReq()">Save</button>
-          <button class="btn btn-outline btn-sm" onclick="cancelReq()">Cancel</button>
+  <!-- ── 1. Customer Detail Card ── -->
+  <div class="dh">
+    <div class="dh-top">
+
+      <!-- Photo -->
+      <div class="dh-photo-wrap" id="photoWrap">
+        <div class="dh-photo" onclick="togglePhotoMenu(event)">
+          ${photoHtml}
+          <div class="dh-photo-overlay">📷</div>
+        </div>
+        <div class="photo-menu" id="photoMenu" style="display:none">
+          <button onclick="document.getElementById('photoFileInput').click()">📁 Upload Photo</button>
+          <button onclick="document.getElementById('photoCamInput').click()">📷 Take Photo</button>
         </div>
       </div>
-    </div>
 
-    <!-- Follow-up -->
-    <div class="sec">
-      <div class="sec-head"><span class="sec-title">📅 Next Follow-up</span></div>
-      <div class="fu-row">
-        <span class="fu-date ${fuCls}">${fuLabel}</span>
-        <input type="date" class="fu-input" id="fuDate" value="${c.next_followup||''}" onchange="qupdate('next_followup',this.value);refreshFU(this.value)" />
-      </div>
-      <div class="quick-d">
-        <button class="qd-btn" onclick="addDays(1)">+1 day</button>
-        <button class="qd-btn" onclick="addDays(3)">+3 days</button>
-        <button class="qd-btn" onclick="addDays(7)">+1 week</button>
-        <button class="qd-btn" onclick="addDays(30)">+1 month</button>
-      </div>
-    </div>
-
-    <!-- Remark -->
-    <div class="sec">
-      <div class="sec-head">
-        <span class="sec-title">💬 Remark</span>
-        <span class="sec-action" onclick="editRemark()">Edit</span>
-      </div>
-      <div class="remark-text${!c.remark?' empty':''}" onclick="editRemark()" id="remark-view">${c.remark ? esc(c.remark) : 'Click to add a remark…'}</div>
-      <div class="remark-edit" id="remark-edit">
-        <textarea id="remark-inp" rows="2">${esc(c.remark||'')}</textarea>
-        <div class="req-btns">
-          <button class="btn btn-primary btn-sm" onclick="saveRemark()">Save</button>
-          <button class="btn btn-outline btn-sm" onclick="cancelRemark()">Cancel</button>
+      <!-- Info -->
+      <div class="dh-info">
+        <div class="dh-name-row">
+          <span class="ef dh-name-ef" data-field="name" onclick="startEdit(this)">
+            <span class="ef-val">${esc(c.name)}</span>
+            <input class="ef-inp" type="text" value="${esc(c.name)}" placeholder="Name" />
+          </span>
+        </div>
+        <div class="dh-meta-row">
+          <span class="ef dh-meta-ef" data-field="company" onclick="startEdit(this)">
+            <span class="ef-val${!c.company?' ef-ph':''}">🏢 ${esc(c.company||'Company')}</span>
+            <input class="ef-inp" type="text" value="${esc(c.company||'')}" placeholder="Company" />
+          </span>
+          <span style="color:var(--border)">•</span>
+          <span class="ef dh-meta-ef" data-field="city" onclick="startEdit(this)">
+            <span class="ef-val${!c.city?' ef-ph':''}">📍 ${esc(c.city||'City')}</span>
+            <input class="ef-inp" type="text" value="${esc(c.city||'')}" placeholder="City" />
+          </span>
+          <span style="color:var(--border)">•</span>
+          <span class="ef dh-meta-ef" data-field="source" onclick="startEdit(this)">
+            <span class="ef-val${!c.source?' ef-ph':''}">🔗 ${esc(c.source||'Source')}</span>
+            <input class="ef-inp" type="text" value="${esc(c.source||'')}" placeholder="Source" />
+          </span>
+        </div>
+        <div class="dh-contact-row">
+          <span class="ef dh-contact-ef" data-field="phone" onclick="startEdit(this)">
+            <span class="ef-val${!c.phone?' ef-ph':''}">📱 ${esc(c.phone||'Phone')}</span>
+            <input class="ef-inp" type="tel" value="${esc(c.phone||'')}" placeholder="Phone" />
+          </span>
+          <span class="ef dh-contact-ef" data-field="email" onclick="startEdit(this)">
+            <span class="ef-val${!c.email?' ef-ph':''}">✉️ ${esc(c.email||'Email')}</span>
+            <input class="ef-inp" type="email" value="${esc(c.email||'')}" placeholder="Email" />
+          </span>
+        </div>
+        <div class="dh-selects">
+          <select class="inline-sel" onchange="qupdateLog('status',this.value,'Status changed to '+this.value)">${sopts}</select>
+          <select class="inline-sel" onchange="qupdateLog('assigned_to',this.value,'Assigned to '+this.value)">${aopts}</select>
+          <button class="btn btn-danger btn-sm" onclick="delC(${c.id})">🗑 Delete</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Product Interests -->
-    <div class="sec">
-      <div class="sec-head">
-        <span class="sec-title">📦 Product Interests</span>
-        <button class="btn btn-outline btn-sm" id="suggestBtn" onclick="suggestInterests(${c.id})" style="font-size:11px">✨ AI Suggest</button>
-      </div>
-      <div class="int-list" id="interestList">${renderIntList(interests, c.id)}</div>
-      <div class="int-actions">
-        <div class="prod-picker-wrap" id="pickerWrap">
-          <button class="prod-picker-btn" onclick="togglePicker(${c.id})">
-            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Add Product
-          </button>
-          <div class="prod-picker-drop" id="prodPickerDrop" style="display:none">
-            <div class="ppd-search"><input id="pickerSearch" placeholder="Search SKU or name…" oninput="renderPicker(${c.id})" /></div>
-            <div class="ppd-list" id="pickerList"></div>
-          </div>
-        </div>
-      </div>
-      <div id="suggestResult" style="display:none;margin-top:8px;padding:10px;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:8px;font-size:13px"></div>
+  <!-- ── 2. Requirement ── -->
+  <div class="sec">
+    <div class="sec-head">
+      <span class="sec-title">📋 Requirement</span>
     </div>
+    <div class="req-display${!c.requirement?' empty':''}" id="reqDisplay" onclick="startReqEdit()">${c.requirement ? esc(c.requirement).replace(/\n/g,'<br>') : 'Click to describe what this customer needs…'}</div>
+    <textarea class="req-ta" id="reqTa" placeholder="What does the customer need?">${esc(c.requirement||'')}</textarea>
+    <div class="req-hint" id="reqHint" style="display:none">Press Esc to cancel • blur or Ctrl+Enter to save</div>
+  </div>
 
-    <!-- Discussion Timeline -->
-    <div class="disc-card">
-      <div class="disc-head">Discussion Timeline</div>
-      <div class="note-compose">
-        <div class="nc-top">
-          <select class="type-sel" id="noteType"><option value="call">📞 Call</option><option value="note">📝 Note</option><option value="meeting">🤝 Meeting</option><option value="message">💬 Message</option></select>
-          <button class="mic-sm" id="noteMic" onclick="toggleNoteMic()" title="Record voice note">🎤</button>
-          <span class="rec-status" id="noteRecSt"></span>
-        </div>
-        <textarea class="nc-textarea" id="noteText" placeholder="What happened? Outcome? Next steps?…" rows="2"></textarea>
-        <div class="transcript-area" id="noteTranscript"></div>
-        <div class="nc-bottom">
-          <span style="font-size:12px;color:var(--muted)">🎤 Mic → speak → AI writes the note</span>
-          <button class="btn btn-primary btn-sm" onclick="saveNote(${c.id})">Save Note</button>
+  <!-- ── 3. Follow-up ── -->
+  <div class="sec">
+    <div class="sec-head"><span class="sec-title">📅 Next Follow-up</span></div>
+    <div class="fu-row">
+      <span class="fu-date ${fuCls}">${fuLabel}</span>
+      <input type="date" class="fu-input" id="fuDate" value="${c.next_followup||''}" onchange="onFuChange(this.value)" />
+    </div>
+    <div class="quick-d">
+      <button class="qd-btn" onclick="addDays(1)">+1 day</button>
+      <button class="qd-btn" onclick="addDays(3)">+3 days</button>
+      <button class="qd-btn" onclick="addDays(7)">+1 week</button>
+      <button class="qd-btn" onclick="addDays(30)">+1 month</button>
+    </div>
+  </div>
+
+  <!-- ── 4. Product Interests ── -->
+  <div class="sec">
+    <div class="sec-head">
+      <span class="sec-title">📦 Product Interests</span>
+      <button class="btn btn-outline btn-sm" id="suggestBtn" onclick="suggestInterests(${c.id})" style="font-size:11px">✨ AI Suggest</button>
+    </div>
+    <div class="int-list" id="interestList">${renderIntList(interests, c.id)}</div>
+    <div class="int-actions">
+      <div class="prod-picker-wrap" id="pickerWrap">
+        <button class="prod-picker-btn" onclick="togglePicker(${c.id})">
+          <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Add Product
+        </button>
+        <div class="prod-picker-drop" id="prodPickerDrop" style="display:none">
+          <div class="ppd-search"><input id="pickerSearch" placeholder="Search SKU or name…" oninput="renderPicker(${c.id})" /></div>
+          <div class="ppd-list" id="pickerList"></div>
         </div>
       </div>
-      <div class="disc-list" id="discList">${renderDiscs(discussions)}</div>
-    </div>`;
+    </div>
+    <div id="suggestResult" style="display:none;margin-top:8px;padding:10px;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:8px;font-size:13px"></div>
+  </div>
 
-  // Close picker when clicking outside
+  <!-- ── 5. AI Summary ── -->
+  <div class="sec">
+    <div class="sec-head">
+      <span class="sec-title">🤖 AI Summary</span>
+      <button class="sec-btn" id="sumBtn" onclick="generateSummary()">Generate ↻</button>
+    </div>
+    <div id="aiSumText" class="ai-sum-ph">Click "Generate" for an AI summary of this customer.</div>
+  </div>
+
+  <!-- ── 6. Timeline ── -->
+  <div class="disc-card">
+    <div class="disc-head">Timeline — Activity &amp; Notes</div>
+    <div class="note-compose">
+      <div class="nc-top">
+        <select class="type-sel" id="noteType"><option value="call">📞 Call</option><option value="note">📝 Note</option><option value="meeting">🤝 Meeting</option><option value="message">💬 Message</option></select>
+        <button class="mic-sm" id="noteMic" onclick="toggleNoteMic()" title="Record voice note">🎤</button>
+        <span class="rec-status" id="noteRecSt"></span>
+      </div>
+      <textarea class="nc-textarea" id="noteText" placeholder="What happened? Outcome? Next steps?…" rows="2"></textarea>
+      <div class="transcript-area" id="noteTranscript"></div>
+      <div class="nc-bottom">
+        <span style="font-size:12px;color:var(--muted)">🎤 Record → AI writes the note</span>
+        <button class="btn btn-primary btn-sm" onclick="saveNote(${c.id})">Add to Timeline</button>
+      </div>
+    </div>
+    <div class="disc-list" id="discList">${renderDiscs(discussions)}</div>
+  </div>`;
+
+  // Requirement inline edit wiring
+  const reqTa = document.getElementById('reqTa');
+  reqTa.onblur = saveReqInline;
+  reqTa.onkeydown = e => {
+    if (e.key === 'Escape') cancelReqInline();
+    if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); saveReqInline(); }
+  };
+
+  // Close picker and photo menu on outside click
   document.addEventListener('click', pickerOutside);
+  document.addEventListener('click', photoMenuOutside);
 }
 
-// ── Requirement ───────────────────────────────────────────────
-function editReq() {
-  document.getElementById('req-view').style.display = 'none';
-  document.getElementById('req-edit').style.display = '';
-  document.getElementById('req-inp').focus();
+// ── Inline field editing ──────────────────────────────────────
+function startEdit(el) {
+  if (el.classList.contains('editing')) return;
+  document.querySelectorAll('.ef.editing').forEach(e => { if (e !== el) commitEditEl(e); });
+  el.classList.add('editing');
+  const inp = el.querySelector('.ef-inp');
+  inp.style.width = Math.max(80, el.offsetWidth - 12) + 'px';
+  inp.focus(); inp.select();
+  inp.onblur = () => setTimeout(() => commitEditEl(el), 120);
+  inp.onkeydown = ev => {
+    if (ev.key === 'Enter') { ev.preventDefault(); inp.blur(); }
+    if (ev.key === 'Escape') { el.classList.remove('editing'); }
+  };
 }
-function cancelReq() {
-  document.getElementById('req-view').style.display = '';
-  document.getElementById('req-edit').style.display = 'none';
-}
-async function saveReq() {
-  const val = document.getElementById('req-inp').value.trim();
-  await qupdate('requirement', val);
-  const el = document.getElementById('req-view');
-  el.innerHTML = val || 'Click to add requirement…';
-  el.className = 'req-text' + (val ? '' : ' empty');
-  cancelReq();
+async function commitEditEl(el) {
+  if (!el.classList.contains('editing')) return;
+  el.classList.remove('editing');
+  const field = el.dataset.field;
+  const inp = el.querySelector('.ef-inp');
+  const val = inp.value.trim();
+  const disp = el.querySelector('.ef-val');
+  const oldVal = String(selC[field] || '');
+  if (val === oldVal) return;
+
+  const prefix = { name:'', company:'🏢 ', city:'📍 ', source:'🔗 ', phone:'📱 ', email:'✉️ ' }[field] || '';
+  const ph = inp.placeholder;
+  disp.textContent = prefix + (val || ph);
+  disp.className = 'ef-val' + (val ? '' : ' ef-ph');
+
+  const label = FIELD_LABELS[field] || field;
+  await qupdateLog(field, val, `${label} updated`);
+
+  if (field === 'name') {
+    const li = all.find(x => x.id === selC.id);
+    if (li) li.name = val;
+    applyFilters();
+    document.getElementById('mobileBackName').textContent = val;
+    document.getElementById('qmicName').textContent = val;
+  }
 }
 
-// ── Remark ────────────────────────────────────────────────────
-function editRemark() {
-  document.getElementById('remark-view').style.display = 'none';
-  document.getElementById('remark-edit').style.display = '';
-  document.getElementById('remark-inp').focus();
+// ── Requirement inline edit ───────────────────────────────────
+function startReqEdit() {
+  const disp = document.getElementById('reqDisplay');
+  const ta = document.getElementById('reqTa');
+  const hint = document.getElementById('reqHint');
+  if (ta.style.display !== 'none') return;
+  disp.style.display = 'none';
+  ta.style.display = '';
+  hint.style.display = '';
+  ta.focus();
+  ta.selectionStart = ta.selectionEnd = ta.value.length;
 }
-function cancelRemark() {
-  document.getElementById('remark-view').style.display = '';
-  document.getElementById('remark-edit').style.display = 'none';
+function cancelReqInline() {
+  const ta = document.getElementById('reqTa');
+  ta.value = selC.requirement || '';
+  document.getElementById('reqDisplay').style.display = '';
+  ta.style.display = 'none';
+  document.getElementById('reqHint').style.display = 'none';
 }
-async function saveRemark() {
-  const val = document.getElementById('remark-inp').value.trim();
-  await qupdate('remark', val);
-  const el = document.getElementById('remark-view');
-  el.textContent = val || 'Click to add a remark…';
-  el.className = 'remark-text' + (val ? '' : ' empty');
-  cancelRemark();
+async function saveReqInline() {
+  const ta = document.getElementById('reqTa');
+  if (ta.style.display === 'none') return;
+  const val = ta.value.trim();
+  ta.style.display = 'none';
+  document.getElementById('reqHint').style.display = 'none';
+  const disp = document.getElementById('reqDisplay');
+  disp.style.display = '';
+  if (val === (selC.requirement || '')) return;
+  disp.innerHTML = val ? esc(val).replace(/\n/g,'<br>') : 'Click to describe what this customer needs…';
+  disp.className = 'req-display' + (val ? '' : ' empty');
+  await qupdateLog('requirement', val, 'Requirement updated');
 }
 
 // ── Follow-up ─────────────────────────────────────────────────
-function refreshFU(val) {
+async function onFuChange(val) {
+  const old = selC.next_followup || '';
+  if (val === old) return;
+  await qupdateLog('next_followup', val, val ? `Follow-up set to ${fmtD(val)}` : 'Follow-up cleared');
   selC.next_followup = val;
   const li = all.find(x => x.id === selC.id);
   if (li) li.next_followup = val;
+  // Refresh the fu-date display
+  const today = todayISO();
+  const ov = val && val < today, td = val && val === today;
+  const fuEl = document.querySelector('.fu-date');
+  if (fuEl) {
+    fuEl.className = 'fu-date ' + (!val ? 'none' : ov ? 'overdue' : td ? 'today' : 'future');
+    fuEl.textContent = !val ? 'Not set' : ov ? `⚠ Overdue — ${fmtD(val)}` : td ? `⚠ Today — ${fmtD(val)}` : fmtD(val);
+  }
   applyFilters();
 }
 function addDays(n) {
   const d = new Date(); d.setDate(d.getDate() + n);
   const iso = d.toISOString().split('T')[0];
   document.getElementById('fuDate').value = iso;
-  qupdate('next_followup', iso); refreshFU(iso);
+  onFuChange(iso);
 }
 
-// ── General field update ──────────────────────────────────────
-async function qupdate(field, val) {
+// ── Update + log activity ─────────────────────────────────────
+async function qupdateLog(field, val, logMsg) {
   if (!selC) return;
   const body = { ...selC, [field]: val };
   delete body.discussions; delete body.interests;
@@ -645,8 +764,68 @@ async function qupdate(field, val) {
   selC[field] = val;
   const li = all.find(x => x.id === selC.id);
   if (li) li[field] = val;
-  applyFilters();
-  toast('Updated','success');
+  toast('Saved', 'success');
+  if (logMsg) await logActivity(logMsg);
+}
+async function logActivity(msg) {
+  if (!selC) return;
+  const r = await fetch(`/api/crm/customers/${selC.id}/discussions`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ note: msg, author: 'System', type: 'activity' })
+  });
+  const d = await r.json();
+  const entry = { id: d.id, note: msg, author: 'System', type: 'activity', created_at: new Date().toISOString() };
+  if (!selC.discussions) selC.discussions = [];
+  selC.discussions.unshift(entry);
+  const dl = document.getElementById('discList');
+  if (dl) {
+    const empty = dl.querySelector('.disc-empty');
+    if (empty) empty.remove();
+    dl.insertAdjacentHTML('afterbegin', renderDiscItem(entry));
+  }
+}
+
+// ── Photo upload ──────────────────────────────────────────────
+function togglePhotoMenu(e) {
+  e.stopPropagation();
+  const m = document.getElementById('photoMenu');
+  m.style.display = m.style.display === 'none' ? 'block' : 'none';
+}
+function photoMenuOutside(e) {
+  const wrap = document.getElementById('photoWrap');
+  if (wrap && !wrap.contains(e.target)) {
+    const m = document.getElementById('photoMenu');
+    if (m) m.style.display = 'none';
+  }
+}
+async function uploadPhoto(input) {
+  const file = input.files[0];
+  if (!file || !selC) return;
+  const m = document.getElementById('photoMenu');
+  if (m) m.style.display = 'none';
+  const ph = document.querySelector('.dh-photo');
+  if (ph) ph.style.opacity = '0.5';
+  try {
+    const fd = new FormData();
+    fd.append('photo', file);
+    const r = await fetch(`/api/crm/customers/${selC.id}/photo`, { method:'POST', body: fd });
+    const d = await r.json();
+    if (d.photo) {
+      selC.photo = d.photo;
+      // Update list avatar
+      const li = all.find(x => x.id === selC.id);
+      if (li) li.photo = d.photo;
+      // Update detail photo
+      if (ph) {
+        ph.innerHTML = `<img src="/uploads/${esc(d.photo)}" alt="Photo" /><div class="dh-photo-overlay">📷</div>`;
+      }
+      applyFilters();
+      await logActivity('Profile photo updated');
+      toast('Photo updated', 'success');
+    }
+  } catch(e) { toast('Upload failed: ' + e.message, 'error'); }
+  if (ph) ph.style.opacity = '';
+  input.value = '';
 }
 
 // ── Product interests ─────────────────────────────────────────
@@ -657,45 +836,41 @@ function renderIntList(interests, cid) {
     const sku = parts ? parts[1] : '';
     const name = parts ? parts[2] : t.interest;
     return `<div class="int-row" id="ir-${t.id}">
-      ${sku ? `<span class="int-sku">SKU ${sku}</span>` : ''}
+      ${sku?`<span class="int-sku">SKU ${esc(sku)}</span>`:''}
       <span class="int-name" title="${esc(name)}">${esc(name)}</span>
-      <input class="int-qty" type="text" placeholder="Qty" value="${esc(t.quantity||'')}"
-        onchange="updateIntQty(${t.id},this.value)" title="Expected quantity (e.g. 100 pcs, 5 kg)" />
-      <button class="int-del" onclick="removeInt(${cid},${t.id})">×</button>
+      <input class="int-qty" type="text" placeholder="Qty / Units" value="${esc(t.quantity||'')}"
+        onchange="updateIntQty(${t.id},this.value)" title="Expected quantity e.g. 100 pcs, 5 kg" />
+      <button class="int-del" onclick="removeInt(${cid},${t.id})" title="Remove">×</button>
     </div>`;
   }).join('');
 }
-
 async function updateIntQty(id, qty) {
   await fetch(`/api/crm/interests/${id}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({quantity:qty}) });
-  if (selC && selC.interests) {
-    const t = selC.interests.find(x => x.id === id);
-    if (t) t.quantity = qty;
-  }
+  if (selC?.interests) { const t = selC.interests.find(x => x.id === id); if (t) t.quantity = qty; }
 }
-
 async function removeInt(cid, iid) {
+  const row = selC?.interests?.find(t => t.id === iid);
   await fetch(`/api/crm/interests/${iid}`, {method:'DELETE'});
   document.getElementById(`ir-${iid}`)?.remove();
   if (selC) selC.interests = (selC.interests||[]).filter(t => t.id !== iid);
-  if (!(selC?.interests?.length)) {
-    document.getElementById('interestList').innerHTML = '<div style="color:var(--muted);font-size:13px;padding:4px 0">No products added yet</div>';
+  if (!selC?.interests?.length) {
+    const el = document.getElementById('interestList');
+    if (el) el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:4px 0">No products added yet</div>';
   }
-  toast('Removed','success');
+  if (row) {
+    const parts = row.interest.match(/^\[([^\]]+)\]\s(.+)$/);
+    const name = parts ? parts[2] : row.interest;
+    await logActivity(`Product removed: ${name}`);
+  }
+  toast('Removed', 'success');
 }
-
-// Product picker
 function togglePicker(cid) {
   const drop = document.getElementById('prodPickerDrop');
   if (drop.style.display === 'none') {
-    drop.style.display = 'flex';
-    drop.style.flexDirection = 'column';
-    pickerOpen = true;
-    renderPicker(cid);
+    drop.style.display = 'flex'; drop.style.flexDirection = 'column';
+    pickerOpen = true; renderPicker(cid);
     setTimeout(() => document.getElementById('pickerSearch')?.focus(), 50);
-  } else {
-    closePicker();
-  }
+  } else { closePicker(); }
 }
 function closePicker() {
   const drop = document.getElementById('prodPickerDrop');
@@ -713,13 +888,12 @@ function renderPicker(cid) {
   if (q) list = list.filter(p => ((p.sku||'')+(p.name||'')+(p.category||'')).toLowerCase().includes(q));
   const el = document.getElementById('pickerList');
   if (!list.length) { el.innerHTML = '<div class="ppd-empty">No products found</div>'; return; }
-  // Group by category
   const cats = [...new Set(list.map(p => p.category))];
   el.innerHTML = cats.map(cat => {
     const items = list.filter(p => p.category === cat);
     return `<div class="ppd-cat-head">${esc(cat)}</div>` +
       items.map(p => `<div class="ppd-item" onclick="addIntFromPicker(${cid},${p.id},'${esc(p.sku||'')}','${esc(p.name||'')}')">
-        ${p.sku ? `<span class="ppd-sku">${esc(p.sku)}</span>` : ''}
+        ${p.sku?`<span class="ppd-sku">${esc(p.sku)}</span>`:''}
         <span class="ppd-name">${esc(p.name)}</span>
       </div>`).join('');
   }).join('');
@@ -734,10 +908,9 @@ async function addIntFromPicker(cid, pid, sku, name) {
   if (!selC.interests) selC.interests = [];
   selC.interests.push({ id: d.id, interest: `[${sku}] ${name}`, quantity: '' });
   document.getElementById('interestList').innerHTML = renderIntList(selC.interests, cid);
-  toast('Product added','success');
+  await logActivity(`Product added: ${sku ? '['+sku+'] ' : ''}${name}`);
+  toast('Product added', 'success');
 }
-
-// AI suggest interests
 async function suggestInterests(cid) {
   const btn = document.getElementById('suggestBtn');
   const resultEl = document.getElementById('suggestResult');
@@ -753,7 +926,7 @@ async function suggestInterests(cid) {
     } else {
       resultEl.style.display = 'block';
       resultEl.innerHTML = '<strong style="font-size:12px;color:#6d28d9">AI Suggestions — click to add:</strong><div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">' +
-        data.suggestions.map(s => `<span style="background:#ede9fe;color:#5b21b6;padding:5px 12px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid #c4b5fd" title="${esc(s.reason||'')}" onclick="addSuggestedInt(${cid},'${esc(s.sku||'')}','${esc(s.name||'')}',this)">${esc(s.name)} ${s.sku?`<span style="opacity:.6">(${esc(s.sku)})</span>`:''}</span>`).join('') + '</div>';
+        data.suggestions.map(s => `<span style="background:#ede9fe;color:#5b21b6;padding:5px 12px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid #c4b5fd" title="${esc(s.reason||'')}" onclick="addSuggestedInt(${cid},'${esc(s.sku||'')}','${esc(s.name||'')}',this)">${esc(s.name)}${s.sku?` <span style="opacity:.6">(${esc(s.sku)})</span>`:''}</span>`).join('') + '</div>';
     }
   } catch(e) {
     resultEl.style.display = 'block';
@@ -769,50 +942,81 @@ async function addSuggestedInt(cid, sku, name, el) {
   selC.interests.push({id: d.id, interest: sku ? `[${sku}] ${name}` : name, quantity: ''});
   document.getElementById('interestList').innerHTML = renderIntList(selC.interests, cid);
   el.textContent = '✓ Added';
+  await logActivity(`Product added (AI suggest): ${sku?'['+sku+'] ':''}${name}`);
 }
 
-// ── Notes / Discussions ───────────────────────────────────────
-function renderDiscs(discs) {
-  if (!discs.length) return '<div class="disc-empty">No notes yet — add the first one above!</div>';
-  return discs.map(d => `
+// ── AI Summary ────────────────────────────────────────────────
+async function generateSummary() {
+  const el = document.getElementById('aiSumText');
+  const btn = document.getElementById('sumBtn');
+  if (!el || !selC) return;
+  el.className = 'ai-sum-ph'; el.textContent = '⏳ Generating summary…';
+  btn.disabled = true;
+  try {
+    const r = await fetch('/api/ai/customer-summary', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({customerId:selC.id})});
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    el.className = 'ai-sum-text'; el.textContent = d.summary;
+  } catch(e) {
+    el.className = 'ai-sum-ph'; el.textContent = 'Could not generate summary: ' + e.message;
+  }
+  btn.disabled = false;
+}
+
+// ── Timeline / Notes ──────────────────────────────────────────
+function renderDiscItem(d) {
+  const isSys = d.type === 'activity';
+  if (isSys) return `
+    <div class="disc-item sys" id="di-${d.id}">
+      <div class="disc-av">⚡</div>
+      <div class="disc-body">
+        <div class="disc-meta"><span class="disc-time">${ago(d.created_at)}</span></div>
+        <div class="disc-note">${esc(d.note)}</div>
+      </div>
+    </div>`;
+  return `
     <div class="disc-item" id="di-${d.id}">
       <div class="disc-av">${(d.author||'?')[0].toUpperCase()}</div>
       <div class="disc-body">
         <div class="disc-meta">
-          <span class="disc-author">${esc(d.author||'Unknown')}</span>
+          <span class="disc-author">${esc(d.author||'Team')}</span>
           <span class="disc-type">${T_ICON[d.type]||'📝'} ${d.type||'note'}</span>
           <span class="disc-time">${ago(d.created_at)}</span>
-          <button class="disc-del" onclick="delDisc(${d.id})">×</button>
         </div>
         <div class="disc-note">${esc(d.note)}</div>
       </div>
-    </div>`).join('');
+    </div>`;
+}
+function renderDiscs(discs) {
+  if (!discs.length) return '<div class="disc-empty">No activity yet — add the first note above</div>';
+  return discs.map(renderDiscItem).join('');
 }
 async function saveNote(cid) {
   const text = document.getElementById('noteText').value.trim();
-  if (!text) return toast('Please write a note first','error');
+  if (!text) return toast('Please write a note first', 'error');
   const type = document.getElementById('noteType').value;
   const author = selC?.assigned_to || 'Team';
-  await fetch(`/api/crm/customers/${cid}/discussions`, {
+  const r = await fetch(`/api/crm/customers/${cid}/discussions`, {
     method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({note:text,author,type})
   });
+  const d = await r.json();
   document.getElementById('noteText').value = '';
-  const r = await fetch(`/api/crm/customers/${cid}`);
-  selC = await r.json();
-  document.getElementById('discList').innerHTML = renderDiscs(selC.discussions||[]);
-  toast('Note saved','success');
-}
-async function delDisc(id) {
-  if (!confirm('Delete this note?')) return;
-  await fetch(`/api/crm/discussions/${id}`,{method:'DELETE'});
-  document.getElementById(`di-${id}`)?.remove();
-  toast('Note deleted','success');
+  const entry = { id: d.id, note: text, author, type, created_at: new Date().toISOString() };
+  if (!selC.discussions) selC.discussions = [];
+  selC.discussions.unshift(entry);
+  const dl = document.getElementById('discList');
+  if (dl) {
+    const empty = dl.querySelector('.disc-empty');
+    if (empty) empty.remove();
+    dl.insertAdjacentHTML('afterbegin', renderDiscItem(entry));
+  }
+  toast('Note added', 'success');
 }
 
 // ── Voice: note mic ───────────────────────────────────────────
 function toggleNoteMic() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) return toast('Voice requires Chrome or Edge','error');
+  if (!SR) return toast('Voice requires Chrome or Edge', 'error');
   if (noteRec) { noteRec.stop(); return; }
   const ta = document.getElementById('noteTranscript');
   ta.style.display = ''; ta.textContent = '';
@@ -837,8 +1041,8 @@ function toggleNoteMic() {
       const d = await r.json();
       document.getElementById('noteText').value = d.note || transcript;
       ta.style.display = 'none';
-      toast('Note written by AI — edit if needed','success');
-    } catch(err) { document.getElementById('noteText').value = transcript; ta.style.display = 'none'; }
+      toast('Note written by AI — review & save', 'success');
+    } catch { document.getElementById('noteText').value = transcript; ta.style.display = 'none'; }
     document.getElementById('noteRecSt').textContent = '';
   };
   noteRec.start();
@@ -846,12 +1050,11 @@ function toggleNoteMic() {
 
 // ── Voice: AI Quick Update mic ────────────────────────────────
 function toggleQuickMic() {
-  if (!selC) return toast('Please select a customer first','error');
+  if (!selC) return toast('Please select a customer first', 'error');
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) return toast('Voice requires Chrome or Edge on HTTPS','error');
+  if (!SR) return toast('Voice requires Chrome or Edge on HTTPS', 'error');
   if (quickRec) { quickRec.stop(); return; }
   const btn = document.getElementById('quickMicBtn');
-  const st = document.getElementById('quickMicSt');
   quickRec = new SR(); quickRec.continuous = true; quickRec.interimResults = true; quickRec.lang = 'en-IN';
   let final = '';
   quickRec.onresult = e => {
@@ -860,14 +1063,14 @@ function toggleQuickMic() {
       if (e.results[i].isFinal) final += e.results[i][0].transcript + ' ';
       else interim += e.results[i][0].transcript;
     }
-    st.textContent = (final + interim).slice(-60) + '…';
+    btn.textContent = '⏹ ' + (final + interim).slice(-40) + '…';
   };
-  quickRec.onstart = () => { btn.classList.add('rec'); btn.textContent = '⏹ Stop Recording'; st.textContent = 'Listening…'; };
+  quickRec.onstart = () => { btn.classList.add('rec'); btn.textContent = '⏹ Stop Recording'; };
   quickRec.onend = async () => {
     quickRec = null; btn.classList.remove('rec'); btn.textContent = '🎤 AI Quick Update';
     const transcript = final.trim();
-    if (!transcript) { st.textContent = selC?.name || 'Select a customer'; return; }
-    st.textContent = '⏳ AI analysing…';
+    if (!transcript) return;
+    btn.textContent = '⏳ Analysing…'; btn.disabled = true;
     try {
       const r = await fetch('/api/ai/quick-update', {
         method:'POST', headers:{'Content-Type':'application/json'},
@@ -877,29 +1080,20 @@ function toggleQuickMic() {
       if (suggestions.error) throw new Error(suggestions.error);
       pendingAI = suggestions;
       showAIConfirm(suggestions);
-    } catch(e) {
-      toast('AI error: ' + e.message, 'error');
-    }
-    st.textContent = selC?.name || '';
+    } catch(e) { toast('AI error: ' + e.message, 'error'); }
+    btn.textContent = '🎤 AI Quick Update'; btn.disabled = false;
   };
-  quickRec.onerror = ev => { st.textContent = 'Error: ' + ev.error; };
+  quickRec.onerror = ev => { btn.textContent = '🎤 AI Quick Update'; toast('Mic error: ' + ev.error, 'error'); };
   quickRec.start();
 }
-
 function showAIConfirm(s) {
-  const LABELS = {
-    status: 'Status', next_followup: 'Follow-up', requirement: 'Requirement',
-    note: 'Note', note_type: 'Note type', product_interests: 'Products'
-  };
   const fields = [];
   if (s.status && STATUSES.includes(s.status)) fields.push({ key:'status', label:'Status', val: s.status });
   if (s.next_followup) fields.push({ key:'next_followup', label:'Follow-up', val: s.next_followup });
   if (s.requirement) fields.push({ key:'requirement', label:'Requirement', val: s.requirement });
   if (s.note) fields.push({ key:'note', label:'Add Note', val: `[${s.note_type||'note'}] ${s.note}` });
   if (s.product_interests?.length) fields.push({ key:'product_interests', label:'Products', val: s.product_interests.map(p=>`${p.sku?'['+p.sku+'] ':''}${p.name}${p.quantity?' × '+p.quantity:''}`).join(', ') });
-
-  if (!fields.length) { toast('No updates detected from voice note','error'); return; }
-
+  if (!fields.length) { toast('No updates detected', 'error'); return; }
   document.getElementById('aiFieldsList').innerHTML = fields.map(f => `
     <div class="ai-field">
       <input type="checkbox" id="ai_chk_${f.key}" checked />
@@ -908,27 +1102,30 @@ function showAIConfirm(s) {
     </div>`).join('');
   document.getElementById('aiConfirmModal').classList.add('open');
 }
-
 async function applyAIUpdate() {
   const s = pendingAI;
   if (!s || !selC) return;
   document.getElementById('aiConfirmModal').classList.remove('open');
-  let updated = false;
-
+  const applied = [];
   if (document.getElementById('ai_chk_status')?.checked && s.status) {
-    await qupdate('status', s.status); updated = true;
+    await qupdateLog('status', s.status, 'Status changed to ' + s.status); applied.push('status');
   }
   if (document.getElementById('ai_chk_next_followup')?.checked && s.next_followup) {
-    await qupdate('next_followup', s.next_followup); refreshFU(s.next_followup); updated = true;
+    await qupdateLog('next_followup', s.next_followup, `Follow-up set to ${fmtD(s.next_followup)}`);
+    document.getElementById('fuDate').value = s.next_followup;
+    applied.push('follow-up');
   }
   if (document.getElementById('ai_chk_requirement')?.checked && s.requirement) {
-    await qupdate('requirement', s.requirement); updated = true;
+    await qupdateLog('requirement', s.requirement, 'Requirement updated via AI');
+    const disp = document.getElementById('reqDisplay');
+    if (disp) { disp.innerHTML = esc(s.requirement).replace(/\n/g,'<br>'); disp.className = 'req-display'; }
+    const ta = document.getElementById('reqTa');
+    if (ta) ta.value = s.requirement;
+    applied.push('requirement');
   }
   if (document.getElementById('ai_chk_note')?.checked && s.note) {
-    await fetch(`/api/crm/customers/${selC.id}/discussions`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ note: s.note, author: selC.assigned_to||'Team', type: s.note_type||'note' })
-    }); updated = true;
+    await saveNote(selC.id);
+    applied.push('note');
   }
   if (document.getElementById('ai_chk_product_interests')?.checked && s.product_interests?.length) {
     for (const p of s.product_interests) {
@@ -940,73 +1137,42 @@ async function applyAIUpdate() {
       if (!selC.interests) selC.interests = [];
       selC.interests.push({ id: d.id, interest: p.sku ? `[${p.sku}] ${p.name}` : p.name, quantity: p.quantity||'' });
     }
-    updated = true;
+    document.getElementById('interestList').innerHTML = renderIntList(selC.interests, selC.id);
+    applied.push('products');
   }
-
   pendingAI = null;
-  if (updated) {
-    const r = await fetch(`/api/crm/customers/${selC.id}`);
-    selC = await r.json();
-    renderDetail();
-    toast('Customer updated by AI!','success');
+  if (applied.length) toast('Applied: ' + applied.join(', '), 'success');
+}
+
+// ── Delete with code ──────────────────────────────────────────
+let delPendingId = null;
+function delC(id) {
+  delPendingId = id;
+  document.getElementById('delCodeInput').value = '';
+  document.getElementById('delCodeErr').style.display = 'none';
+  document.getElementById('deleteCodeModal').classList.add('open');
+  setTimeout(() => document.getElementById('delCodeInput').focus(), 100);
+}
+async function confirmDel() {
+  const code = document.getElementById('delCodeInput').value;
+  if (code !== '7592') {
+    document.getElementById('delCodeErr').style.display = '';
+    document.getElementById('delCodeInput').value = '';
+    document.getElementById('delCodeInput').focus();
+    return;
   }
-}
-
-// ── Edit modal ────────────────────────────────────────────────
-function openEdit() {
-  const c = selC;
-  const sopts = STATUSES.map(s=>`<option${c.status===s?' selected':''}>${s}</option>`).join('');
-  const aopts = ASSIGNEES.map(a=>`<option${c.assigned_to===a?' selected':''}>${a}</option>`).join('');
-  document.getElementById('editFields').innerHTML = `
-    <div class="form-group"><label>Name</label><input id="e_name" value="${esc(c.name||'')}"/></div>
-    <div class="form-group"><label>Company</label><input id="e_co" value="${esc(c.company||'')}"/></div>
-    <div class="form-group"><label>Phone</label><input id="e_phone" value="${esc(c.phone||'')}"/></div>
-    <div class="form-group"><label>Email</label><input id="e_email" value="${esc(c.email||'')}"/></div>
-    <div class="form-group"><label>City</label><input id="e_city" value="${esc(c.city||'')}"/></div>
-    <div class="form-group"><label>Source</label><input id="e_src" value="${esc(c.source||'')}"/></div>
-    <div class="form-group"><label>Status</label><select id="e_status">${sopts}</select></div>
-    <div class="form-group"><label>Assigned To</label><select id="e_asgn">${aopts}</select></div>
-    <div class="form-group"><label>Next Follow-up</label><input type="date" id="e_fu" value="${c.next_followup||''}"/></div>
-    <div class="form-group full"><label>Requirement</label><textarea id="e_req" rows="3">${esc(c.requirement||'')}</textarea></div>
-    <div class="form-group full"><label>Remark</label><textarea id="e_remark" rows="2">${esc(c.remark||'')}</textarea></div>`;
-  document.getElementById('editModal').classList.add('open');
-}
-function closeEdit() { document.getElementById('editModal').classList.remove('open'); }
-async function saveEdit() {
-  const upd = {
-    name:document.getElementById('e_name').value.trim(),
-    company:document.getElementById('e_co').value.trim(),
-    phone:document.getElementById('e_phone').value.trim(),
-    email:document.getElementById('e_email').value.trim(),
-    city:document.getElementById('e_city').value.trim(),
-    source:document.getElementById('e_src').value.trim(),
-    status:document.getElementById('e_status').value,
-    assigned_to:document.getElementById('e_asgn').value,
-    next_followup:document.getElementById('e_fu').value,
-    requirement:document.getElementById('e_req').value.trim(),
-    remark:document.getElementById('e_remark').value.trim(),
-    followup_action:selC.followup_action||''
-  };
-  await fetch(`/api/crm/customers/${selC.id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(upd)});
-  Object.assign(selC, upd);
-  const li = all.find(x => x.id === selC.id);
-  if (li) Object.assign(li, upd);
-  closeEdit(); applyFilters(); renderDetail();
-  toast('Updated','success');
-}
-
-// ── Delete ────────────────────────────────────────────────────
-async function delC(id) {
-  if (!confirm('Delete this customer and all their notes? Cannot be undone.')) return;
-  await fetch(`/api/crm/customers/${id}`,{method:'DELETE'});
-  all = all.filter(c => c.id !== id); selId = null; selC = null;
+  document.getElementById('deleteCodeModal').classList.remove('open');
+  await fetch(`/api/crm/customers/${delPendingId}`, {method:'DELETE'});
+  all = all.filter(c => c.id !== delPendingId);
+  selId = null; selC = null; delPendingId = null;
   document.getElementById('detailContent').style.display = 'none';
   document.getElementById('emptyState').style.display = '';
   document.querySelector('.crm-wrap').classList.remove('detail-open');
   document.getElementById('mobileBackBar').style.display = 'none';
-  document.getElementById('quickMicSt').textContent = 'Select a customer first';
+  document.getElementById('qmicBar').classList.remove('on');
   history.replaceState(null,'',location.pathname);
-  applyFilters(); toast('Deleted','success');
+  applyFilters();
+  toast('Customer deleted', 'success');
 }
 
 // ── Add Customer ──────────────────────────────────────────────
@@ -1043,17 +1209,15 @@ async function saveAdd(e) {
     assigned_to:document.getElementById('a_assigned').value,
     next_followup:document.getElementById('a_followup').value,
     requirement:document.getElementById('a_req').value.trim(),
-    remark:document.getElementById('a_remark').value.trim()
+    remark: ''
   };
   const r = await fetch('/api/crm/customers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   const d = await r.json();
   closeAdd(); await loadAll();
   if (d.id) selectC(d.id);
-  toast('Customer added!','success');
+  toast('Customer added!', 'success');
   btn.disabled = false; btn.textContent = 'Save Customer';
 }
-
-// ── Add voice mic ─────────────────────────────────────────────
 function toggleAddMic() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) { document.getElementById('addVoiceErr').textContent='Voice requires Chrome or Edge.'; document.getElementById('addVoiceErr').style.display=''; return; }
@@ -1074,7 +1238,7 @@ function toggleAddMic() {
 }
 async function extractAndFill() {
   const t = addText.trim();
-  if (!t) return toast('Please record something first','error');
+  if (!t) return toast('Please record something first', 'error');
   const btn = document.getElementById('addExtractBtn');
   btn.disabled = true; btn.textContent = '⏳ Extracting…';
   try {
@@ -1087,11 +1251,10 @@ async function extractAndFill() {
     if (d.email) document.getElementById('a_email').value = d.email;
     if (d.city) document.getElementById('a_city').value = d.city;
     if (d.requirement) document.getElementById('a_req').value = d.requirement;
-    if (d.remark) document.getElementById('a_remark').value = d.remark;
     if (d.next_followup) document.getElementById('a_followup').value = d.next_followup;
     if (d.status && STATUSES.includes(d.status)) document.getElementById('a_status').value = d.status;
-    toast('Fields filled by AI — review before saving','success');
-  } catch(err) { toast('AI error: '+err.message,'error'); }
+    toast('Fields filled — review before saving', 'success');
+  } catch(err) { toast('AI error: '+err.message, 'error'); }
   btn.disabled = false; btn.textContent = '✨ Auto-fill with AI';
 }
 
@@ -1105,8 +1268,8 @@ function ago(ts){if(!ts)return'';const m=Math.floor((Date.now()-new Date(ts).get
 function toast(msg,type=''){const el=document.getElementById('toast');el.textContent=msg;el.className=type?`show ${type}`:'show';setTimeout(()=>el.className='',3000);}
 
 document.getElementById('addModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAdd();});
-document.getElementById('editModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeEdit();});
 document.getElementById('aiConfirmModal').addEventListener('click',e=>{if(e.target===e.currentTarget)document.getElementById('aiConfirmModal').classList.remove('open');});
+document.getElementById('deleteCodeModal').addEventListener('click',e=>{if(e.target===e.currentTarget)document.getElementById('deleteCodeModal').classList.remove('open');});
 
 init();
 </script>

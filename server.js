@@ -73,6 +73,7 @@ db.exec(`
 
 // ── Idempotent schema migrations ─────────────────────────────
 try { db.exec("ALTER TABLE customer_interests ADD COLUMN quantity TEXT DEFAULT ''"); } catch(e) {}
+try { db.exec("ALTER TABLE customers_v2 ADD COLUMN photo TEXT DEFAULT ''"); } catch(e) {}
 
 // ── Idempotent data migrations ────────────────────────────────
 try {
@@ -177,8 +178,8 @@ app.post('/api/crm/customers', (req, res) => {
 
 app.put('/api/crm/customers/:id', (req, res) => {
   const c = req.body;
-  db.prepare(`UPDATE customers_v2 SET name=?,company=?,phone=?,email=?,city=?,assigned_to=?,status=?,requirement=?,followup_action=?,next_followup=?,remark=?,updated_at=datetime('now') WHERE id=?`)
-    .run(c.name, c.company||'', c.phone||'', c.email||'', c.city||'', c.assigned_to||'', c.status||'Lead', c.requirement||'', c.followup_action||'', c.next_followup||'', c.remark||'', req.params.id);
+  db.prepare(`UPDATE customers_v2 SET name=?,company=?,phone=?,email=?,city=?,assigned_to=?,status=?,source=?,requirement=?,followup_action=?,next_followup=?,remark=?,updated_at=datetime('now') WHERE id=?`)
+    .run(c.name, c.company||'', c.phone||'', c.email||'', c.city||'', c.assigned_to||'', c.status||'Lead', c.source||'', c.requirement||'', c.followup_action||'', c.next_followup||'', c.remark||'', req.params.id);
   res.json({ success: true });
 });
 
@@ -205,6 +206,18 @@ app.post('/api/crm/customers/:id/discussions', (req, res) => {
 app.delete('/api/crm/discussions/:id', (req, res) => {
   db.prepare('DELETE FROM discussions WHERE id=?').run(req.params.id);
   res.json({ success: true });
+});
+
+// Customer photo upload
+app.post('/api/crm/customers/:id/photo', upload.single('photo'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+  const row = db.prepare('SELECT photo FROM customers_v2 WHERE id=?').get(req.params.id);
+  if (row?.photo) {
+    const fp = path.join(uploadsDir, row.photo);
+    try { if (fs.existsSync(fp)) fs.unlinkSync(fp); } catch(e) {}
+  }
+  db.prepare("UPDATE customers_v2 SET photo=?,updated_at=datetime('now') WHERE id=?").run(req.file.filename, req.params.id);
+  res.json({ success: true, photo: req.file.filename });
 });
 
 // Interests
@@ -449,6 +462,31 @@ app.post('/api/ai/suggest-interests', async (req, res) => {
     });
     const match = msg.content[0].text.match(/\[[\s\S]*\]/);
     res.json({ suggestions: match ? JSON.parse(match[0]) : [] });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── AI: customer summary ──────────────────────────────────────
+app.post('/api/ai/customer-summary', async (req, res) => {
+  try {
+    const { customerId } = req.body;
+    const c = db.prepare('SELECT * FROM customers_v2 WHERE id=?').get(customerId);
+    if (!c) return res.status(404).json({ error: 'Not found' });
+    const discs = db.prepare("SELECT note,type,created_at FROM discussions WHERE customer_id=? AND type!='activity' ORDER BY created_at DESC LIMIT 20").all(customerId);
+    const ints = db.prepare('SELECT interest,quantity FROM customer_interests WHERE customer_id=?').all(customerId);
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const msg = await client.messages.create({
+      model: 'claude-sonnet-4-6', max_tokens: 350,
+      system: 'Write a concise CRM customer summary (max 120 words). Cover: who they are, what they need, their current status, product interests, and one clear recommended next action. Be professional and actionable.',
+      messages: [{ role: 'user', content: `Name: ${c.name} | Company: ${c.company||'—'} | City: ${c.city||'—'} | Source: ${c.source||'—'}
+Status: ${c.status} | Assigned: ${c.assigned_to} | Follow-up: ${c.next_followup||'not set'}
+Requirement: ${c.requirement||'not specified'}
+Products interested: ${ints.map(i=>i.interest+(i.quantity?' × '+i.quantity:'')).join('; ')||'none'}
+Discussion notes (${discs.length}):
+${discs.slice(0,8).map(d=>`• [${d.type}] ${d.note}`).join('\n')||'No notes yet'}
+
+Write the summary:` }]
+    });
+    res.json({ summary: msg.content[0].text.trim() });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
