@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShopManager — Products</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .cat-tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
+    .cat-tab { padding:6px 14px; border-radius:20px; font-size:13px; font-weight:500; cursor:pointer; border:1px solid var(--border); background:var(--surface); color:var(--muted); transition:all .15s; }
+    .cat-tab.active, .cat-tab:hover { background:var(--primary); color:#fff; border-color:var(--primary); }
+
+    .product-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; }
+    .product-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; cursor:pointer; transition:box-shadow .15s; }
+    .product-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.08); }
+    .product-img { width:100%; height:160px; object-fit:cover; background:var(--bg); display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:13px; }
+    .product-img img { width:100%; height:160px; object-fit:cover; }
+    .product-body { padding:14px; }
+    .product-cat { font-size:11px; font-weight:600; color:var(--primary); text-transform:uppercase; letter-spacing:.5px; }
+    .product-name { font-size:14px; font-weight:600; margin:4px 0 8px; line-height:1.4; }
+    .product-meta { display:flex; justify-content:space-between; align-items:center; }
+    .product-price { font-size:16px; font-weight:700; color:var(--text); }
+    .product-unit { font-size:11px; color:var(--muted); }
+
+    /* Detail Modal */
+    .modal { width:680px; max-height:90vh; overflow-y:auto; }
+    .modal-tabs { display:flex; border-bottom:1px solid var(--border); margin:-28px -28px 24px; padding:0 28px; }
+    .modal-tab { padding:12px 16px; font-size:14px; font-weight:500; cursor:pointer; color:var(--muted); border-bottom:2px solid transparent; margin-bottom:-1px; }
+    .modal-tab.active { color:var(--primary); border-bottom-color:var(--primary); }
+    .tab-panel { display:none; }
+    .tab-panel.active { display:block; }
+
+    .spec-table { width:100%; border-collapse:collapse; font-size:13px; }
+    .spec-table td { padding:8px 0; border-bottom:1px solid var(--border); }
+    .spec-table td:first-child { color:var(--muted); font-weight:500; width:40%; }
+
+    /* Image grid */
+    .img-grid { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+    .img-thumb { position:relative; width:90px; height:90px; border-radius:8px; overflow:hidden; border:1px solid var(--border); }
+    .img-thumb img { width:100%; height:100%; object-fit:cover; }
+    .img-del { position:absolute; top:3px; right:3px; background:rgba(0,0,0,.5); color:#fff; border:none; border-radius:50%; width:20px; height:20px; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center; }
+    .img-upload-box { width:90px; height:90px; border:2px dashed var(--border); border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; color:var(--muted); font-size:11px; gap:4px; transition:border-color .15s; }
+    .img-upload-box:hover { border-color:var(--primary); color:var(--primary); }
+    #imgFileInput { display:none; }
+
+    .avail-yes { color:#15803d; } .avail-order { color:#a16207; } .avail-no { color:#b91c1c; }
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo"><h1>ShopManager</h1><p>Ecommerce Dashboard</p></div>
+  <nav class="sidebar-nav">
+    <a href="index.html" class="nav-link">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+      Dashboard
+    </a>
+    <a href="customers.html" class="nav-link">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      Customers
+    </a>
+    <a href="orders.html" class="nav-link">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+      Orders
+    </a>
+    <a href="products.html" class="nav-link active">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+      Products
+    </a>
+  </nav>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <h2>Products</h2>
+    <div class="topbar-actions">
+      <div class="search-box">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input type="text" id="searchInput" placeholder="Search products…" oninput="filterProducts()" />
+      </div>
+      <button class="btn btn-primary" onclick="openAddModal()">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Add Product
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="cat-tabs" id="catTabs"></div>
+    <div id="productGrid" class="product-grid"></div>
+  </div>
+</div>
+
+<!-- Product Detail / Edit Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3 id="modalTitle">Product Details</h3>
+
+    <div class="modal-tabs">
+      <div class="modal-tab active" onclick="switchTab('details')">Details</div>
+      <div class="modal-tab" onclick="switchTab('specs')">Specs</div>
+      <div class="modal-tab" onclick="switchTab('images')">Images</div>
+    </div>
+
+    <form id="productForm" onsubmit="saveProduct(event)">
+      <input type="hidden" id="productId" />
+
+      <!-- Details Tab -->
+      <div class="tab-panel active" id="tab-details">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>SKU</label>
+            <input type="text" id="fSku" />
+          </div>
+          <div class="form-group">
+            <label>Category *</label>
+            <input type="text" id="fCategory" required list="categoryList" />
+            <datalist id="categoryList">
+              <option value="Nickel Strip Plated">
+              <option value="Nickel Strip Pure">
+              <option value="Copper Bus Bar">
+              <option value="Cells">
+            </datalist>
+          </div>
+          <div class="form-group full">
+            <label>Product Name *</label>
+            <input type="text" id="fName" required />
+          </div>
+          <div class="form-group">
+            <label>Price (₹)</label>
+            <input type="text" id="fPrice" placeholder="e.g. 480 or ₹95/PCS" />
+          </div>
+          <div class="form-group">
+            <label>New Price (₹)</label>
+            <input type="text" id="fNewPrice" placeholder="Optional discount price" />
+          </div>
+          <div class="form-group">
+            <label>Unit</label>
+            <select id="fUnit">
+              <option value="KG">KG</option>
+              <option value="Piece">Piece</option>
+              <option value="Pack">Pack</option>
+              <option value="Set">Set</option>
+              <option value="Meter">Meter</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Minimum Quantity</label>
+            <input type="number" id="fMinQty" min="1" value="1" />
+          </div>
+          <div class="form-group">
+            <label>Availability</label>
+            <select id="fAvailability">
+              <option value="yes">In Stock</option>
+              <option value="order placed">Order Placed</option>
+              <option value="no">Out of Stock</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label>Dimensions / Size</label>
+            <input type="text" id="fDimensions" />
+          </div>
+          <div class="form-group full">
+            <label>Details / Description</label>
+            <textarea id="fDetails" rows="3"></textarea>
+          </div>
+          <div class="form-group full">
+            <label>Applications</label>
+            <textarea id="fApplications" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Specs Tab -->
+      <div class="tab-panel" id="tab-specs">
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Cell-specific technical specifications</p>
+        <div class="form-grid">
+          <div class="form-group"><label>Cell Type</label><input type="text" id="sType" placeholder="e.g. LiFePO4, Lithium-Ion" /></div>
+          <div class="form-group"><label>Form Factor</label><input type="text" id="sFormFactor" placeholder="e.g. 18650, 21700, 32140" /></div>
+          <div class="form-group"><label>Nominal Voltage</label><input type="text" id="sVoltage" placeholder="e.g. 3.2V" /></div>
+          <div class="form-group"><label>Capacity</label><input type="text" id="sCapacity" placeholder="e.g. 15Ah, 2600 mAh" /></div>
+          <div class="form-group"><label>Max Charge Voltage</label><input type="text" id="sMaxV" placeholder="e.g. 3.65V" /></div>
+          <div class="form-group"><label>Min Discharge Voltage</label><input type="text" id="sMinV" placeholder="e.g. 2.0V" /></div>
+          <div class="form-group"><label>Cycle Life</label><input type="text" id="sCycles" placeholder="e.g. ≥3000 cycles @ 80% DOD" /></div>
+          <div class="form-group"><label>Std Charge Rate</label><input type="text" id="sCharge" placeholder="e.g. 0.5C" /></div>
+          <div class="form-group"><label>Max Discharge Rate</label><input type="text" id="sDischarge" placeholder="e.g. 3C" /></div>
+          <div class="form-group"><label>Weight</label><input type="text" id="sWeight" placeholder="e.g. ~310g" /></div>
+          <div class="form-group"><label>Internal Resistance</label><input type="text" id="sResistance" placeholder="e.g. ≤12 mΩ" /></div>
+          <div class="form-group"><label>Temperature Range</label><input type="text" id="sTemp" placeholder="e.g. -20°C to +60°C" /></div>
+          <div class="form-group"><label>Energy</label><input type="text" id="sEnergy" placeholder="e.g. 48Wh" /></div>
+          <div class="form-group"><label>Grade</label><input type="text" id="sGrade" placeholder="e.g. A Grade (ESS)" /></div>
+          <div class="form-group full"><label>Certifications</label><input type="text" id="sCerts" placeholder="e.g. UN38.3, CE, RoHS, MSDS" /></div>
+        </div>
+      </div>
+
+      <!-- Images Tab -->
+      <div class="tab-panel" id="tab-images">
+        <div class="img-grid" id="imgGrid"></div>
+        <input type="file" id="imgFileInput" multiple accept="image/*" onchange="uploadImages()" />
+        <div class="img-upload-box" onclick="document.getElementById('imgFileInput').click()">
+          <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          Upload Images
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-top:8px">Max 5MB per image. Save product details first before uploading images.</p>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger btn-sm" id="deleteBtn" onclick="deleteProduct()" style="margin-right:auto;display:none">Delete Product</button>
+        <button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="saveBtn">Save Product</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="js/config.js"></script>
+<script src="js/sheets.js"></script>
+<script>
+let allProducts = [];
+let activeCategory = 'All';
+
+const availClass = { yes:'avail-yes', 'order placed':'avail-order', no:'avail-no' };
+const availLabel = { yes:'In Stock', 'order placed':'Order Placed', no:'Out of Stock' };
+
+async function loadProducts() {
+  try {
+    const res = await fetch('/api/products');
+    const data = await res.json();
+    allProducts = data.data || [];
+    buildCategoryTabs();
+    renderGrid(allProducts);
+  } catch(e) {
+    document.getElementById('productGrid').innerHTML = `<p style="color:var(--danger)">${e.message}</p>`;
+  }
+}
+
+function buildCategoryTabs() {
+  const cats = ['All', ...new Set(allProducts.map(p => p.category))];
+  document.getElementById('catTabs').innerHTML = cats.map(c =>
+    `<div class="cat-tab ${c===activeCategory?'active':''}" onclick="setCategory('${c}')">${c} <span style="opacity:.6">(${c==='All'?allProducts.length:allProducts.filter(p=>p.category===c).length})</span></div>`
+  ).join('');
+}
+
+function setCategory(cat) {
+  activeCategory = cat;
+  buildCategoryTabs();
+  filterProducts();
+}
+
+function filterProducts() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  let list = activeCategory === 'All' ? allProducts : allProducts.filter(p => p.category === activeCategory);
+  if (q) list = list.filter(p => `${p.name} ${p.sku} ${p.category} ${p.details}`.toLowerCase().includes(q));
+  renderGrid(list);
+}
+
+function renderGrid(list) {
+  const grid = document.getElementById('productGrid');
+  if (list.length === 0) {
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width:48px;height:48px;margin:0 auto 12px;display:block;opacity:.3"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>No products found</div>`;
+    return;
+  }
+  grid.innerHTML = list.map(p => {
+    const imgs = JSON.parse(p.images || '[]');
+    const thumb = imgs.length ? `<img src="/uploads/${imgs[0]}" alt="${p.name}" />` : `<div class="product-img" style="height:160px">No image</div>`;
+    const avail = p.availability || 'yes';
+    return `
+    <div class="product-card" onclick='openEditModal(${JSON.stringify(p)})'>
+      <div class="product-img">${thumb}</div>
+      <div class="product-body">
+        <div class="product-cat">${p.category}</div>
+        <div class="product-name">${p.name}</div>
+        <div class="product-meta">
+          <div>
+            <div class="product-price">₹${p.price}${p.unit==='KG'?'/kg':p.unit==='Piece'?'/pc':'/'+p.unit.toLowerCase()}</div>
+            <div class="product-unit">Min: ${p.min_quantity} ${p.unit}</div>
+          </div>
+          <span class="${availClass[avail]||'avail-yes'}" style="font-size:12px;font-weight:500">${availLabel[avail]||avail}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Modal ──────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.modal-tab').forEach((t,i) => t.classList.toggle('active', ['details','specs','images'][i]===tab));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+}
+
+function fillForm(p) {
+  document.getElementById('productId').value = p?.id || '';
+  document.getElementById('fSku').value = p?.sku || '';
+  document.getElementById('fCategory').value = p?.category || '';
+  document.getElementById('fName').value = p?.name || '';
+  document.getElementById('fPrice').value = p?.price || '';
+  document.getElementById('fNewPrice').value = p?.new_price || '';
+  document.getElementById('fUnit').value = p?.unit || 'Piece';
+  document.getElementById('fMinQty').value = p?.min_quantity || 1;
+  document.getElementById('fAvailability').value = p?.availability || 'yes';
+  document.getElementById('fDimensions').value = p?.dimensions || '';
+  document.getElementById('fDetails').value = p?.details || '';
+  document.getElementById('fApplications').value = p?.applications || '';
+
+  const specs = typeof p?.specs === 'string' ? JSON.parse(p.specs || '{}') : (p?.specs || {});
+  document.getElementById('sType').value = specs.type || '';
+  document.getElementById('sFormFactor').value = specs.form_factor || '';
+  document.getElementById('sVoltage').value = specs.nominal_voltage || '';
+  document.getElementById('sCapacity').value = specs.capacity || '';
+  document.getElementById('sMaxV').value = specs.max_voltage || '';
+  document.getElementById('sMinV').value = specs.min_voltage || '';
+  document.getElementById('sCycles').value = specs.cycle_life || '';
+  document.getElementById('sCharge').value = specs.std_charge || '';
+  document.getElementById('sDischarge').value = specs.max_discharge || '';
+  document.getElementById('sWeight').value = specs.weight || '';
+  document.getElementById('sResistance').value = specs.internal_resistance || '';
+  document.getElementById('sTemp').value = specs.temp_range || '';
+  document.getElementById('sEnergy').value = specs.energy || '';
+  document.getElementById('sGrade').value = specs.grade || '';
+  document.getElementById('sCerts').value = specs.certifications || '';
+
+  renderImageGrid(JSON.parse(p?.images || '[]'), p?.id);
+}
+
+function renderImageGrid(images, productId) {
+  const grid = document.getElementById('imgGrid');
+  grid.innerHTML = images.map(f => `
+    <div class="img-thumb">
+      <img src="/uploads/${f}" />
+      <button type="button" class="img-del" onclick="deleteImage(${productId},'${f}')">×</button>
+    </div>`).join('');
+}
+
+function openAddModal() {
+  document.getElementById('modalTitle').textContent = 'Add Product';
+  document.getElementById('deleteBtn').style.display = 'none';
+  document.getElementById('saveBtn').textContent = 'Add Product';
+  fillForm(null);
+  switchTab('details');
+  document.getElementById('modal').classList.add('open');
+}
+
+function openEditModal(p) {
+  document.getElementById('modalTitle').textContent = 'Edit Product';
+  document.getElementById('deleteBtn').style.display = 'block';
+  document.getElementById('saveBtn').textContent = 'Save Changes';
+  fillForm(p);
+  switchTab('details');
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+function buildPayload() {
+  return {
+    sku: document.getElementById('fSku').value.trim(),
+    category: document.getElementById('fCategory').value.trim(),
+    name: document.getElementById('fName').value.trim(),
+    price: document.getElementById('fPrice').value.trim(),
+    new_price: document.getElementById('fNewPrice').value.trim(),
+    unit: document.getElementById('fUnit').value,
+    min_quantity: parseInt(document.getElementById('fMinQty').value) || 1,
+    availability: document.getElementById('fAvailability').value,
+    dimensions: document.getElementById('fDimensions').value.trim(),
+    details: document.getElementById('fDetails').value.trim(),
+    applications: document.getElementById('fApplications').value.trim(),
+    specs: {
+      type: document.getElementById('sType').value.trim(),
+      form_factor: document.getElementById('sFormFactor').value.trim(),
+      nominal_voltage: document.getElementById('sVoltage').value.trim(),
+      capacity: document.getElementById('sCapacity').value.trim(),
+      max_voltage: document.getElementById('sMaxV').value.trim(),
+      min_voltage: document.getElementById('sMinV').value.trim(),
+      cycle_life: document.getElementById('sCycles').value.trim(),
+      std_charge: document.getElementById('sCharge').value.trim(),
+      max_discharge: document.getElementById('sDischarge').value.trim(),
+      weight: document.getElementById('sWeight').value.trim(),
+      internal_resistance: document.getElementById('sResistance').value.trim(),
+      temp_range: document.getElementById('sTemp').value.trim(),
+      energy: document.getElementById('sEnergy').value.trim(),
+      grade: document.getElementById('sGrade').value.trim(),
+      certifications: document.getElementById('sCerts').value.trim(),
+    }
+  };
+}
+
+async function saveProduct(e) {
+  e.preventDefault();
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  const id = document.getElementById('productId').value;
+  const payload = buildPayload();
+  try {
+    if (id) {
+      await fetch(`/api/products/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+      toast('Product updated!', 'success');
+    } else {
+      await fetch('/api/products', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+      toast('Product added!', 'success');
+    }
+    closeModal();
+    await loadProducts();
+  } catch(err) { toast(err.message, 'error'); }
+  btn.disabled = false;
+  btn.textContent = id ? 'Save Changes' : 'Add Product';
+}
+
+async function deleteProduct() {
+  const id = document.getElementById('productId').value;
+  if (!id || !confirm('Delete this product permanently?')) return;
+  await fetch(`/api/products/${id}`, { method:'DELETE' });
+  toast('Product deleted', 'success');
+  closeModal();
+  await loadProducts();
+}
+
+async function uploadImages() {
+  const id = document.getElementById('productId').value;
+  if (!id) { toast('Save the product first before uploading images', 'error'); return; }
+  const files = document.getElementById('imgFileInput').files;
+  if (!files.length) return;
+  const form = new FormData();
+  Array.from(files).forEach(f => form.append('images', f));
+  const res = await fetch(`/api/products/${id}/images`, { method:'POST', body:form });
+  const data = await res.json();
+  if (data.error) { toast(data.error, 'error'); return; }
+  renderImageGrid(data.images, id);
+  toast('Images uploaded!', 'success');
+  await loadProducts();
+}
+
+async function deleteImage(productId, filename) {
+  await fetch(`/api/products/${productId}/images/${filename}`, { method:'DELETE' });
+  const p = allProducts.find(x => x.id === productId);
+  if (p) {
+    const imgs = JSON.parse(p.images || '[]').filter(f => f !== filename);
+    p.images = JSON.stringify(imgs);
+    renderImageGrid(imgs, productId);
+  }
+  await loadProducts();
+}
+
+function toast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = type ? `show ${type}` : 'show';
+  setTimeout(() => el.className = '', 3000);
+}
+
+document.getElementById('modal').addEventListener('click', e => { if (e.target===e.currentTarget) closeModal(); });
+
+loadProducts();
+</script>
+</body>
+</html>
