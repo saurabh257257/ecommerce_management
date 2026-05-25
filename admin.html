@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Arambhika Enablers</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .nav-sec { padding: 10px 12px 4px; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .7px; }
+    .member-row { display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+    .member-row:last-child { border-bottom: none; }
+    .member-av { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .member-info { flex: 1; min-width: 0; }
+    .member-name { font-size: 14px; font-weight: 600; }
+    .member-role { font-size: 12px; color: var(--muted); margin-top: 1px; }
+    .member-link { font-size: 12px; color: var(--primary); text-decoration: none; }
+    .member-link:hover { text-decoration: underline; }
+    .color-swatch { width: 20px; height: 20px; border-radius: 50%; border: 2px solid rgba(0,0,0,.1); flex-shrink: 0; }
+
+    /* Add form */
+    .add-form { padding: 16px; border-top: 1px solid var(--border); background: var(--bg); }
+    .add-form .form-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+    .add-form .fg { display: flex; flex-direction: column; gap: 5px; }
+    .add-form label { font-size: 12px; font-weight: 600; color: var(--muted); }
+    .add-form input[type=text], .add-form input[type=color] { border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; font-size: 13px; font-family: inherit; outline: none; }
+    .add-form input[type=text]:focus { border-color: var(--primary); }
+    .add-form input[type=color] { width: 44px; height: 36px; padding: 2px 3px; cursor: pointer; }
+
+    .color-presets { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+    .color-preset { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform .12s; }
+    .color-preset:hover { transform: scale(1.2); }
+    .color-preset.sel { border-color: rgba(0,0,0,.3); transform: scale(1.15); }
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo"><h1>Arambhika</h1><p>Enablers Dashboard</p></div>
+  <nav class="sidebar-nav">
+    <a href="index.html" class="nav-link"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>Dashboard</a>
+    <a href="customers.html" class="nav-link"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>CRM</a>
+    <div class="nav-sec">Team</div>
+    <a href="rohan.html" class="nav-link"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zМ12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>Rohan</a>
+    <a href="saurabh.html" class="nav-link"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zМ12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>Saurabh</a>
+    <a href="orders.html" class="nav-link"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>Orders</a>
+    <a href="products.html" class="nav-link"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>Products</a>
+    <a href="database.html" class="nav-link"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>Database</a>
+  </nav>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <h2>Admin</h2>
+  </div>
+  <div class="content">
+
+    <div class="card" style="margin-bottom:24px;max-width:640px">
+      <div class="card-header">
+        <h3>Team Members</h3>
+        <span style="font-size:12px;color:var(--muted)" id="memberCount"></span>
+      </div>
+      <div id="memberList"></div>
+      <div class="add-form">
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px">Add New Member</div>
+        <div class="add-form form-row">
+          <div class="fg">
+            <label>Name *</label>
+            <input type="text" id="newName" placeholder="Team member name" style="width:160px" onkeydown="if(event.key==='Enter')addMember()" />
+          </div>
+          <div class="fg">
+            <label>Role</label>
+            <input type="text" id="newRole" placeholder="e.g. Sales, Support" style="width:140px" />
+          </div>
+          <div class="fg">
+            <label>Color</label>
+            <input type="color" id="newColor" value="#4f46e5" />
+          </div>
+          <button class="btn btn-primary" onclick="addMember()" style="align-self:flex-end">Add Member</button>
+        </div>
+        <div class="color-presets" id="colorPresets"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const PRESET_COLORS = ['#4f46e5','#7c3aed','#db2777','#dc2626','#ea580c','#d97706','#16a34a','#0891b2','#0284c7','#475569'];
+let members = [];
+
+async function init() {
+  renderColorPresets();
+  const r = await fetch('/api/team-members');
+  members = (await r.json()).data || [];
+  renderMembers();
+}
+
+function renderColorPresets() {
+  const el = document.getElementById('colorPresets');
+  const colorInput = document.getElementById('newColor');
+  el.innerHTML = PRESET_COLORS.map(c => `<div class="color-preset${colorInput.value===c?' sel':''}" style="background:${c}" onclick="selectColor('${c}')"></div>`).join('');
+}
+
+function selectColor(c) {
+  document.getElementById('newColor').value = c;
+  renderColorPresets();
+}
+
+function renderMembers() {
+  document.getElementById('memberCount').textContent = members.length + ' member' + (members.length!==1?'s':'');
+  const el = document.getElementById('memberList');
+  if (!members.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No team members yet</div>'; return; }
+  el.innerHTML = members.map(m => `
+    <div class="member-row" id="mr-${m.id}">
+      <div class="member-av" style="background:${m.color}">${(m.name||'?')[0].toUpperCase()}</div>
+      <div class="member-info">
+        <div class="member-name">${esc(m.name)}</div>
+        <div class="member-role">${m.role ? esc(m.role) : '<em style="opacity:.6">No role set</em>'}</div>
+      </div>
+      <a href="team.html?name=${encodeURIComponent(m.name)}" class="member-link">View Dashboard →</a>
+      <div class="color-swatch" style="background:${m.color}" title="${m.color}"></div>
+      <button class="btn btn-danger btn-sm" onclick="deleteMember(${m.id},'${esc(m.name).replace(/'/g,"\\'")}')">Remove</button>
+    </div>`).join('');
+}
+
+async function addMember() {
+  const name = document.getElementById('newName').value.trim();
+  const role = document.getElementById('newRole').value.trim();
+  const color = document.getElementById('newColor').value;
+  if (!name) { toast('Name is required', 'error'); return; }
+  const r = await fetch('/api/team-members', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name,role,color}) });
+  const d = await r.json();
+  if (d.error) { toast(d.error, 'error'); return; }
+  members.push({ id:d.id, name:d.name, role, color });
+  document.getElementById('newName').value = '';
+  document.getElementById('newRole').value = '';
+  renderMembers();
+  toast('Team member added', 'success');
+}
+
+async function deleteMember(id, name) {
+  if (!confirm(`Remove ${name} from the team? Their customers will become unassigned.`)) return;
+  await fetch(`/api/team-members/${id}`, { method:'DELETE' });
+  members = members.filter(m => m.id !== id);
+  renderMembers();
+  toast('Member removed', 'success');
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toast(msg,type=''){const el=document.getElementById('toast');el.textContent=msg;el.className=type?`show ${type}`:'show';setTimeout(()=>el.className='',3500);}
+
+init();
+</script>
+<script src="js/nav.js"></script>
+</body>
+</html>

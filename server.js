@@ -59,6 +59,12 @@ db.exec(`
     tag_id INTEGER NOT NULL,
     PRIMARY KEY (customer_id, tag_id)
   );
+  CREATE TABLE IF NOT EXISTS team_members (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    color TEXT DEFAULT '#4f46e5',
+    role TEXT DEFAULT ''
+  );
   CREATE TABLE IF NOT EXISTS orders (
     id TEXT PRIMARY KEY,
     customerName TEXT, product TEXT,
@@ -99,6 +105,9 @@ try {
     "UPDATE customers_v2 SET assigned_to='Unassigned' WHERE assigned_to NOT IN ('Rohan','Saurabh','Unassigned') OR assigned_to IS NULL OR assigned_to=''"
   ].join(';'));
 } catch(e) { console.log('Migration note:', e.message); }
+
+// Seed initial team members
+try { db.exec("INSERT OR IGNORE INTO team_members (name,color,role) VALUES ('Rohan','#1d4ed8','Sales'),('Saurabh','#15803d','Sales')"); } catch(e) {}
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
@@ -176,6 +185,28 @@ app.delete('/api/tags/:id', (req, res) => {
   db.prepare('DELETE FROM customer_tags WHERE tag_id=?').run(req.params.id);
   db.prepare('DELETE FROM tags WHERE id=?').run(req.params.id);
   res.json({ success: true });
+});
+
+// ── Team Members ─────────────────────────────────────────────
+app.get('/api/team-members', (req, res) => {
+  res.json({ data: db.prepare('SELECT * FROM team_members ORDER BY id').all() });
+});
+app.post('/api/team-members', (req, res) => {
+  const { name, color, role } = req.body;
+  if (!name) return res.status(400).json({ error: 'Name required' });
+  try {
+    const r = db.prepare('INSERT INTO team_members (name,color,role) VALUES (?,?,?)').run(name.trim(), color||'#4f46e5', role||'');
+    res.json({ success:true, id:r.lastInsertRowid, name:name.trim(), color:color||'#4f46e5', role:role||'' });
+  } catch(e) { res.status(400).json({ error:'Name already exists' }); }
+});
+app.put('/api/team-members/:id', (req, res) => {
+  const { color, role } = req.body;
+  db.prepare('UPDATE team_members SET color=?,role=? WHERE id=?').run(color||'#4f46e5', role||'', req.params.id);
+  res.json({ success:true });
+});
+app.delete('/api/team-members/:id', (req, res) => {
+  db.prepare('DELETE FROM team_members WHERE id=?').run(req.params.id);
+  res.json({ success:true });
 });
 
 // ── Customer tags ─────────────────────────────────────────────
