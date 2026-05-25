@@ -49,6 +49,16 @@ db.exec(`
     customer_id INTEGER NOT NULL,
     interest TEXT NOT NULL
   );
+  CREATE TABLE IF NOT EXISTS tags (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    color TEXT DEFAULT '#6366f1'
+  );
+  CREATE TABLE IF NOT EXISTS customer_tags (
+    customer_id INTEGER NOT NULL,
+    tag_id INTEGER NOT NULL,
+    PRIMARY KEY (customer_id, tag_id)
+  );
   CREATE TABLE IF NOT EXISTS orders (
     id TEXT PRIMARY KEY,
     customerName TEXT, product TEXT,
@@ -150,6 +160,35 @@ app.delete('/api/orders/:id', (req, res) => {
   res.json({ success: true });
 });
 
+// ── Tags ──────────────────────────────────────────────────────
+app.get('/api/tags', (req, res) => {
+  res.json({ data: db.prepare('SELECT * FROM tags ORDER BY name').all() });
+});
+app.post('/api/tags', (req, res) => {
+  const { name, color } = req.body;
+  if (!name) return res.status(400).json({ error: 'Name required' });
+  try {
+    const r = db.prepare('INSERT INTO tags (name, color) VALUES (?,?)').run(name.trim(), color || '#6366f1');
+    res.json({ success: true, id: r.lastInsertRowid, name: name.trim(), color: color || '#6366f1' });
+  } catch(e) { res.status(400).json({ error: 'Tag already exists' }); }
+});
+app.delete('/api/tags/:id', (req, res) => {
+  db.prepare('DELETE FROM customer_tags WHERE tag_id=?').run(req.params.id);
+  db.prepare('DELETE FROM tags WHERE id=?').run(req.params.id);
+  res.json({ success: true });
+});
+
+// ── Customer tags ─────────────────────────────────────────────
+app.post('/api/crm/customers/:id/tags', (req, res) => {
+  const { tag_id } = req.body;
+  db.prepare('INSERT OR IGNORE INTO customer_tags (customer_id, tag_id) VALUES (?,?)').run(req.params.id, tag_id);
+  res.json({ success: true });
+});
+app.delete('/api/crm/customers/:id/tags/:tagId', (req, res) => {
+  db.prepare('DELETE FROM customer_tags WHERE customer_id=? AND tag_id=?').run(req.params.id, req.params.tagId);
+  res.json({ success: true });
+});
+
 // ── Customers V2 (CRM) ───────────────────────────────────────
 app.get('/api/crm/customers', (req, res) => {
   const { assigned_to, status, search } = req.query;
@@ -160,7 +199,15 @@ app.get('/api/crm/customers', (req, res) => {
   if (search) { conds.push('(name LIKE ? OR company LIKE ? OR phone LIKE ?)'); params.push(...Array(3).fill(`%${search}%`)); }
   if (conds.length) sql += ' WHERE ' + conds.join(' AND ');
   sql += ' ORDER BY updated_at DESC';
-  res.json({ data: db.prepare(sql).all(...params) });
+  const customers = db.prepare(sql).all(...params);
+  if (customers.length) {
+    const ids = customers.map(c => c.id);
+    const tagRows = db.prepare(`SELECT ct.customer_id, t.id, t.name, t.color FROM customer_tags ct JOIN tags t ON ct.tag_id=t.id WHERE ct.customer_id IN (${ids.map(()=>'?').join(',')})`).all(...ids);
+    const byC = {};
+    tagRows.forEach(t => { if (!byC[t.customer_id]) byC[t.customer_id]=[]; byC[t.customer_id].push({id:t.id,name:t.name,color:t.color}); });
+    customers.forEach(c => { c.tags = byC[c.id] || []; });
+  }
+  res.json({ data: customers });
 });
 
 app.get('/api/crm/customers/:id', (req, res) => {
@@ -168,7 +215,8 @@ app.get('/api/crm/customers/:id', (req, res) => {
   if (!c) return res.status(404).json({ error: 'Not found' });
   const discussions = db.prepare('SELECT * FROM discussions WHERE customer_id=? ORDER BY created_at DESC').all(req.params.id);
   const interests = db.prepare('SELECT id, interest, quantity FROM customer_interests WHERE customer_id=?').all(req.params.id);
-  res.json({ ...c, discussions, interests });
+  const tags = db.prepare('SELECT t.id, t.name, t.color FROM customer_tags ct JOIN tags t ON ct.tag_id=t.id WHERE ct.customer_id=? ORDER BY t.name').all(req.params.id);
+  res.json({ ...c, discussions, interests, tags });
 });
 
 app.post('/api/crm/customers', (req, res) => {
@@ -298,8 +346,13 @@ app.post('/api/products/:id/images', upload.array('images', 10), (req, res) => {
     const ext = path.extname(f.originalname).toLowerCase() || '.jpg';
     const idx = existing.length + i + 1;
     const newName = `${safeId}_${safeSku}_${safeCat}_${safeName}_${idx}${ext}`;
-    try { fs.renameSync(path.join(uploadsDir, f.filename), path.join(uploadsDir, newName)); } catch(e) {}
-    return newName;
+    try {
+      fs.renameSync(path.join(uploadsDir, f.filename), path.join(uploadsDir, newName));
+      return newName;
+    } catch(e) {
+      console.error('Image rename failed:', e.message);
+      return f.filename;
+    }
   });
   const all = [...existing, ...newFiles];
   db.prepare('UPDATE products SET images=? WHERE id=?').run(JSON.stringify(all), req.params.id);

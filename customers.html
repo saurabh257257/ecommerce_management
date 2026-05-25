@@ -212,6 +212,37 @@
 
     /* Delete code modal */
     .del-code-input { letter-spacing: 8px; font-size: 22px; text-align: center; font-weight: 700; }
+
+    /* Tags */
+    .tag-badge { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; }
+    .tag-badge .tag-x { cursor:pointer; opacity:.6; font-size:13px; line-height:1; margin-left:2px; }
+    .tag-badge .tag-x:hover { opacity:1; }
+    .tags-row { display:flex; flex-wrap:wrap; gap:5px; align-items:center; margin-top:8px; }
+    .tag-add-btn { display:inline-flex; align-items:center; gap:3px; padding:2px 8px; border-radius:20px; border:1px dashed var(--border); font-size:11px; color:var(--muted); cursor:pointer; background:none; font-family:inherit; transition:all .15s; }
+    .tag-add-btn:hover { border-color:var(--primary); color:var(--primary); }
+    .tag-picker-wrap { position:relative; display:inline-block; }
+    .tag-picker-drop { position:absolute; top:calc(100%+4px); left:0; width:240px; background:var(--surface); border:1px solid var(--border); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.14); z-index:400; overflow:hidden; }
+    .tpd-search { padding:8px; border-bottom:1px solid var(--border); }
+    .tpd-search input { width:100%; border:1px solid var(--border); border-radius:6px; padding:5px 9px; font-size:13px; font-family:inherit; outline:none; box-sizing:border-box; }
+    .tpd-search input:focus { border-color:var(--primary); }
+    .tpd-list { max-height:200px; overflow-y:auto; }
+    .tpd-item { padding:7px 12px; cursor:pointer; display:flex; align-items:center; gap:8px; font-size:13px; border-bottom:1px solid var(--border); }
+    .tpd-item:last-child { border:none; }
+    .tpd-item:hover { background:var(--bg); }
+    .tpd-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+    .tpd-create { padding:8px 12px; border-top:1px solid var(--border); }
+    .tpd-create input { width:100%; border:1px solid var(--border); border-radius:6px; padding:5px 9px; font-size:12px; font-family:inherit; outline:none; box-sizing:border-box; }
+    .tpd-create input:focus { border-color:var(--primary); }
+    .tpd-colors { display:flex; gap:5px; padding:4px 12px 8px; flex-wrap:wrap; }
+    .tpd-col { width:18px; height:18px; border-radius:50%; cursor:pointer; border:2px solid transparent; transition:transform .12s; }
+    .tpd-col:hover,.tpd-col.sel { transform:scale(1.2); border-color:rgba(0,0,0,.2); }
+    .tag-filter-wrap { padding:6px 12px; border-bottom:1px solid var(--border); }
+    .tag-filter-label { font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
+    .tag-filter-chips { display:flex; flex-wrap:wrap; gap:4px; }
+    .tag-filter-chip { padding:2px 8px; border-radius:20px; font-size:11px; font-weight:600; cursor:pointer; border:1px solid transparent; transition:all .15s; opacity:.8; }
+    .tag-filter-chip:hover { opacity:1; }
+    .tag-filter-chip.active { opacity:1; box-shadow:0 0 0 2px rgba(0,0,0,.15); }
+    .ci-tags { display:flex; flex-wrap:wrap; gap:3px; margin-top:3px; }
   </style>
 </head>
 <body>
@@ -268,6 +299,10 @@
           </select>
         </div>
         <div class="list-count" id="listCount"></div>
+      </div>
+      <div class="tag-filter-wrap" id="tagFilterWrap" style="display:none">
+        <div class="tag-filter-label">Filter by Tag</div>
+        <div class="tag-filter-chips" id="tagFilterChips"></div>
       </div>
       <div class="crm-list" id="crmList"><div class="loading-msg">Loading…</div></div>
       <!-- Mic — shown when customer is selected -->
@@ -394,10 +429,13 @@ const COLORS = ['#6366f1','#8b5cf6','#06b6d4','#10b981','#f59e0b','#ef4444','#ec
 let all = [], selId = null, selC = null, fA = '';
 let addRec = null, noteRec = null, quickRec = null, addText = '';
 let allProducts = [], pickerOpen = false, pendingAI = null, delPendingId = null;
+let allTags = [], activeTag = '', tagPickerOpen = false, newTagColor = '#6366f1';
+
+const TAG_COLORS = ['#6366f1','#8b5cf6','#ec4899','#ef4444','#f97316','#f59e0b','#22c55e','#06b6d4','#0ea5e9','#64748b'];
 
 // ── Init ──────────────────────────────────────────────────────
 async function init() {
-  await Promise.all([loadAll(), loadProducts()]);
+  await Promise.all([loadAll(), loadProducts(), loadTags()]);
   const p = new URLSearchParams(location.search).get('id');
   if (p) selectC(parseInt(p));
 }
@@ -424,6 +462,7 @@ function applyFilters() {
   if (fA) list = list.filter(c => c.assigned_to === fA);
   if (st) list = list.filter(c => c.status === st);
   if (q) list = list.filter(c => ((c.name||'')+(c.company||'')+(c.phone||'')).toLowerCase().includes(q));
+  if (activeTag) list = list.filter(c => (c.tags||[]).some(t => t.id === activeTag));
   if (so === 'name') list = [...list].sort((a,b) => (a.name||'').localeCompare(b.name||''));
   else if (so === 'followup') list = [...list].sort((a,b) => (a.next_followup||'9') < (b.next_followup||'9') ? -1 : 1);
   document.getElementById('listCount').textContent = `${list.length} customer${list.length!==1?'s':''}`;
@@ -456,6 +495,7 @@ function renderList(list) {
         </div>
         ${c.phone?`<div class="ci-phone">📱 ${esc(c.phone)}</div>`:''}
         ${reqPrev?`<div class="ci-req">📋 ${reqPrev}</div>`:''}
+        ${(c.tags||[]).length?`<div class="ci-tags">${(c.tags||[]).map(t=>`<span class="tag-badge" style="background:${t.color}22;color:${t.color};border:1px solid ${t.color}55">${esc(t.name)}</span>`).join('')}</div>`:''}
       </div>
     </div>`;
   }).join('');
@@ -575,6 +615,20 @@ function renderDetail() {
           <select class="inline-sel" onchange="qupdateLog('assigned_to',this.value,'Assigned to '+this.value)">${aopts}</select>
           <button class="btn btn-danger btn-sm" onclick="delC(${c.id})">🗑 Delete</button>
         </div>
+        <div class="tags-row" id="custTagsRow">
+          ${renderCustTags(c.tags||[], c.id)}
+          <div class="tag-picker-wrap" id="tagPickerWrap">
+            <button class="tag-add-btn" onclick="openTagPicker(${c.id})">＋ Tag</button>
+            <div class="tag-picker-drop" id="tagPickerDrop" style="display:none">
+              <div class="tpd-search"><input id="tagPickerSearch" placeholder="Search tags…" oninput="renderTagPicker(${c.id})" /></div>
+              <div class="tpd-list" id="tagPickerList"></div>
+              <div class="tpd-create">
+                <input id="newTagName" placeholder="＋ Create new tag…" onkeydown="if(event.key==='Enter')createAndAddTag(${c.id})" />
+                <div class="tpd-colors" id="tpdColors"></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -669,6 +723,7 @@ function renderDetail() {
   // Close picker and photo menu on outside click
   document.addEventListener('click', pickerOutside);
   document.addEventListener('click', photoMenuOutside);
+  document.addEventListener('click', tagPickerOutside);
 }
 
 // ── Inline field editing ──────────────────────────────────────
@@ -807,6 +862,125 @@ async function logActivity(msg) {
   }
 }
 
+// ── Tags ──────────────────────────────────────────────────────
+async function loadTags() {
+  const r = await fetch('/api/tags');
+  allTags = (await r.json()).data || [];
+  renderTagFilterPanel();
+}
+
+function renderTagFilterPanel() {
+  const wrap = document.getElementById('tagFilterWrap');
+  const chips = document.getElementById('tagFilterChips');
+  if (!wrap || !chips) return;
+  if (!allTags.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  chips.innerHTML = allTags.map(t => {
+    const isActive = activeTag === t.id;
+    return `<span class="tag-filter-chip${isActive?' active':''}" onclick="setTagFilter(${t.id})"
+      style="background:${t.color}${isActive?'33':'18'};color:${t.color};border-color:${t.color}${isActive?'':'44'}">${esc(t.name)}</span>`;
+  }).join('');
+}
+
+function setTagFilter(id) {
+  activeTag = activeTag === id ? '' : id;
+  renderTagFilterPanel();
+  applyFilters();
+}
+
+function renderCustTags(tags, cid) {
+  return tags.map(t =>
+    `<span class="tag-badge" style="background:${t.color}22;color:${t.color};border:1px solid ${t.color}55">
+      ${esc(t.name)}<span class="tag-x" onclick="removeTagFromCustomer(${cid},${t.id},this)">×</span>
+    </span>`
+  ).join('');
+}
+
+async function removeTagFromCustomer(cid, tagId, el) {
+  await fetch(`/api/crm/customers/${cid}/tags/${tagId}`, { method:'DELETE' });
+  el.closest('.tag-badge').remove();
+  if (selC) selC.tags = (selC.tags||[]).filter(t => t.id !== tagId);
+  const li = all.find(c => c.id === cid);
+  if (li) { li.tags = (li.tags||[]).filter(t => t.id !== tagId); applyFilters(); }
+}
+
+function openTagPicker(cid) {
+  const drop = document.getElementById('tagPickerDrop');
+  if (!drop) return;
+  if (drop.style.display !== 'none') { closeTagPicker(); return; }
+  drop.style.display = 'block';
+  tagPickerOpen = true;
+  renderTagPickerColors();
+  renderTagPicker(cid);
+  setTimeout(() => document.getElementById('tagPickerSearch')?.focus(), 50);
+}
+
+function closeTagPicker() {
+  const drop = document.getElementById('tagPickerDrop');
+  if (drop) drop.style.display = 'none';
+  tagPickerOpen = false;
+}
+
+function renderTagPickerColors() {
+  const el = document.getElementById('tpdColors');
+  if (!el) return;
+  el.innerHTML = TAG_COLORS.map(c =>
+    `<div class="tpd-col${c===newTagColor?' sel':''}" style="background:${c}" onclick="selectTagColor('${c}')" title="${c}"></div>`
+  ).join('');
+}
+
+function selectTagColor(c) {
+  newTagColor = c;
+  renderTagPickerColors();
+}
+
+function renderTagPicker(cid) {
+  const q = (document.getElementById('tagPickerSearch')?.value||'').toLowerCase();
+  const el = document.getElementById('tagPickerList');
+  if (!el) return;
+  const existing = new Set((selC?.tags||[]).map(t => t.id));
+  let list = allTags.filter(t => !existing.has(t.id));
+  if (q) list = list.filter(t => t.name.toLowerCase().includes(q));
+  if (!list.length) { el.innerHTML = '<div style="padding:12px;font-size:13px;color:var(--muted);text-align:center">No tags to add</div>'; return; }
+  el.innerHTML = list.map(t =>
+    `<div class="tpd-item" onclick="addTagToCustomer(${cid},${t.id})">
+      <div class="tpd-dot" style="background:${t.color}"></div>
+      <span>${esc(t.name)}</span>
+    </div>`
+  ).join('');
+}
+
+async function addTagToCustomer(cid, tagId) {
+  await fetch(`/api/crm/customers/${cid}/tags`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({tag_id:tagId}) });
+  const tag = allTags.find(t => t.id === tagId);
+  if (!tag) return;
+  if (selC) { if (!selC.tags) selC.tags=[]; selC.tags.push(tag); }
+  const li = all.find(c => c.id === cid);
+  if (li) { if (!li.tags) li.tags=[]; li.tags.push(tag); applyFilters(); }
+  // Refresh tag badges in detail
+  const row = document.getElementById('custTagsRow');
+  const wrap = document.getElementById('tagPickerWrap');
+  if (row && wrap) {
+    row.innerHTML = renderCustTags(selC.tags||[], cid);
+    row.appendChild(wrap);
+  }
+  closeTagPicker();
+}
+
+async function createAndAddTag(cid) {
+  const nameEl = document.getElementById('newTagName');
+  const name = nameEl?.value.trim();
+  if (!name) return;
+  const r = await fetch('/api/tags', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name, color:newTagColor}) });
+  const d = await r.json();
+  if (d.error) { toast(d.error, 'error'); return; }
+  allTags.push({ id: d.id, name: d.name, color: d.color });
+  allTags.sort((a,b) => a.name.localeCompare(b.name));
+  renderTagFilterPanel();
+  if (nameEl) nameEl.value = '';
+  await addTagToCustomer(cid, d.id);
+}
+
 // ── Photo upload ──────────────────────────────────────────────
 function togglePhotoMenu(e) {
   e.stopPropagation();
@@ -903,6 +1077,11 @@ function pickerOutside(e) {
   if (!pickerOpen) return;
   const wrap = document.getElementById('pickerWrap');
   if (wrap && !wrap.contains(e.target)) closePicker();
+}
+function tagPickerOutside(e) {
+  if (!tagPickerOpen) return;
+  const wrap = document.getElementById('tagPickerWrap');
+  if (wrap && !wrap.contains(e.target)) closeTagPicker();
 }
 function renderPicker(cid) {
   const q = (document.getElementById('pickerSearch')?.value || '').toLowerCase();
