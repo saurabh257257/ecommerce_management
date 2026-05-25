@@ -287,10 +287,6 @@
         <div class="filter-row">
           <select class="sel" id="statusF" onchange="applyFilters()">
             <option value="">All Statuses</option>
-            <option value="Lead">Lead</option>
-            <option value="Contacted">Contacted</option>
-            <option value="Contacted but No Response">No Response</option>
-            <option value="Onboarded">Onboarded</option>
           </select>
           <select class="sel" id="sortF" onchange="applyFilters()">
             <option value="updated">Last Updated</option>
@@ -397,7 +393,7 @@
           <div class="form-group"><label>State</label><input id="a_state" placeholder="Maharashtra, Delhi…" /></div>
           <div class="form-group"><label>GST Number</label><input id="a_gst" placeholder="27XXXXX1234X1ZX" /></div>
           <div class="form-group"><label>Source</label><input id="a_src" placeholder="Expo, referral, online…" /></div>
-          <div class="form-group"><label>Status</label><select id="a_status"><option>Lead</option><option>Contacted</option><option>Contacted but No Response</option><option>Onboarded</option></select></div>
+          <div class="form-group"><label>Status</label><select id="a_status"><option>Lead</option></select></div>
           <div class="form-group"><label>Assigned To</label><select id="a_assigned"><option>Unassigned</option><option>Rohan</option><option>Saurabh</option></select></div>
           <div class="form-group"><label>Next Follow-up</label><input type="date" id="a_followup" /></div>
           <div class="form-group full"><label>Requirement</label><textarea id="a_req" rows="2" placeholder="What does the customer need?"></textarea></div>
@@ -418,8 +414,9 @@
 <div id="toast"></div>
 
 <script>
-const STATUSES = ['Lead','Contacted','Contacted but No Response','Onboarded'];
+let STATUSES = ['Lead','Contacted','Contacted but No Response','Onboarded'];
 const ASSIGNEES = ['Unassigned','Rohan','Saurabh'];
+let S_COLOR = {}; // name -> hex color from DB
 const S_BADGE = { Lead:'badge-yellow', Contacted:'badge-blue', 'Contacted but No Response':'badge-orange', Onboarded:'badge-green' };
 const A_CLASS = { Rohan:'asgn-rohan', Saurabh:'asgn-saurabh', Unassigned:'asgn-unassigned' };
 const T_ICON = { call:'📞', note:'📝', meeting:'🤝', message:'💬', activity:'⚡' };
@@ -435,9 +432,25 @@ const TAG_COLORS = ['#6366f1','#8b5cf6','#ec4899','#ef4444','#f97316','#f59e0b',
 
 // ── Init ──────────────────────────────────────────────────────
 async function init() {
-  await Promise.all([loadAll(), loadProducts(), loadTags()]);
+  await Promise.all([loadAll(), loadProducts(), loadTags(), loadStatuses()]);
   const p = new URLSearchParams(location.search).get('id');
   if (p) selectC(parseInt(p));
+}
+async function loadStatuses() {
+  try {
+    const r = await fetch('/api/statuses');
+    const data = (await r.json()).data || [];
+    if (data.length) {
+      STATUSES = data.map(s => s.name);
+      data.forEach(s => { S_COLOR[s.name] = s.color; });
+    }
+    // Populate filter dropdown
+    const sf = document.getElementById('statusF');
+    sf.innerHTML = '<option value="">All Statuses</option>' + STATUSES.map(s => `<option value="${s}">${s}</option>`).join('');
+    // Populate Add Customer modal dropdown
+    const as = document.getElementById('a_status');
+    as.innerHTML = STATUSES.map(s => `<option>${s}</option>`).join('');
+  } catch(e) {}
 }
 async function loadAll() {
   const r = await fetch('/api/crm/customers');

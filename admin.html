@@ -32,6 +32,12 @@
     .color-preset { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform .12s; }
     .color-preset:hover { transform: scale(1.2); }
     .color-preset.sel { border-color: rgba(0,0,0,.3); transform: scale(1.15); }
+
+    /* Tag / Status rows */
+    .tag-row { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--border); }
+    .tag-row:last-child { border-bottom: none; }
+    .tag-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; color: #fff; }
+    .tag-name { flex: 1; font-size: 14px; font-weight: 500; }
   </style>
 </head>
 <body>
@@ -83,6 +89,54 @@
       </div>
     </div>
 
+    <!-- Tags Management -->
+    <div class="card" style="margin-bottom:24px;max-width:640px">
+      <div class="card-header">
+        <h3>Tags</h3>
+        <span style="font-size:12px;color:var(--muted)" id="tagCount"></span>
+      </div>
+      <div id="tagList"></div>
+      <div class="add-form">
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px">Create New Tag</div>
+        <div class="add-form form-row">
+          <div class="fg">
+            <label>Tag Name *</label>
+            <input type="text" id="newTagName" placeholder="e.g. Hot Lead, VIP, Follow-up" style="width:200px" onkeydown="if(event.key==='Enter')addTag()" />
+          </div>
+          <div class="fg">
+            <label>Color</label>
+            <input type="color" id="newTagColor" value="#6366f1" />
+          </div>
+          <button class="btn btn-primary" onclick="addTag()" style="align-self:flex-end">Add Tag</button>
+        </div>
+        <div class="color-presets" id="tagColorPresets"></div>
+      </div>
+    </div>
+
+    <!-- Statuses Management -->
+    <div class="card" style="max-width:640px">
+      <div class="card-header">
+        <h3>Customer Statuses</h3>
+        <span style="font-size:12px;color:var(--muted)" id="statusCount"></span>
+      </div>
+      <div id="statusList"></div>
+      <div class="add-form">
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px">Create New Status</div>
+        <div class="add-form form-row">
+          <div class="fg">
+            <label>Status Name *</label>
+            <input type="text" id="newStatusName" placeholder="e.g. Negotiating, Trial, Churned" style="width:200px" onkeydown="if(event.key==='Enter')addStatus()" />
+          </div>
+          <div class="fg">
+            <label>Color</label>
+            <input type="color" id="newStatusColor" value="#6366f1" />
+          </div>
+          <button class="btn btn-primary" onclick="addStatus()" style="align-self:flex-end">Add Status</button>
+        </div>
+        <div class="color-presets" id="statusColorPresets"></div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -90,24 +144,108 @@
 
 <script>
 const PRESET_COLORS = ['#4f46e5','#7c3aed','#db2777','#dc2626','#ea580c','#d97706','#16a34a','#0891b2','#0284c7','#475569'];
-let members = [];
+let members = [], tags = [], statuses = [];
 
 async function init() {
-  renderColorPresets();
-  const r = await fetch('/api/team-members');
-  members = (await r.json()).data || [];
+  renderPresets('colorPresets', 'newColor', selectMemberColor);
+  renderPresets('tagColorPresets', 'newTagColor', selectTagColor);
+  renderPresets('statusColorPresets', 'newStatusColor', selectStatusColor);
+  const [mr, tr, sr] = await Promise.all([
+    fetch('/api/team-members').then(r => r.json()),
+    fetch('/api/tags').then(r => r.json()),
+    fetch('/api/statuses').then(r => r.json()),
+  ]);
+  members = mr.data || [];
+  tags = tr.data || [];
+  statuses = sr.data || [];
   renderMembers();
+  renderTags();
+  renderStatuses();
 }
 
-function renderColorPresets() {
-  const el = document.getElementById('colorPresets');
-  const colorInput = document.getElementById('newColor');
-  el.innerHTML = PRESET_COLORS.map(c => `<div class="color-preset${colorInput.value===c?' sel':''}" style="background:${c}" onclick="selectColor('${c}')"></div>`).join('');
+function renderPresets(elId, inputId, cb) {
+  const el = document.getElementById(elId);
+  const colorInput = document.getElementById(inputId);
+  el.innerHTML = PRESET_COLORS.map(c => `<div class="color-preset${colorInput.value===c?' sel':''}" style="background:${c}" onclick="(${cb.toString()})('${c}')"></div>`).join('');
 }
 
-function selectColor(c) {
+function selectMemberColor(c) {
   document.getElementById('newColor').value = c;
-  renderColorPresets();
+  renderPresets('colorPresets', 'newColor', selectMemberColor);
+}
+function selectTagColor(c) {
+  document.getElementById('newTagColor').value = c;
+  renderPresets('tagColorPresets', 'newTagColor', selectTagColor);
+}
+function selectStatusColor(c) {
+  document.getElementById('newStatusColor').value = c;
+  renderPresets('statusColorPresets', 'newStatusColor', selectStatusColor);
+}
+
+function renderTags() {
+  document.getElementById('tagCount').textContent = tags.length + ' tag' + (tags.length !== 1 ? 's' : '');
+  const el = document.getElementById('tagList');
+  if (!tags.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No tags yet</div>'; return; }
+  el.innerHTML = tags.map(t => `
+    <div class="tag-row" id="tr-${t.id}">
+      <span class="tag-chip" style="background:${t.color}">${esc(t.name)}</span>
+      <span class="tag-name" style="color:var(--muted);font-size:12px">${t.color}</span>
+      <button class="btn btn-danger btn-sm" onclick="deleteTag(${t.id},'${esc(t.name).replace(/'/g,"\\'")}')">Delete</button>
+    </div>`).join('');
+}
+
+function renderStatuses() {
+  document.getElementById('statusCount').textContent = statuses.length + ' status' + (statuses.length !== 1 ? 'es' : '');
+  const el = document.getElementById('statusList');
+  if (!statuses.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No statuses yet</div>'; return; }
+  el.innerHTML = statuses.map(s => `
+    <div class="tag-row" id="sr-${s.id}">
+      <span class="tag-chip" style="background:${s.color}">${esc(s.name)}</span>
+      <span style="flex:1"></span>
+      <button class="btn btn-danger btn-sm" onclick="deleteStatus(${s.id},'${esc(s.name).replace(/'/g,"\\'")}')">Delete</button>
+    </div>`).join('');
+}
+
+async function addTag() {
+  const name = document.getElementById('newTagName').value.trim();
+  const color = document.getElementById('newTagColor').value;
+  if (!name) { toast('Tag name is required', 'error'); return; }
+  const r = await fetch('/api/tags', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name, color}) });
+  const d = await r.json();
+  if (d.error) { toast(d.error, 'error'); return; }
+  tags.push({ id: d.id, name: d.name, color });
+  document.getElementById('newTagName').value = '';
+  renderTags();
+  toast('Tag created', 'success');
+}
+
+async function deleteTag(id, name) {
+  if (!confirm(`Delete tag "${name}"? It will be removed from all customers.`)) return;
+  await fetch(`/api/tags/${id}`, { method:'DELETE' });
+  tags = tags.filter(t => t.id !== id);
+  renderTags();
+  toast('Tag deleted', 'success');
+}
+
+async function addStatus() {
+  const name = document.getElementById('newStatusName').value.trim();
+  const color = document.getElementById('newStatusColor').value;
+  if (!name) { toast('Status name is required', 'error'); return; }
+  const r = await fetch('/api/statuses', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name, color}) });
+  const d = await r.json();
+  if (d.error) { toast(d.error, 'error'); return; }
+  statuses.push({ id: d.id, name: d.name, color });
+  document.getElementById('newStatusName').value = '';
+  renderStatuses();
+  toast('Status created', 'success');
+}
+
+async function deleteStatus(id, name) {
+  if (!confirm(`Delete status "${name}"? Customers with this status will keep it but it won't appear in filters.`)) return;
+  await fetch(`/api/statuses/${id}`, { method:'DELETE' });
+  statuses = statuses.filter(s => s.id !== id);
+  renderStatuses();
+  toast('Status deleted', 'success');
 }
 
 function renderMembers() {

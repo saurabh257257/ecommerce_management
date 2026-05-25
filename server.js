@@ -65,6 +65,12 @@ db.exec(`
     color TEXT DEFAULT '#4f46e5',
     role TEXT DEFAULT ''
   );
+  CREATE TABLE IF NOT EXISTS statuses (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    color TEXT DEFAULT '#6366f1',
+    sort_order INTEGER DEFAULT 0
+  );
   CREATE TABLE IF NOT EXISTS orders (
     id TEXT PRIMARY KEY,
     customerName TEXT, product TEXT,
@@ -108,6 +114,8 @@ try {
 
 // Seed initial team members
 try { db.exec("INSERT OR IGNORE INTO team_members (name,color,role) VALUES ('Rohan','#1d4ed8','Sales'),('Saurabh','#15803d','Sales')"); } catch(e) {}
+// Seed default statuses
+try { db.exec("INSERT OR IGNORE INTO statuses (name,color,sort_order) VALUES ('Lead','#f59e0b',1),('Contacted','#3b82f6',2),('Contacted but No Response','#f97316',3),('Onboarded','#22c55e',4)"); } catch(e) {}
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
@@ -184,6 +192,26 @@ app.post('/api/tags', (req, res) => {
 app.delete('/api/tags/:id', (req, res) => {
   db.prepare('DELETE FROM customer_tags WHERE tag_id=?').run(req.params.id);
   db.prepare('DELETE FROM tags WHERE id=?').run(req.params.id);
+  res.json({ success: true });
+});
+
+// ── Statuses ─────────────────────────────────────────────────
+app.get('/api/statuses', (req, res) => {
+  res.json({ data: db.prepare('SELECT * FROM statuses ORDER BY sort_order, name').all() });
+});
+app.post('/api/statuses', (req, res) => {
+  const { name, color } = req.body;
+  if (!name) return res.status(400).json({ error: 'Name required' });
+  try {
+    const maxOrder = db.prepare('SELECT MAX(sort_order) as m FROM statuses').get().m || 0;
+    const r = db.prepare('INSERT INTO statuses (name, color, sort_order) VALUES (?,?,?)').run(name.trim(), color || '#6366f1', maxOrder + 1);
+    res.json({ success: true, id: r.lastInsertRowid, name: name.trim(), color: color || '#6366f1' });
+  } catch(e) { res.status(400).json({ error: 'Status already exists' }); }
+});
+app.delete('/api/statuses/:id', (req, res) => {
+  const s = db.prepare('SELECT name FROM statuses WHERE id=?').get(req.params.id);
+  if (!s) return res.status(404).json({ error: 'Not found' });
+  db.prepare('DELETE FROM statuses WHERE id=?').run(req.params.id);
   res.json({ success: true });
 });
 
