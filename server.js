@@ -285,10 +285,20 @@ app.delete('/api/products/:id', (req, res) => {
 
 // Image upload
 app.post('/api/products/:id/images', upload.array('images', 10), (req, res) => {
-  const p = db.prepare('SELECT images FROM products WHERE id=?').get(req.params.id);
+  const p = db.prepare('SELECT * FROM products WHERE id=?').get(req.params.id);
   if (!p) return res.status(404).json({ error: 'Product not found' });
   const existing = JSON.parse(p.images || '[]');
-  const newFiles = req.files.map(f => f.filename);
+  const safeId = String(p.id);
+  const safeSku = (p.sku || 'sku').replace(/[^a-zA-Z0-9]/g, '_');
+  const safeCat = (p.category || 'cat').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
+  const safeName = (p.name || 'product').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 30);
+  const newFiles = req.files.map((f, i) => {
+    const ext = path.extname(f.originalname).toLowerCase() || '.jpg';
+    const idx = existing.length + i + 1;
+    const newName = `${safeId}_${safeSku}_${safeCat}_${safeName}_${idx}${ext}`;
+    try { fs.renameSync(path.join(uploadsDir, f.filename), path.join(uploadsDir, newName)); } catch(e) {}
+    return newName;
+  });
   const all = [...existing, ...newFiles];
   db.prepare('UPDATE products SET images=? WHERE id=?').run(JSON.stringify(all), req.params.id);
   res.json({ success: true, images: all });
@@ -520,18 +530,19 @@ Omit any field not clearly mentioned in the transcript. Today is ${new Date().to
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-// ── Image rename to sku_productname ───────────────────────────
+// ── Image rename to id_sku_category_name_N ───────────────────────────
 app.post('/api/products/:id/rename-images', (req, res) => {
   try {
     const p = db.prepare('SELECT * FROM products WHERE id=?').get(req.params.id);
     if (!p) return res.status(404).json({ error: 'Not found' });
     const images = JSON.parse(p.images || '[]');
+    const safeId = String(p.id);
     const safeSku = (p.sku || 'sku').replace(/[^a-zA-Z0-9]/g, '_');
+    const safeCat = (p.category || 'cat').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
     const safeName = (p.name || 'product').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 30);
     const newImages = images.map((oldFile, i) => {
-      const ext = path.extname(oldFile) || '.jpg';
-      const suffix = i > 0 ? `_${i + 1}` : '';
-      const newFile = `${safeSku}_${safeName}${suffix}${ext}`;
+      const ext = path.extname(oldFile).toLowerCase() || '.jpg';
+      const newFile = `${safeId}_${safeSku}_${safeCat}_${safeName}_${i + 1}${ext}`;
       const oldPath = path.join(uploadsDir, oldFile);
       const newPath = path.join(uploadsDir, newFile);
       if (fs.existsSync(oldPath) && !fs.existsSync(newPath)) fs.renameSync(oldPath, newPath);
