@@ -101,9 +101,10 @@
     .req-display { font-size: 14px; line-height: 1.65; color: var(--text); cursor: pointer; min-height: 28px; border-radius: 7px; padding: 6px 8px; transition: background .12s; }
     .req-display:hover { background: #f0f0ff; }
     .req-display.empty { color: var(--muted); font-style: italic; }
-    .req-ta { display: none; width: 100%; border: 1px solid #a5b4fc; border-radius: 8px; padding: 9px 12px; font-size: 14px; font-family: inherit; resize: vertical; outline: none; min-height: 80px; box-shadow: 0 0 0 3px #eef2ff; }
+    .req-ta { width: 100%; border: 1px solid #a5b4fc; border-radius: 8px; padding: 9px 12px; font-size: 14px; font-family: inherit; resize: vertical; outline: none; min-height: 80px; box-shadow: 0 0 0 3px #eef2ff; }
     .req-ta:focus { border-color: var(--primary); }
     .req-hint { font-size: 11px; color: var(--muted); margin-top: 5px; }
+    .req-actions { display: flex; gap: 8px; margin-top: 8px; }
 
     /* Follow-up */
     .fu-date { font-size: 18px; font-weight: 700; }
@@ -358,6 +359,8 @@
           <div class="form-group"><label>Phone</label><input id="a_phone" placeholder="+91 XXXXX XXXXX" /></div>
           <div class="form-group"><label>Email</label><input type="email" id="a_email" placeholder="email@example.com" /></div>
           <div class="form-group"><label>City</label><input id="a_city" placeholder="City" /></div>
+          <div class="form-group"><label>State</label><input id="a_state" placeholder="Maharashtra, Delhi…" /></div>
+          <div class="form-group"><label>GST Number</label><input id="a_gst" placeholder="27XXXXX1234X1ZX" /></div>
           <div class="form-group"><label>Source</label><input id="a_src" placeholder="Expo, referral, online…" /></div>
           <div class="form-group"><label>Status</label><select id="a_status"><option>Lead</option><option>Contacted</option><option>Contacted but No Response</option><option>Onboarded</option></select></div>
           <div class="form-group"><label>Assigned To</label><select id="a_assigned"><option>Unassigned</option><option>Rohan</option><option>Saurabh</option></select></div>
@@ -385,7 +388,7 @@ const ASSIGNEES = ['Unassigned','Rohan','Saurabh'];
 const S_BADGE = { Lead:'badge-yellow', Contacted:'badge-blue', 'Contacted but No Response':'badge-orange', Onboarded:'badge-green' };
 const A_CLASS = { Rohan:'asgn-rohan', Saurabh:'asgn-saurabh', Unassigned:'asgn-unassigned' };
 const T_ICON = { call:'📞', note:'📝', meeting:'🤝', message:'💬', activity:'⚡' };
-const FIELD_LABELS = { name:'Name', company:'Company', phone:'Phone', email:'Email', city:'City', source:'Source', status:'Status', assigned_to:'Assigned to', requirement:'Requirement', next_followup:'Follow-up' };
+const FIELD_LABELS = { name:'Name', company:'Company', phone:'Phone', email:'Email', city:'City', state:'State', gst_number:'GST Number', source:'Source', status:'Status', assigned_to:'Assigned to', requirement:'Requirement', next_followup:'Follow-up' };
 const COLORS = ['#6366f1','#8b5cf6','#06b6d4','#10b981','#f59e0b','#ef4444','#ec4899','#0ea5e9'];
 
 let all = [], selId = null, selC = null, fA = '';
@@ -558,6 +561,14 @@ function renderDetail() {
             <span class="ef-val${!c.email?' ef-ph':''}">✉️ ${esc(c.email||'Email')}</span>
             <input class="ef-inp" type="email" value="${esc(c.email||'')}" placeholder="Email" />
           </span>
+          <span class="ef dh-contact-ef" data-field="state" onclick="startEdit(this)">
+            <span class="ef-val${!c.state?' ef-ph':''}">🗺 ${esc(c.state||'State')}</span>
+            <input class="ef-inp" type="text" value="${esc(c.state||'')}" placeholder="State" />
+          </span>
+          <span class="ef dh-contact-ef" data-field="gst_number" onclick="startEdit(this)">
+            <span class="ef-val${!c.gst_number?' ef-ph':''}">🧾 ${esc(c.gst_number||'GST Number')}</span>
+            <input class="ef-inp" type="text" value="${esc(c.gst_number||'')}" placeholder="GST Number" />
+          </span>
         </div>
         <div class="dh-selects">
           <select class="inline-sel" onchange="qupdateLog('status',this.value,'Status changed to '+this.value)">${sopts}</select>
@@ -572,11 +583,15 @@ function renderDetail() {
   <div class="sec">
     <div class="sec-head">
       <span class="sec-title">📋 Details</span>
-      <span style="font-size:11px;color:var(--muted)">click to edit</span>
+      <span id="reqClickHint" style="font-size:11px;color:var(--muted)">click to edit</span>
     </div>
     <div class="req-display${!c.requirement?' empty':''}" id="reqDisplay" onclick="startReqEdit()">${c.requirement ? esc(c.requirement).replace(/\n/g,'<br>') : 'Click to add customer details, requirement, what they need…'}</div>
-    <textarea class="req-ta" id="reqTa" placeholder="Customer details, requirement, what they need…">${esc(c.requirement||'')}</textarea>
-    <div class="req-hint" id="reqHint" style="display:none">Ctrl+Enter to save • Esc to cancel</div>
+    <textarea class="req-ta" id="reqTa" style="display:none" placeholder="Customer details, requirement, what they need…">${esc(c.requirement||'')}</textarea>
+    <div class="req-actions" id="reqActions" style="display:none">
+      <button class="btn btn-primary btn-sm" onclick="saveReqInline()">Save</button>
+      <button class="btn btn-outline btn-sm" onclick="cancelReqInline()">Cancel</button>
+      <span class="req-hint" style="display:block;margin:0;align-self:center">Ctrl+Enter to save</span>
+    </div>
   </div>
 
   <!-- ── 3. Follow-up ── -->
@@ -646,7 +661,6 @@ function renderDetail() {
 
   // Requirement inline edit wiring
   const reqTa = document.getElementById('reqTa');
-  reqTa.onblur = saveReqInline;
   reqTa.onkeydown = e => {
     if (e.key === 'Escape') cancelReqInline();
     if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); saveReqInline(); }
@@ -681,7 +695,7 @@ async function commitEditEl(el) {
   const oldVal = String(selC[field] || '');
   if (val === oldVal) return;
 
-  const prefix = { name:'', company:'🏢 ', city:'📍 ', source:'🔗 ', phone:'📱 ', email:'✉️ ' }[field] || '';
+  const prefix = { name:'', company:'🏢 ', city:'📍 ', state:'🗺 ', gst_number:'🧾 ', source:'🔗 ', phone:'📱 ', email:'✉️ ' }[field] || '';
   const ph = inp.placeholder;
   disp.textContent = prefix + (val || ph);
   disp.className = 'ef-val' + (val ? '' : ' ef-ph');
@@ -702,11 +716,13 @@ async function commitEditEl(el) {
 function startReqEdit() {
   const disp = document.getElementById('reqDisplay');
   const ta = document.getElementById('reqTa');
-  const hint = document.getElementById('reqHint');
-  if (!disp || disp.style.display === 'none') return; // already editing
+  const actions = document.getElementById('reqActions');
+  const hint = document.getElementById('reqClickHint');
+  if (!disp || ta.style.display === 'block') return; // already editing
   disp.style.display = 'none';
+  if (hint) hint.style.display = 'none';
   ta.style.display = 'block';
-  hint.style.display = '';
+  actions.style.display = 'flex';
   ta.focus();
   ta.selectionStart = ta.selectionEnd = ta.value.length;
 }
@@ -714,16 +730,20 @@ function cancelReqInline() {
   const ta = document.getElementById('reqTa');
   if (!ta) return;
   ta.value = selC.requirement || '';
-  document.getElementById('reqDisplay').style.display = '';
   ta.style.display = 'none';
-  document.getElementById('reqHint').style.display = 'none';
+  document.getElementById('reqActions').style.display = 'none';
+  const hint = document.getElementById('reqClickHint');
+  if (hint) hint.style.display = '';
+  document.getElementById('reqDisplay').style.display = '';
 }
 async function saveReqInline() {
   const ta = document.getElementById('reqTa');
   if (!ta || ta.style.display !== 'block') return;
   const val = ta.value.trim();
   ta.style.display = 'none';
-  document.getElementById('reqHint').style.display = 'none';
+  document.getElementById('reqActions').style.display = 'none';
+  const hint = document.getElementById('reqClickHint');
+  if (hint) hint.style.display = '';
   const disp = document.getElementById('reqDisplay');
   disp.style.display = '';
   if (val === (selC.requirement || '')) return;
@@ -1216,6 +1236,8 @@ async function saveAdd(e) {
     phone:document.getElementById('a_phone').value.trim(),
     email:document.getElementById('a_email').value.trim(),
     city:document.getElementById('a_city').value.trim(),
+    state:document.getElementById('a_state').value.trim(),
+    gst_number:document.getElementById('a_gst').value.trim(),
     source:document.getElementById('a_src').value.trim(),
     status:document.getElementById('a_status').value,
     assigned_to:document.getElementById('a_assigned').value,

@@ -74,6 +74,8 @@ db.exec(`
 // ── Idempotent schema migrations ─────────────────────────────
 try { db.exec("ALTER TABLE customer_interests ADD COLUMN quantity TEXT DEFAULT ''"); } catch(e) {}
 try { db.exec("ALTER TABLE customers_v2 ADD COLUMN photo TEXT DEFAULT ''"); } catch(e) {}
+try { db.exec("ALTER TABLE customers_v2 ADD COLUMN state TEXT DEFAULT ''"); } catch(e) {}
+try { db.exec("ALTER TABLE customers_v2 ADD COLUMN gst_number TEXT DEFAULT ''"); } catch(e) {}
 
 // ── Idempotent data migrations ────────────────────────────────
 try {
@@ -171,15 +173,15 @@ app.get('/api/crm/customers/:id', (req, res) => {
 
 app.post('/api/crm/customers', (req, res) => {
   const c = req.body;
-  const r = db.prepare(`INSERT INTO customers_v2 (name,company,phone,email,city,assigned_to,status,source,requirement,followup_action,next_followup,remark) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`)
-    .run(c.name, c.company||'', c.phone||'', c.email||'', c.city||'', c.assigned_to||'', c.status||'Lead', c.source||'', c.requirement||'', c.followup_action||'', c.next_followup||'', c.remark||'');
+  const r = db.prepare(`INSERT INTO customers_v2 (name,company,phone,email,city,state,gst_number,assigned_to,status,source,requirement,followup_action,next_followup,remark) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+    .run(c.name, c.company||'', c.phone||'', c.email||'', c.city||'', c.state||'', c.gst_number||'', c.assigned_to||'', c.status||'Lead', c.source||'', c.requirement||'', c.followup_action||'', c.next_followup||'', c.remark||'');
   res.json({ success: true, id: r.lastInsertRowid });
 });
 
 app.put('/api/crm/customers/:id', (req, res) => {
   const c = req.body;
-  db.prepare(`UPDATE customers_v2 SET name=?,company=?,phone=?,email=?,city=?,assigned_to=?,status=?,source=?,requirement=?,followup_action=?,next_followup=?,remark=?,updated_at=datetime('now') WHERE id=?`)
-    .run(c.name, c.company||'', c.phone||'', c.email||'', c.city||'', c.assigned_to||'', c.status||'Lead', c.source||'', c.requirement||'', c.followup_action||'', c.next_followup||'', c.remark||'', req.params.id);
+  db.prepare(`UPDATE customers_v2 SET name=?,company=?,phone=?,email=?,city=?,state=?,gst_number=?,assigned_to=?,status=?,source=?,requirement=?,followup_action=?,next_followup=?,remark=?,updated_at=datetime('now') WHERE id=?`)
+    .run(c.name, c.company||'', c.phone||'', c.email||'', c.city||'', c.state||'', c.gst_number||'', c.assigned_to||'', c.status||'Lead', c.source||'', c.requirement||'', c.followup_action||'', c.next_followup||'', c.remark||'', req.params.id);
   res.json({ success: true });
 });
 
