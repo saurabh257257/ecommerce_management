@@ -610,15 +610,44 @@ app.post('/api/products/:id/rename-images', (req, res) => {
 
 // ── Download all product images as ZIP ───────────────────────
 app.get('/api/download/images.zip', (req, res) => {
-  const { execSync } = require('child_process');
   try {
-    const imgs = fs.readdirSync(uploadsDir).filter(f => /\.(jpg|jpeg|png|gif|webp)$/i.test(f));
-    if (!imgs.length) return res.status(404).json({ error: 'No images found' });
+    const products = db.prepare('SELECT id, sku, category, name, images FROM products').all();
+    const finalFiles = [];
+
+    for (const p of products) {
+      const imgs = JSON.parse(p.images || '[]');
+      if (!imgs.length) continue;
+      const safeId = String(p.id);
+      const safeSku = (p.sku || 'sku').replace(/[^a-zA-Z0-9]/g, '_');
+      const safeCat = (p.category || 'cat').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
+      const safeName = (p.name || 'product').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 30);
+      const renamed = [];
+      imgs.forEach((oldFile, i) => {
+        const ext = path.extname(oldFile).toLowerCase() || '.jpg';
+        const newFile = `${safeId}_${safeSku}_${safeCat}_${safeName}_${i + 1}${ext}`;
+        const oldPath = path.join(uploadsDir, oldFile);
+        const newPath = path.join(uploadsDir, newFile);
+        if (!fs.existsSync(oldPath)) { renamed.push(null); return; }
+        if (oldFile !== newFile && !fs.existsSync(newPath)) {
+          try { fs.renameSync(oldPath, newPath); renamed.push(newFile); }
+          catch(e) { renamed.push(oldFile); return; }
+        } else {
+          renamed.push(fs.existsSync(newPath) ? newFile : oldFile);
+        }
+      });
+      // Update DB if any file was renamed
+      const cleanRenamed = renamed.filter(Boolean);
+      if (JSON.stringify(cleanRenamed) !== JSON.stringify(imgs)) {
+        db.prepare('UPDATE products SET images=? WHERE id=?').run(JSON.stringify(cleanRenamed), p.id);
+      }
+      cleanRenamed.forEach(f => { if (fs.existsSync(path.join(uploadsDir, f))) finalFiles.push(f); });
+    }
+
+    if (!finalFiles.length) return res.status(404).json({ error: 'No product images found' });
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', 'attachment; filename="product-images.zip"');
-    // Stream zip using zip command (available on all Linux systems)
     const { spawn } = require('child_process');
-    const zip = spawn('zip', ['-j', '-', ...imgs], { cwd: uploadsDir });
+    const zip = spawn('zip', ['-j', '-', ...finalFiles], { cwd: uploadsDir });
     zip.stdout.pipe(res);
     zip.stderr.on('data', () => {});
     zip.on('error', () => res.status(500).end());
