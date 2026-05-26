@@ -289,14 +289,14 @@
         <div class="car-dots" id="carDots"></div>
         <!-- Thumbnail strip -->
         <div class="img-strip" id="imgGrid">
-          <input type="file" id="imgFileInput" multiple accept="image/*" onchange="uploadImages()" style="display:none" />
+          <input type="file" id="imgFileInput" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff,.tif,.heic,.heif,.avif,.svg,.ico,.jfif,.pjpeg,.pjp" onchange="uploadImages()" style="display:none" />
           <div class="img-upload-box" onclick="document.getElementById('imgFileInput').click()">
             <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
             Add
           </div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;margin-top:4px">
-          <p style="font-size:12px;color:var(--muted);margin:0;flex:1">Max 5MB per image. Save product first before uploading.</p>
+          <p style="font-size:12px;color:var(--muted);margin:0;flex:1">Max 20MB. Supports JPG, PNG, WebP, GIF, BMP, HEIC, SVG and more. Save product first.</p>
           <button type="button" class="btn btn-outline btn-sm" onclick="renameImages()">
             <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
             Rename to SKU_Name
@@ -454,7 +454,7 @@ function renderImageGrid(images, productId) {
 
   const strip = document.getElementById('imgGrid');
   const uploadBtn = `
-    <input type="file" id="imgFileInput" multiple accept="image/*" onchange="uploadImages()" style="display:none" />
+    <input type="file" id="imgFileInput" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff,.tif,.heic,.heif,.avif,.svg,.ico,.jfif,.pjpeg,.pjp" onchange="uploadImages()" style="display:none" />
     <div class="img-upload-box" onclick="document.getElementById('imgFileInput').click()">
       <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
       Add
