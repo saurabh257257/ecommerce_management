@@ -488,7 +488,9 @@ function toast(msg, type='') {
 
 document.getElementById('modal').addEventListener('click', e => { if (e.target===e.currentTarget) closeModal(); });
 
-loadProducts();
+loadProducts().then(() => {
+  if (new URLSearchParams(location.search).get('add') === '1') openAddModal();
+});
 </script>
 <script src="js/nav.js"></script>
 </body>

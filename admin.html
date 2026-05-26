@@ -89,6 +89,22 @@
       </div>
     </div>
 
+    <!-- Products -->
+    <div class="card" style="margin-bottom:24px;max-width:640px">
+      <div class="card-header">
+        <h3>Products</h3>
+        <span style="font-size:12px;color:var(--muted)" id="productAdminCount"></span>
+      </div>
+      <div style="padding:16px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <a href="products.html?add=1" class="btn btn-primary">
+          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="margin-right:6px"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Add Product
+        </a>
+        <a href="products.html" class="btn btn-outline">View All Products</a>
+        <a href="/api/download/products.csv" class="btn btn-outline">Download SKU CSV</a>
+      </div>
+    </div>
+
     <!-- Tags Management -->
     <div class="card" style="margin-bottom:24px;max-width:640px">
       <div class="card-header">
@@ -150,14 +166,18 @@ async function init() {
   renderPresets('colorPresets', 'newColor', selectMemberColor);
   renderPresets('tagColorPresets', 'newTagColor', selectTagColor);
   renderPresets('statusColorPresets', 'newStatusColor', selectStatusColor);
-  const [mr, tr, sr] = await Promise.all([
+  const [mr, tr, sr, pr] = await Promise.all([
     fetch('/api/team-members').then(r => r.json()),
     fetch('/api/tags').then(r => r.json()),
     fetch('/api/statuses').then(r => r.json()),
+    fetch('/api/products').then(r => r.json()),
   ]);
   members = mr.data || [];
   tags = tr.data || [];
   statuses = sr.data || [];
+  const products = pr.data || [];
+  const el = document.getElementById('productAdminCount');
+  if (el) el.textContent = products.length + ' product' + (products.length !== 1 ? 's' : '');
   renderMembers();
   renderTags();
   renderStatuses();
