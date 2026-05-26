@@ -73,6 +73,20 @@
     .lb-next { right:4px; }
 
     .avail-yes { color:#15803d; } .avail-order { color:#a16207; } .avail-no { color:#b91c1c; }
+
+    /* Product flags */
+    .product-flags { display:flex; flex-direction:column; gap:4px; padding:10px 14px 12px; border-top:1px solid var(--border); }
+    .flag-cb { display:flex; align-items:center; gap:7px; font-size:12px; color:var(--text); cursor:pointer; user-select:none; }
+    .flag-cb input[type=checkbox] { width:14px; height:14px; cursor:pointer; accent-color:var(--primary); flex-shrink:0; }
+    .flag-cb.checked { font-weight:600; }
+    .flag-cb .flag-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .flag-dot.avail { background:#22c55e; }
+    .flag-dot.oos { background:#ef4444; }
+    .flag-dot.internal { background:#8b5cf6; }
+    /* In-modal flags */
+    .modal-flags { display:flex; gap:20px; flex-wrap:wrap; padding:12px 0 4px; }
+    .modal-flag-cb { display:flex; align-items:center; gap:7px; font-size:13px; cursor:pointer; }
+    .modal-flag-cb input { width:15px; height:15px; cursor:pointer; accent-color:var(--primary); }
   </style>
 </head>
 <body>
@@ -218,6 +232,26 @@
             <label>Applications</label>
             <textarea id="fApplications" rows="2"></textarea>
           </div>
+          <div class="form-group full">
+            <label>Flags</label>
+            <div class="modal-flags">
+              <label class="modal-flag-cb">
+                <input type="checkbox" id="fFlagAvail" />
+                <span class="flag-dot avail" style="width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0"></span>
+                Available
+              </label>
+              <label class="modal-flag-cb">
+                <input type="checkbox" id="fFlagOos" />
+                <span class="flag-dot oos" style="width:8px;height:8px;border-radius:50%;background:#ef4444;flex-shrink:0"></span>
+                Out of Stock
+              </label>
+              <label class="modal-flag-cb">
+                <input type="checkbox" id="fFlagInternal" />
+                <span class="flag-dot internal" style="width:8px;height:8px;border-radius:50%;background:#8b5cf6;flex-shrink:0"></span>
+                For Internal
+              </label>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -333,10 +367,11 @@ function renderGrid(list) {
     const thumb = imgs.length ? `<img src="/uploads/${imgs[0]}" alt="${p.name}" />` : `<div class="product-img" style="height:160px">No image</div>`;
     const badge = imgs.length > 1 ? `<span class="img-count-badge">🖼 ${imgs.length}</span>` : '';
     const avail = p.availability || 'yes';
+    const fa = !!p.flag_available, fo = !!p.flag_out_of_stock, fi = !!p.flag_for_internal;
     return `
-    <div class="product-card" onclick='openEditModal(${JSON.stringify(p)})'>
-      <div class="product-img-wrap"><div class="product-img">${thumb}</div>${badge}</div>
-      <div class="product-body">
+    <div class="product-card" id="pc-${p.id}">
+      <div class="product-img-wrap" onclick='openEditModal(${JSON.stringify(p).replace(/'/g,"&#39;")})' style="cursor:pointer"><div class="product-img">${thumb}</div>${badge}</div>
+      <div class="product-body" onclick='openEditModal(${JSON.stringify(p).replace(/'/g,"&#39;")})' style="cursor:pointer">
         <div class="product-cat">${p.category}</div>
         <div class="product-name">${p.name}</div>
         <div class="product-meta">
@@ -346,6 +381,20 @@ function renderGrid(list) {
           </div>
           <span class="${availClass[avail]||'avail-yes'}" style="font-size:12px;font-weight:500">${availLabel[avail]||avail}</span>
         </div>
+      </div>
+      <div class="product-flags">
+        <label class="flag-cb${fa?' checked':''}" onclick="event.stopPropagation()">
+          <input type="checkbox" ${fa?'checked':''} onchange="toggleFlag(${p.id},'flag_available',this.checked)" />
+          <span class="flag-dot avail"></span> Available
+        </label>
+        <label class="flag-cb${fo?' checked':''}" onclick="event.stopPropagation()">
+          <input type="checkbox" ${fo?'checked':''} onchange="toggleFlag(${p.id},'flag_out_of_stock',this.checked)" />
+          <span class="flag-dot oos"></span> Out of Stock
+        </label>
+        <label class="flag-cb${fi?' checked':''}" onclick="event.stopPropagation()">
+          <input type="checkbox" ${fi?'checked':''} onchange="toggleFlag(${p.id},'flag_for_internal',this.checked)" />
+          <span class="flag-dot internal"></span> For Internal
+        </label>
       </div>
     </div>`;
   }).join('');
@@ -371,6 +420,9 @@ function fillForm(p) {
   document.getElementById('fDimensions').value = p?.dimensions || '';
   document.getElementById('fDetails').value = p?.details || '';
   document.getElementById('fApplications').value = p?.applications || '';
+  document.getElementById('fFlagAvail').checked = !!p?.flag_available;
+  document.getElementById('fFlagOos').checked = !!p?.flag_out_of_stock;
+  document.getElementById('fFlagInternal').checked = !!p?.flag_for_internal;
 
   const specs = typeof p?.specs === 'string' ? JSON.parse(p.specs || '{}') : (p?.specs || {});
   document.getElementById('sType').value = specs.type || '';
@@ -490,6 +542,9 @@ function buildPayload() {
     dimensions: document.getElementById('fDimensions').value.trim(),
     details: document.getElementById('fDetails').value.trim(),
     applications: document.getElementById('fApplications').value.trim(),
+    flag_available: document.getElementById('fFlagAvail').checked ? 1 : 0,
+    flag_out_of_stock: document.getElementById('fFlagOos').checked ? 1 : 0,
+    flag_for_internal: document.getElementById('fFlagInternal').checked ? 1 : 0,
     specs: {
       type: document.getElementById('sType').value.trim(),
       form_factor: document.getElementById('sFormFactor').value.trim(),
@@ -564,6 +619,27 @@ async function deleteImage(productId, filename) {
     renderImageGrid(imgs, productId);
   }
   await loadProducts();
+}
+
+async function toggleFlag(productId, flagName, checked) {
+  const p = allProducts.find(x => x.id === productId);
+  if (!p) return;
+  p[flagName] = checked ? 1 : 0;
+  // Update label styling instantly
+  const card = document.getElementById('pc-' + productId);
+  if (card) {
+    card.querySelectorAll('.flag-cb').forEach(label => {
+      const cb = label.querySelector('input');
+      label.classList.toggle('checked', cb.checked);
+    });
+  }
+  try {
+    await fetch(`/api/products/${productId}/flags`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ flag_available: p.flag_available, flag_out_of_stock: p.flag_out_of_stock, flag_for_internal: p.flag_for_internal })
+    });
+  } catch(e) { toast('Save failed', 'error'); }
 }
 
 async function renameImages() {

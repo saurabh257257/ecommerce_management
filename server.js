@@ -98,6 +98,9 @@ try { db.exec("ALTER TABLE customer_interests ADD COLUMN quantity TEXT DEFAULT '
 try { db.exec("ALTER TABLE customers_v2 ADD COLUMN photo TEXT DEFAULT ''"); } catch(e) {}
 try { db.exec("ALTER TABLE customers_v2 ADD COLUMN state TEXT DEFAULT ''"); } catch(e) {}
 try { db.exec("ALTER TABLE customers_v2 ADD COLUMN gst_number TEXT DEFAULT ''"); } catch(e) {}
+try { db.exec("ALTER TABLE products ADD COLUMN flag_available INTEGER DEFAULT 0"); } catch(e) {}
+try { db.exec("ALTER TABLE products ADD COLUMN flag_out_of_stock INTEGER DEFAULT 0"); } catch(e) {}
+try { db.exec("ALTER TABLE products ADD COLUMN flag_for_internal INTEGER DEFAULT 0"); } catch(e) {}
 
 // ── Idempotent data migrations ────────────────────────────────
 try {
@@ -368,15 +371,22 @@ app.get('/api/products/:id', (req, res) => {
 
 app.post('/api/products', (req, res) => {
   const p = req.body;
-  const r = db.prepare(`INSERT INTO products (sku,category,name,price,new_price,availability,unit,min_quantity,dimensions,details,specs,applications,images) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-    .run(p.sku, p.category, p.name, p.price, p.new_price || '', p.availability || 'yes', p.unit, p.min_quantity || 1, p.dimensions || '', p.details || '', JSON.stringify(p.specs || {}), p.applications || '', '[]');
+  const r = db.prepare(`INSERT INTO products (sku,category,name,price,new_price,availability,unit,min_quantity,dimensions,details,specs,applications,images,flag_available,flag_out_of_stock,flag_for_internal) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+    .run(p.sku, p.category, p.name, p.price, p.new_price || '', p.availability || 'yes', p.unit, p.min_quantity || 1, p.dimensions || '', p.details || '', JSON.stringify(p.specs || {}), p.applications || '', '[]', p.flag_available?1:0, p.flag_out_of_stock?1:0, p.flag_for_internal?1:0);
   res.json({ success: true, id: r.lastInsertRowid });
 });
 
 app.put('/api/products/:id', (req, res) => {
   const p = req.body;
-  db.prepare(`UPDATE products SET sku=?,category=?,name=?,price=?,new_price=?,availability=?,unit=?,min_quantity=?,dimensions=?,details=?,specs=?,applications=?,updated_at=datetime('now') WHERE id=?`)
-    .run(p.sku, p.category, p.name, p.price, p.new_price || '', p.availability, p.unit, p.min_quantity, p.dimensions || '', p.details || '', JSON.stringify(p.specs || {}), p.applications || '', req.params.id);
+  db.prepare(`UPDATE products SET sku=?,category=?,name=?,price=?,new_price=?,availability=?,unit=?,min_quantity=?,dimensions=?,details=?,specs=?,applications=?,flag_available=?,flag_out_of_stock=?,flag_for_internal=?,updated_at=datetime('now') WHERE id=?`)
+    .run(p.sku, p.category, p.name, p.price, p.new_price || '', p.availability, p.unit, p.min_quantity, p.dimensions || '', p.details || '', JSON.stringify(p.specs || {}), p.applications || '', p.flag_available?1:0, p.flag_out_of_stock?1:0, p.flag_for_internal?1:0, req.params.id);
+  res.json({ success: true });
+});
+
+app.patch('/api/products/:id/flags', (req, res) => {
+  const { flag_available, flag_out_of_stock, flag_for_internal } = req.body;
+  db.prepare(`UPDATE products SET flag_available=?,flag_out_of_stock=?,flag_for_internal=?,updated_at=datetime('now') WHERE id=?`)
+    .run(flag_available?1:0, flag_out_of_stock?1:0, flag_for_internal?1:0, req.params.id);
   res.json({ success: true });
 });
 
