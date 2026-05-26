@@ -36,14 +36,41 @@
     .spec-table td { padding:8px 0; border-bottom:1px solid var(--border); }
     .spec-table td:first-child { color:var(--muted); font-weight:500; width:40%; }
 
-    /* Image grid */
-    .img-grid { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
-    .img-thumb { position:relative; width:90px; height:90px; border-radius:8px; overflow:hidden; border:1px solid var(--border); }
+    /* Carousel */
+    .img-carousel { position:relative; width:100%; height:280px; background:#f1f5f9; border-radius:10px; overflow:hidden; display:flex; align-items:center; justify-content:center; margin-bottom:10px; }
+    .img-carousel.empty { display:none; }
+    .car-main { width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
+    .car-main img { max-width:100%; max-height:280px; object-fit:contain; cursor:zoom-in; }
+    .car-btn { position:absolute; top:50%; transform:translateY(-50%); background:rgba(0,0,0,.45); color:#fff; border:none; border-radius:50%; width:36px; height:36px; font-size:22px; cursor:pointer; z-index:2; display:flex; align-items:center; justify-content:center; transition:background .15s; line-height:1; }
+    .car-btn:hover { background:rgba(0,0,0,.7); }
+    .car-prev { left:10px; }
+    .car-next { right:10px; }
+    .car-counter { position:absolute; bottom:8px; right:12px; background:rgba(0,0,0,.5); color:#fff; font-size:11px; padding:2px 8px; border-radius:20px; }
+    .car-dots { display:flex; gap:6px; justify-content:center; margin-bottom:10px; }
+    .car-dot { width:7px; height:7px; border-radius:50%; background:#cbd5e1; cursor:pointer; transition:background .15s; }
+    .car-dot.active { background:var(--primary); }
+    /* Thumbnail strip */
+    .img-strip { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+    .img-thumb { position:relative; width:72px; height:72px; border-radius:8px; overflow:hidden; border:2px solid var(--border); cursor:pointer; transition:border-color .15s; flex-shrink:0; }
+    .img-thumb.active { border-color:var(--primary); }
     .img-thumb img { width:100%; height:100%; object-fit:cover; }
-    .img-del { position:absolute; top:3px; right:3px; background:rgba(0,0,0,.5); color:#fff; border:none; border-radius:50%; width:20px; height:20px; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center; }
-    .img-upload-box { width:90px; height:90px; border:2px dashed var(--border); border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; color:var(--muted); font-size:11px; gap:4px; transition:border-color .15s; }
+    .img-del { position:absolute; top:2px; right:2px; background:rgba(0,0,0,.55); color:#fff; border:none; border-radius:50%; width:18px; height:18px; cursor:pointer; font-size:11px; display:flex; align-items:center; justify-content:center; }
+    .img-upload-box { width:72px; height:72px; border:2px dashed var(--border); border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; color:var(--muted); font-size:10px; gap:3px; transition:border-color .15s; flex-shrink:0; }
     .img-upload-box:hover { border-color:var(--primary); color:var(--primary); }
     #imgFileInput { display:none; }
+    /* Card image count badge */
+    .img-count-badge { position:absolute; bottom:6px; right:8px; background:rgba(0,0,0,.55); color:#fff; font-size:10px; font-weight:600; padding:2px 7px; border-radius:20px; }
+    .product-img-wrap { position:relative; }
+    /* Lightbox */
+    .lb-overlay { position:fixed; inset:0; background:rgba(0,0,0,.9); z-index:9999; display:flex; align-items:center; justify-content:center; animation:lbIn .15s ease; }
+    @keyframes lbIn { from{opacity:0} to{opacity:1} }
+    .lb-overlay img { max-width:90vw; max-height:90vh; object-fit:contain; border-radius:6px; }
+    .lb-close { position:absolute; top:16px; right:20px; color:#fff; font-size:30px; cursor:pointer; opacity:.8; line-height:1; }
+    .lb-close:hover { opacity:1; }
+    .lb-nav { position:absolute; top:50%; transform:translateY(-50%); color:#fff; font-size:40px; cursor:pointer; padding:8px 16px; opacity:.7; user-select:none; }
+    .lb-nav:hover { opacity:1; }
+    .lb-prev { left:4px; }
+    .lb-next { right:4px; }
 
     .avail-yes { color:#15803d; } .avail-order { color:#a16207; } .avail-no { color:#b91c1c; }
   </style>
@@ -96,6 +123,10 @@
       <a href="/api/download/products.csv" class="btn btn-outline">
         <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
         Download SKU
+      </a>
+      <a href="/api/download/images.zip" class="btn btn-outline" id="dlImgBtn">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        Download Images
       </a>
       <button class="btn btn-primary" onclick="openAddModal()">
         <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
@@ -214,17 +245,29 @@
 
       <!-- Images Tab -->
       <div class="tab-panel" id="tab-images">
-        <div class="img-grid" id="imgGrid"></div>
-        <input type="file" id="imgFileInput" multiple accept="image/*" onchange="uploadImages()" />
-        <div class="img-upload-box" onclick="document.getElementById('imgFileInput').click()">
-          <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-          Upload Images
+        <!-- Carousel -->
+        <div class="img-carousel empty" id="imgCarousel">
+          <button type="button" class="car-btn car-prev" onclick="carNav(-1)">&#8249;</button>
+          <div class="car-main" id="carMain"></div>
+          <button type="button" class="car-btn car-next" onclick="carNav(1)">&#8250;</button>
+          <span class="car-counter" id="carCounter"></span>
         </div>
-        <p style="font-size:12px;color:var(--muted);margin-top:8px">Max 5MB per image. Save product details first before uploading images.</p>
-        <button type="button" class="btn btn-outline btn-sm" style="margin-top:8px" onclick="renameImages()">
-          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-          Rename to SKU_Name
-        </button>
+        <div class="car-dots" id="carDots"></div>
+        <!-- Thumbnail strip -->
+        <div class="img-strip" id="imgGrid">
+          <input type="file" id="imgFileInput" multiple accept="image/*" onchange="uploadImages()" style="display:none" />
+          <div class="img-upload-box" onclick="document.getElementById('imgFileInput').click()">
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            Add
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:4px">
+          <p style="font-size:12px;color:var(--muted);margin:0;flex:1">Max 5MB per image. Save product first before uploading.</p>
+          <button type="button" class="btn btn-outline btn-sm" onclick="renameImages()">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+            Rename to SKU_Name
+          </button>
+        </div>
       </div>
 
       <div class="modal-footer">
@@ -288,10 +331,11 @@ function renderGrid(list) {
   grid.innerHTML = list.map(p => {
     const imgs = JSON.parse(p.images || '[]');
     const thumb = imgs.length ? `<img src="/uploads/${imgs[0]}" alt="${p.name}" />` : `<div class="product-img" style="height:160px">No image</div>`;
+    const badge = imgs.length > 1 ? `<span class="img-count-badge">🖼 ${imgs.length}</span>` : '';
     const avail = p.availability || 'yes';
     return `
     <div class="product-card" onclick='openEditModal(${JSON.stringify(p)})'>
-      <div class="product-img">${thumb}</div>
+      <div class="product-img-wrap"><div class="product-img">${thumb}</div>${badge}</div>
       <div class="product-body">
         <div class="product-cat">${p.category}</div>
         <div class="product-name">${p.name}</div>
@@ -348,19 +392,74 @@ function fillForm(p) {
   renderImageGrid(JSON.parse(p?.images || '[]'), p?.id);
 }
 
+let carImages = [], carIdx = 0, carProductId = null;
+
 function renderImageGrid(images, productId) {
-  const grid = document.getElementById('imgGrid');
-  grid.innerHTML = images.map(f => `
-    <div class="img-thumb">
+  carImages = [...images];
+  carProductId = productId;
+  if (carIdx >= carImages.length) carIdx = Math.max(0, carImages.length - 1);
+  renderCarousel();
+
+  const strip = document.getElementById('imgGrid');
+  const uploadBtn = `
+    <input type="file" id="imgFileInput" multiple accept="image/*" onchange="uploadImages()" style="display:none" />
+    <div class="img-upload-box" onclick="document.getElementById('imgFileInput').click()">
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      Add
+    </div>`;
+  strip.innerHTML = images.map((f, i) => `
+    <div class="img-thumb${i===carIdx?' active':''}" onclick="carGoTo(${i})">
       <img src="/uploads/${f}" />
-      <button type="button" class="img-del" onclick="deleteImage(${productId},'${f}')">×</button>
-    </div>`).join('');
+      <button type="button" class="img-del" onclick="event.stopPropagation();deleteImage(${productId},'${f}')">×</button>
+    </div>`).join('') + uploadBtn;
 }
+
+function renderCarousel() {
+  const carousel = document.getElementById('imgCarousel');
+  const main = document.getElementById('carMain');
+  const dots = document.getElementById('carDots');
+  const counter = document.getElementById('carCounter');
+  if (!carImages.length) {
+    carousel.classList.add('empty');
+    dots.innerHTML = '';
+    return;
+  }
+  carousel.classList.remove('empty');
+  main.innerHTML = `<img src="/uploads/${carImages[carIdx]}" alt="" onclick="openLb(${carIdx})" />`;
+  counter.textContent = `${carIdx + 1} / ${carImages.length}`;
+  dots.innerHTML = carImages.map((_, i) => `<span class="car-dot${i===carIdx?' active':''}" onclick="carGoTo(${i})"></span>`).join('');
+  document.querySelectorAll('#imgGrid .img-thumb').forEach((t, i) => t.classList.toggle('active', i === carIdx));
+  document.querySelector('.car-prev').style.visibility = carImages.length <= 1 ? 'hidden' : '';
+  document.querySelector('.car-next').style.visibility = carImages.length <= 1 ? 'hidden' : '';
+}
+
+function carNav(dir) { carGoTo((carIdx + dir + carImages.length) % carImages.length); }
+function carGoTo(idx) { carIdx = idx; renderCarousel(); document.querySelectorAll('#imgGrid .img-thumb').forEach((t,i) => t.classList.toggle('active', i===idx)); }
+
+// ── Lightbox ──────────────────────────────────────────────────
+let lbIdx = 0;
+function openLb(idx) {
+  lbIdx = idx;
+  const lb = document.createElement('div');
+  lb.className = 'lb-overlay'; lb.id = 'lb';
+  lb.innerHTML = `
+    <span class="lb-close" onclick="closeLb()">&times;</span>
+    ${carImages.length > 1 ? `<span class="lb-nav lb-prev" onclick="lbNav(-1)">&#8249;</span>` : ''}
+    <img id="lbImg" src="/uploads/${carImages[lbIdx]}" />
+    ${carImages.length > 1 ? `<span class="lb-nav lb-next" onclick="lbNav(1)">&#8250;</span>` : ''}`;
+  document.body.appendChild(lb);
+  lb.addEventListener('click', e => { if (e.target === lb) closeLb(); });
+  document.addEventListener('keydown', lbKey);
+}
+function lbNav(dir) { lbIdx = (lbIdx + dir + carImages.length) % carImages.length; document.getElementById('lbImg').src = '/uploads/' + carImages[lbIdx]; }
+function closeLb() { document.getElementById('lb')?.remove(); document.removeEventListener('keydown', lbKey); }
+function lbKey(e) { if (e.key==='Escape') closeLb(); if (e.key==='ArrowLeft') lbNav(-1); if (e.key==='ArrowRight') lbNav(1); }
 
 function openAddModal() {
   document.getElementById('modalTitle').textContent = 'Add Product';
   document.getElementById('deleteBtn').style.display = 'none';
   document.getElementById('saveBtn').textContent = 'Add Product';
+  carIdx = 0;
   fillForm(null);
   switchTab('details');
   document.getElementById('modal').classList.add('open');
@@ -370,6 +469,7 @@ function openEditModal(p) {
   document.getElementById('modalTitle').textContent = 'Edit Product';
   document.getElementById('deleteBtn').style.display = 'block';
   document.getElementById('saveBtn').textContent = 'Save Changes';
+  carIdx = 0;
   fillForm(p);
   switchTab('details');
   document.getElementById('modal').classList.add('open');
