@@ -734,7 +734,7 @@ function renderDetail() {
       <textarea class="nc-textarea" id="noteText" placeholder="What happened? Outcome? Next steps?…" rows="2"></textarea>
       <div class="transcript-area" id="noteTranscript"></div>
       <div class="nc-bottom">
-        <span style="font-size:12px;color:var(--muted)">🎤 Record → AI writes the note</span>
+        <span style="font-size:12px;color:var(--muted)">🎤 Record → transcript saved as-is</span>
         <button class="btn btn-primary btn-sm" onclick="saveNote(${c.id})">Add to Timeline</button>
       </div>
     </div>
@@ -880,7 +880,9 @@ async function qupdateLog(field, val, logMsg) {
   if (logMsg) await logActivity(logMsg);
 }
 async function logActivity(msg) {
-  if (!selC) return;
+  if (!selC || !msg) return;
+  const last = selC?.discussions?.[0];
+  if (last && last.type === 'activity' && last.note === msg) return;
   const r = await fetch(`/api/crm/customers/${selC.id}/discussions`, {
     method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify({ note: msg, author: 'System', type: 'activity' })
@@ -1230,6 +1232,8 @@ function renderDiscs(discs) {
 async function saveNote(cid) {
   const text = document.getElementById('noteText').value.trim();
   if (!text) return toast('Please write a note first', 'error');
+  const last = selC?.discussions?.[0];
+  if (last && last.type !== 'activity' && last.note.trim() === text) return toast('Duplicate note — already saved', 'error');
   const type = document.getElementById('noteType').value;
   const author = selC?.assigned_to || 'Team';
   const r = await fetch(`/api/crm/customers/${cid}/discussions`, {
@@ -1267,19 +1271,13 @@ function toggleNoteMic() {
     ta.textContent = final + interim;
   };
   noteRec.onstart = () => { document.getElementById('noteMic').classList.add('rec'); document.getElementById('noteRecSt').textContent = 'Recording…'; };
-  noteRec.onend = async () => {
+  noteRec.onend = () => {
     noteRec = null; document.getElementById('noteMic').classList.remove('rec');
-    const transcript = final.trim();
-    if (!transcript) { ta.style.display = 'none'; document.getElementById('noteRecSt').textContent = ''; return; }
-    document.getElementById('noteRecSt').textContent = '⏳ AI writing…';
-    try {
-      const r = await fetch('/api/ai/extract-note', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({transcript,customerName:selC?.name})});
-      const d = await r.json();
-      document.getElementById('noteText').value = d.note || transcript;
-      ta.style.display = 'none';
-      toast('Note written by AI — review & save', 'success');
-    } catch { document.getElementById('noteText').value = transcript; ta.style.display = 'none'; }
     document.getElementById('noteRecSt').textContent = '';
+    const transcript = final.trim();
+    ta.style.display = 'none';
+    if (!transcript) return;
+    document.getElementById('noteText').value = transcript;
   };
   noteRec.start();
 }
