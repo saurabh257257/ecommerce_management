@@ -393,6 +393,7 @@
           <div class="form-group"><label>State</label><input id="a_state" placeholder="Maharashtra, Delhi…" /></div>
           <div class="form-group"><label>GST Number</label><input id="a_gst" placeholder="27XXXXX1234X1ZX" /></div>
           <div class="form-group"><label>Source</label><input id="a_src" placeholder="Expo, referral, online…" /></div>
+          <div class="form-group"><label>Customer Type</label><select id="a_ctype"><option value="">— None —</option></select></div>
           <div class="form-group"><label>Status</label><select id="a_status"><option>Lead</option></select></div>
           <div class="form-group"><label>Assigned To</label><select id="a_assigned"><option>Unassigned</option><option>Rohan</option><option>Saurabh</option></select></div>
           <div class="form-group"><label>Next Follow-up</label><input type="date" id="a_followup" /></div>
@@ -427,12 +428,13 @@ let all = [], selId = null, selC = null, fA = '';
 let addRec = null, noteRec = null, quickRec = null, addText = '';
 let allProducts = [], pickerOpen = false, pendingAI = null, delPendingId = null;
 let allTags = [], activeTag = '', tagPickerOpen = false, newTagColor = '#6366f1';
+let allCustTypes = [];
 
 const TAG_COLORS = ['#6366f1','#8b5cf6','#ec4899','#ef4444','#f97316','#f59e0b','#22c55e','#06b6d4','#0ea5e9','#64748b'];
 
 // ── Init ──────────────────────────────────────────────────────
 async function init() {
-  await Promise.all([loadAll(), loadProducts(), loadTags(), loadStatuses()]);
+  await Promise.all([loadAll(), loadProducts(), loadTags(), loadStatuses(), loadCustTypes()]);
   const p = new URLSearchParams(location.search).get('id');
   if (p) selectC(parseInt(p));
 }
@@ -450,6 +452,15 @@ async function loadStatuses() {
     // Populate Add Customer modal dropdown
     const as = document.getElementById('a_status');
     as.innerHTML = STATUSES.map(s => `<option>${s}</option>`).join('');
+  } catch(e) {}
+}
+async function loadCustTypes() {
+  try {
+    const r = await fetch('/api/customer-types');
+    allCustTypes = (await r.json()).data || [];
+    // Populate Add Customer modal
+    const sel = document.getElementById('a_ctype');
+    if (sel) sel.innerHTML = '<option value="">— None —</option>' + allCustTypes.map(t => `<option value="${t.name}" style="color:${t.color}">${t.name}</option>`).join('');
   } catch(e) {}
 }
 async function loadAll() {
@@ -504,6 +515,7 @@ function renderList(list) {
         <div class="ci-row">
           <span class="badge ${S_BADGE[c.status]||'badge-gray'}" style="font-size:10px;padding:2px 6px">${c.status||'—'}</span>
           <span class="asgn ${ac}">${c.assigned_to||'Unassigned'}</span>
+          ${(()=>{ const ct=allCustTypes.find(t=>t.name===c.customer_type); return ct?`<span style="font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600;background:${ct.color}22;color:${ct.color};border:1px solid ${ct.color}55">${esc(ct.name)}</span>`:''; })()}
           ${dueHtml}
         </div>
         ${c.phone?`<div class="ci-phone">📱 ${esc(c.phone)}</div>`:''}
@@ -556,6 +568,8 @@ function renderDetail() {
 
   const sopts = STATUSES.map(s=>`<option${c.status===s?' selected':''}>${s}</option>`).join('');
   const aopts = ASSIGNEES.map(a=>`<option${c.assigned_to===a?' selected':''}>${a}</option>`).join('');
+  const ctype = allCustTypes.find(t => t.name === c.customer_type);
+  const ctopts = `<option value="">— Type —</option>` + allCustTypes.map(t=>`<option value="${t.name}"${c.customer_type===t.name?' selected':''}>${t.name}</option>`).join('');
   const discussions = c.discussions || [];
   const interests = c.interests || [];
 
@@ -624,6 +638,7 @@ function renderDetail() {
           </span>
         </div>
         <div class="dh-selects">
+          <select class="inline-sel" onchange="onCtypeChange(this)" style="${ctype?`border-color:${ctype.color};color:${ctype.color};font-weight:600`:''}" id="ctypeSel">${ctopts}</select>
           <select class="inline-sel" onchange="qupdateLog('status',this.value,'Status changed to '+this.value)">${sopts}</select>
           <select class="inline-sel" onchange="qupdateLog('assigned_to',this.value,'Assigned to '+this.value)">${aopts}</select>
           <button class="btn btn-danger btn-sm" onclick="delC(${c.id})">🗑 Delete</button>
@@ -843,6 +858,13 @@ function addDays(n) {
   const iso = d.toISOString().split('T')[0];
   document.getElementById('fuDate').value = iso;
   onFuChange(iso);
+}
+
+function onCtypeChange(sel) {
+  const ct = allCustTypes.find(t => t.name === sel.value);
+  if (ct) { sel.style.borderColor = ct.color; sel.style.color = ct.color; sel.style.fontWeight = '600'; }
+  else { sel.style.borderColor = ''; sel.style.color = ''; sel.style.fontWeight = ''; }
+  qupdateLog('customer_type', sel.value, sel.value ? 'Customer type set to ' + sel.value : 'Customer type cleared');
 }
 
 // ── Update + log activity ─────────────────────────────────────
@@ -1431,6 +1453,7 @@ async function saveAdd(e) {
     state:document.getElementById('a_state').value.trim(),
     gst_number:document.getElementById('a_gst').value.trim(),
     source:document.getElementById('a_src').value.trim(),
+    customer_type:document.getElementById('a_ctype').value,
     status:document.getElementById('a_status').value,
     assigned_to:document.getElementById('a_assigned').value,
     next_followup:document.getElementById('a_followup').value,

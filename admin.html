@@ -129,6 +129,30 @@
       </div>
     </div>
 
+    <!-- Customer Types -->
+    <div class="card" style="margin-bottom:24px;max-width:640px">
+      <div class="card-header">
+        <h3>Customer Types</h3>
+        <span style="font-size:12px;color:var(--muted)" id="ctypeCount"></span>
+      </div>
+      <div id="ctypeList"></div>
+      <div class="add-form">
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px">Create New Type</div>
+        <div class="add-form form-row">
+          <div class="fg">
+            <label>Type Name *</label>
+            <input type="text" id="newCtypeName" placeholder="e.g. EV Battery, Supplier, OEM" style="width:200px" onkeydown="if(event.key==='Enter')addCtype()" />
+          </div>
+          <div class="fg">
+            <label>Color</label>
+            <input type="color" id="newCtypeColor" value="#0ea5e9" />
+          </div>
+          <button class="btn btn-primary" onclick="addCtype()" style="align-self:flex-end">Add Type</button>
+        </div>
+        <div class="color-presets" id="ctypeColorPresets"></div>
+      </div>
+    </div>
+
     <!-- Statuses Management -->
     <div class="card" style="max-width:640px">
       <div class="card-header">
@@ -160,27 +184,31 @@
 
 <script>
 const PRESET_COLORS = ['#4f46e5','#7c3aed','#db2777','#dc2626','#ea580c','#d97706','#16a34a','#0891b2','#0284c7','#475569'];
-let members = [], tags = [], statuses = [];
+let members = [], tags = [], statuses = [], ctypes = [];
 
 async function init() {
   renderPresets('colorPresets', 'newColor', selectMemberColor);
   renderPresets('tagColorPresets', 'newTagColor', selectTagColor);
   renderPresets('statusColorPresets', 'newStatusColor', selectStatusColor);
-  const [mr, tr, sr, pr] = await Promise.all([
+  renderPresets('ctypeColorPresets', 'newCtypeColor', selectCtypeColor);
+  const [mr, tr, sr, pr, ctr] = await Promise.all([
     fetch('/api/team-members').then(r => r.json()),
     fetch('/api/tags').then(r => r.json()),
     fetch('/api/statuses').then(r => r.json()),
     fetch('/api/products').then(r => r.json()),
+    fetch('/api/customer-types').then(r => r.json()),
   ]);
   members = mr.data || [];
   tags = tr.data || [];
   statuses = sr.data || [];
+  ctypes = ctr.data || [];
   const products = pr.data || [];
   const el = document.getElementById('productAdminCount');
   if (el) el.textContent = products.length + ' product' + (products.length !== 1 ? 's' : '');
   renderMembers();
   renderTags();
   renderStatuses();
+  renderCtypes();
 }
 
 function renderPresets(elId, inputId, cb) {
@@ -200,6 +228,43 @@ function selectTagColor(c) {
 function selectStatusColor(c) {
   document.getElementById('newStatusColor').value = c;
   renderPresets('statusColorPresets', 'newStatusColor', selectStatusColor);
+}
+function selectCtypeColor(c) {
+  document.getElementById('newCtypeColor').value = c;
+  renderPresets('ctypeColorPresets', 'newCtypeColor', selectCtypeColor);
+}
+
+function renderCtypes() {
+  document.getElementById('ctypeCount').textContent = ctypes.length + ' type' + (ctypes.length !== 1 ? 's' : '');
+  const el = document.getElementById('ctypeList');
+  if (!ctypes.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No customer types yet</div>'; return; }
+  el.innerHTML = ctypes.map(t => `
+    <div class="tag-row" id="ct-${t.id}">
+      <span class="tag-chip" style="background:${t.color}">${esc(t.name)}</span>
+      <span style="flex:1"></span>
+      <button class="btn btn-danger btn-sm" onclick="deleteCtype(${t.id},'${esc(t.name).replace(/'/g,"\\'")}')">Delete</button>
+    </div>`).join('');
+}
+
+async function addCtype() {
+  const name = document.getElementById('newCtypeName').value.trim();
+  const color = document.getElementById('newCtypeColor').value;
+  if (!name) { toast('Type name is required', 'error'); return; }
+  const r = await fetch('/api/customer-types', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name, color}) });
+  const d = await r.json();
+  if (d.error) { toast(d.error, 'error'); return; }
+  ctypes.push({ id: d.id, name: d.name, color });
+  document.getElementById('newCtypeName').value = '';
+  renderCtypes();
+  toast('Customer type created', 'success');
+}
+
+async function deleteCtype(id, name) {
+  if (!confirm(`Delete type "${name}"? Customers with this type will be untyped.`)) return;
+  await fetch(`/api/customer-types/${id}`, { method:'DELETE' });
+  ctypes = ctypes.filter(t => t.id !== id);
+  renderCtypes();
+  toast('Type deleted', 'success');
 }
 
 function renderTags() {

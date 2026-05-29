@@ -71,6 +71,12 @@ db.exec(`
     color TEXT DEFAULT '#6366f1',
     sort_order INTEGER DEFAULT 0
   );
+  CREATE TABLE IF NOT EXISTS customer_types (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    color TEXT DEFAULT '#0ea5e9',
+    sort_order INTEGER DEFAULT 0
+  );
   CREATE TABLE IF NOT EXISTS orders (
     id TEXT PRIMARY KEY,
     customerName TEXT, product TEXT,
@@ -99,6 +105,7 @@ try { db.exec("ALTER TABLE customers_v2 ADD COLUMN photo TEXT DEFAULT ''"); } ca
 try { db.exec("ALTER TABLE customers_v2 ADD COLUMN state TEXT DEFAULT ''"); } catch(e) {}
 try { db.exec("ALTER TABLE customers_v2 ADD COLUMN gst_number TEXT DEFAULT ''"); } catch(e) {}
 try { db.exec("ALTER TABLE products ADD COLUMN flag_available INTEGER DEFAULT 0"); } catch(e) {}
+try { db.exec("ALTER TABLE customers_v2 ADD COLUMN customer_type TEXT DEFAULT ''"); } catch(e) {}
 try { db.exec("ALTER TABLE products ADD COLUMN flag_out_of_stock INTEGER DEFAULT 0"); } catch(e) {}
 try { db.exec("ALTER TABLE products ADD COLUMN flag_for_internal INTEGER DEFAULT 0"); } catch(e) {}
 
@@ -119,6 +126,8 @@ try {
 try { db.exec("INSERT OR IGNORE INTO team_members (name,color,role) VALUES ('Rohan','#1d4ed8','Sales'),('Saurabh','#15803d','Sales')"); } catch(e) {}
 // Seed default statuses
 try { db.exec("INSERT OR IGNORE INTO statuses (name,color,sort_order) VALUES ('Lead','#f59e0b',1),('Contacted','#3b82f6',2),('Contacted but No Response','#f97316',3),('Onboarded','#22c55e',4)"); } catch(e) {}
+// Seed default customer types
+try { db.exec("INSERT OR IGNORE INTO customer_types (name,color,sort_order) VALUES ('EV Battery','#22c55e',1),('Supplier','#f97316',2),('Retailer','#3b82f6',3),('Distributor','#8b5cf6',4)"); } catch(e) {}
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
@@ -218,6 +227,24 @@ app.delete('/api/statuses/:id', (req, res) => {
   res.json({ success: true });
 });
 
+// ── Customer Types ────────────────────────────────────────────
+app.get('/api/customer-types', (req, res) => {
+  res.json({ data: db.prepare('SELECT * FROM customer_types ORDER BY sort_order, name').all() });
+});
+app.post('/api/customer-types', (req, res) => {
+  const { name, color } = req.body;
+  if (!name) return res.status(400).json({ error: 'Name required' });
+  try {
+    const maxOrder = db.prepare('SELECT MAX(sort_order) as m FROM customer_types').get().m || 0;
+    const r = db.prepare('INSERT INTO customer_types (name, color, sort_order) VALUES (?,?,?)').run(name.trim(), color || '#0ea5e9', maxOrder + 1);
+    res.json({ success: true, id: r.lastInsertRowid, name: name.trim(), color: color || '#0ea5e9' });
+  } catch(e) { res.status(400).json({ error: 'Type already exists' }); }
+});
+app.delete('/api/customer-types/:id', (req, res) => {
+  db.prepare('DELETE FROM customer_types WHERE id=?').run(req.params.id);
+  res.json({ success: true });
+});
+
 // ── Team Members ─────────────────────────────────────────────
 app.get('/api/team-members', (req, res) => {
   res.json({ data: db.prepare('SELECT * FROM team_members ORDER BY id').all() });
@@ -283,15 +310,15 @@ app.get('/api/crm/customers/:id', (req, res) => {
 
 app.post('/api/crm/customers', (req, res) => {
   const c = req.body;
-  const r = db.prepare(`INSERT INTO customers_v2 (name,company,phone,email,city,state,gst_number,assigned_to,status,source,requirement,followup_action,next_followup,remark) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-    .run(c.name, c.company||'', c.phone||'', c.email||'', c.city||'', c.state||'', c.gst_number||'', c.assigned_to||'', c.status||'Lead', c.source||'', c.requirement||'', c.followup_action||'', c.next_followup||'', c.remark||'');
+  const r = db.prepare(`INSERT INTO customers_v2 (name,company,phone,email,city,state,gst_number,assigned_to,status,source,requirement,followup_action,next_followup,remark,customer_type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+    .run(c.name, c.company||'', c.phone||'', c.email||'', c.city||'', c.state||'', c.gst_number||'', c.assigned_to||'', c.status||'Lead', c.source||'', c.requirement||'', c.followup_action||'', c.next_followup||'', c.remark||'', c.customer_type||'');
   res.json({ success: true, id: r.lastInsertRowid });
 });
 
 app.put('/api/crm/customers/:id', (req, res) => {
   const c = req.body;
-  db.prepare(`UPDATE customers_v2 SET name=?,company=?,phone=?,email=?,city=?,state=?,gst_number=?,assigned_to=?,status=?,source=?,requirement=?,followup_action=?,next_followup=?,remark=?,updated_at=datetime('now') WHERE id=?`)
-    .run(c.name, c.company||'', c.phone||'', c.email||'', c.city||'', c.state||'', c.gst_number||'', c.assigned_to||'', c.status||'Lead', c.source||'', c.requirement||'', c.followup_action||'', c.next_followup||'', c.remark||'', req.params.id);
+  db.prepare(`UPDATE customers_v2 SET name=?,company=?,phone=?,email=?,city=?,state=?,gst_number=?,assigned_to=?,status=?,source=?,requirement=?,followup_action=?,next_followup=?,remark=?,customer_type=?,updated_at=datetime('now') WHERE id=?`)
+    .run(c.name, c.company||'', c.phone||'', c.email||'', c.city||'', c.state||'', c.gst_number||'', c.assigned_to||'', c.status||'Lead', c.source||'', c.requirement||'', c.followup_action||'', c.next_followup||'', c.remark||'', c.customer_type||'', req.params.id);
   res.json({ success: true });
 });
 
