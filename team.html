@@ -24,13 +24,18 @@
     .tm-stat.warn   .tm-stat-v { color:#f59e0b; }
     .tm-stat.ok     .tm-stat-v { color:#16a34a; }
 
-    /* AI brief */
-    .brief-bar { padding:7px 12px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:7px; flex-shrink:0; background:var(--card); }
-    .brief-btn { font-size:11px; padding:4px 10px; border-radius:6px; border:1px solid var(--border); background:var(--bg); cursor:pointer; font-family:inherit; color:var(--text); white-space:nowrap; }
-    .brief-btn:hover { background:var(--primary); color:#fff; border-color:var(--primary); }
-    .brief-panel { padding:11px 13px; border-bottom:1px solid var(--border); background:#f0f9ff; display:none; flex-shrink:0; max-height:200px; overflow-y:auto; }
-    .brief-panel.open { display:block; }
-    .brief-text { font-size:12px; line-height:1.65; color:#0c4a6e; white-space:pre-wrap; }
+    /* AI brief — right panel */
+    .tm-brief-view { flex:1; display:flex; flex-direction:column; overflow:hidden; background:var(--bg); }
+    .brief-rh { padding:14px 20px 12px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; gap:10px; }
+    .brief-rh-title { font-size:15px; font-weight:700; }
+    .brief-rh-ts    { font-size:11px; color:var(--muted); margin-top:2px; }
+    .brief-rh-actions { display:flex; align-items:center; gap:7px; }
+    .brief-body { flex:1; overflow-y:auto; padding:20px 22px; }
+    .brief-loading { color:var(--muted); font-size:13px; display:flex; align-items:center; gap:8px; }
+    .brief-content { font-size:13px; line-height:1.8; color:var(--text); white-space:pre-wrap; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px 18px; }
+    .brief-empty { color:var(--muted); font-size:13px; text-align:center; padding:40px 20px; }
+    .detail-back { font-size:11px; color:var(--primary); cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:3px; margin-bottom:12px; background:none; border:none; font-family:inherit; padding:0; }
+    .detail-back:hover { text-decoration:underline; }
 
     /* Search + filter */
     .tm-search-bar { padding:8px 10px; border-bottom:1px solid var(--border); flex-shrink:0; }
@@ -55,9 +60,7 @@
 
     /* Right panel */
     .tm-right  { flex:1; display:flex; flex-direction:column; overflow:hidden; background:var(--bg); }
-    .tm-empty  { flex:1; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px; color:var(--muted); }
-    .tm-detail { flex:1; overflow-y:auto; padding:18px 22px; display:none; }
-    .tm-detail.open { display:block; }
+    .tm-detail { flex:1; overflow-y:auto; padding:18px 22px; }
 
     /* Detail */
     .d-head { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px; gap:12px; flex-wrap:wrap; }
@@ -133,7 +136,7 @@
   <div class="topbar" style="flex-shrink:0">
     <h2 id="pageTitle">Dashboard</h2>
     <div class="topbar-actions">
-      <button class="btn btn-outline btn-sm" onclick="loadBrief(true)">✨ AI Brief</button>
+      <button class="btn btn-outline btn-sm" onclick="showBrief()">🤖 Brief</button>
       <button class="btn btn-outline btn-sm" onclick="location.reload()">↻ Refresh</button>
       <a href="customers.html" class="btn btn-outline btn-sm">Full CRM</a>
     </div>
@@ -153,15 +156,6 @@
         </div>
       </div>
 
-      <div class="brief-bar">
-        <span style="font-size:11px;color:var(--muted);flex:1">🤖 AI daily brief</span>
-        <button class="brief-btn" onclick="loadBrief()" id="briefBtn">Generate</button>
-        <button class="brief-btn" onclick="toggleBrief()" id="briefToggle" style="display:none">Hide</button>
-      </div>
-      <div class="brief-panel" id="briefPanel">
-        <div class="brief-text" id="briefText"></div>
-      </div>
-
       <div class="tm-search-bar">
         <input type="text" id="tmSearch" placeholder="Search name, phone, email, company, city…" oninput="renderList()" />
       </div>
@@ -171,13 +165,25 @@
       </div>
     </div>
 
-    <!-- RIGHT: customer detail -->
+    <!-- RIGHT: AI brief (default) + customer detail -->
     <div class="tm-right">
-      <div class="tm-empty" id="tmEmpty">
-        <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-        <span style="font-size:14px">Select a customer to view details</span>
+      <!-- AI Brief view -->
+      <div class="tm-brief-view" id="tmBriefView">
+        <div class="brief-rh">
+          <div>
+            <div class="brief-rh-title">🤖 AI Daily Brief</div>
+            <div class="brief-rh-ts" id="briefTimestamp">—</div>
+          </div>
+          <div class="brief-rh-actions">
+            <button class="btn btn-outline btn-sm" id="briefRefreshBtn" onclick="loadBrief()">🔄 Refresh</button>
+          </div>
+        </div>
+        <div class="brief-body" id="briefBody">
+          <div class="brief-empty">Click <strong>🔄 Refresh</strong> to generate your daily brief.</div>
+        </div>
       </div>
-      <div class="tm-detail" id="tmDetail"></div>
+      <!-- Customer detail view (hidden by default) -->
+      <div class="tm-detail" id="tmDetail" style="display:none"></div>
     </div>
   </div>
 </div>
@@ -233,6 +239,8 @@ async function init() {
   const all = (await r.json()).data || [];
   mine = all.filter(c => (c.assigned_to||'').trim() === PERSON);
   renderStats(); buildFilterTabs(); renderList();
+  // Load last stored brief from localStorage
+  loadStoredBrief();
 }
 
 function todayISO() { return new Date().toISOString().split('T')[0]; }
@@ -290,13 +298,20 @@ async function selectC(id) {
   selId=id;
   document.querySelectorAll('.tm-item').forEach(el=>el.classList.remove('active'));
   const li=document.getElementById('li-'+id); if(li) li.classList.add('active');
-  document.getElementById('tmEmpty').style.display='none';
+  document.getElementById('tmBriefView').style.display='none';
   const detail=document.getElementById('tmDetail');
-  detail.classList.add('open');
+  detail.style.display='block';
   detail.innerHTML='<div style="padding:40px;text-align:center;color:var(--muted)">Loading…</div>';
   const r=await fetch(`/api/crm/customers/${id}`);
   selCust=await r.json();
   renderDetail();
+}
+
+function showBrief() {
+  selId=null; selCust=null;
+  document.querySelectorAll('.tm-item').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tmDetail').style.display='none';
+  document.getElementById('tmBriefView').style.display='flex';
 }
 
 function renderDetail() {
@@ -315,6 +330,7 @@ function renderDetail() {
   }).join(''):'<div style="color:var(--muted);font-size:12px">No activity yet</div>';
 
   document.getElementById('tmDetail').innerHTML=`
+    <button class="detail-back" onclick="showBrief()">← Back to Brief</button>
     <div class="d-head">
       <div>
         <div class="d-name">${esc(c.name)}</div>
@@ -406,23 +422,49 @@ async function saveFU(){
   toast('Follow-up date set','success');
 }
 
-async function loadBrief(force=false) {
-  const panel=document.getElementById('briefPanel'),text=document.getElementById('briefText'),btn=document.getElementById('briefBtn'),tog=document.getElementById('briefToggle');
-  if(!force&&panel.classList.contains('open'))return;
-  panel.classList.add('open');tog.style.display='';
-  text.textContent='⏳ Generating your daily brief…';
-  btn.disabled=true;btn.textContent='Generating…';
+function loadStoredBrief() {
+  const stored = localStorage.getItem('brief_' + PERSON);
+  if (!stored) return;
   try {
-    const r=await fetch('/api/ai/daily-brief',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({person:PERSON})});
-    const d=await r.json();
-    text.textContent=d.brief||d.error||'No brief generated.';
-    if(d.stats){document.getElementById('stOv').textContent=d.stats.overdue;document.getElementById('stTd').textContent=d.stats.dueToday;}
-  } catch(e){text.textContent='Could not load brief: '+e.message;}
-  btn.disabled=false;btn.textContent='Refresh';
+    const {text, ts} = JSON.parse(stored);
+    renderBriefContent(text, ts);
+  } catch(e) {}
 }
-function toggleBrief(){
-  const p=document.getElementById('briefPanel'),t=document.getElementById('briefToggle');
-  if(p.classList.contains('open')){p.classList.remove('open');t.textContent='Show';}else{p.classList.add('open');t.textContent='Hide';}
+
+function renderBriefContent(text, ts) {
+  const body = document.getElementById('briefBody');
+  const tsEl = document.getElementById('briefTimestamp');
+  if (ts) {
+    const d = new Date(ts);
+    tsEl.textContent = 'Last generated: ' + d.toLocaleDateString('en-IN',{day:'numeric',month:'short'}) + ' at ' + d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  }
+  body.innerHTML = `<div class="brief-content">${esc(text).replace(/\n/g,'<br>')}</div>`;
+}
+
+async function loadBrief() {
+  const btn = document.getElementById('briefRefreshBtn');
+  const body = document.getElementById('briefBody');
+  // Switch to brief view if on customer detail
+  showBrief();
+  body.innerHTML = '<div class="brief-loading">⏳ Generating your daily brief…</div>';
+  document.getElementById('briefTimestamp').textContent = 'Generating…';
+  btn.disabled = true; btn.textContent = '⏳ Loading…';
+  try {
+    const r = await fetch('/api/ai/daily-brief',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({person:PERSON})});
+    const d = await r.json();
+    const text = d.brief || d.error || 'No brief generated.';
+    const ts = new Date().toISOString();
+    localStorage.setItem('brief_' + PERSON, JSON.stringify({text, ts}));
+    renderBriefContent(text, ts);
+    if (d.stats) {
+      document.getElementById('stOv').textContent = d.stats.overdue;
+      document.getElementById('stTd').textContent = d.stats.dueToday;
+    }
+  } catch(e) {
+    body.innerHTML = `<div class="brief-empty">Could not load brief: ${esc(e.message)}</div>`;
+    document.getElementById('briefTimestamp').textContent = '—';
+  }
+  btn.disabled = false; btn.textContent = '🔄 Refresh';
 }
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
