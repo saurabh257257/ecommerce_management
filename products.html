@@ -134,14 +134,6 @@
         <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
         <input type="text" id="searchInput" placeholder="Search products…" oninput="filterProducts()" />
       </div>
-      <a href="/api/download/products.csv" class="btn btn-outline">
-        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-        Download SKU
-      </a>
-      <a href="/api/download/images.zip" class="btn btn-outline" id="dlImgBtn">
-        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-        Download Images
-      </a>
       <button class="btn btn-primary" onclick="openAddModal()">
         <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
         Add Product
@@ -295,13 +287,7 @@
             Add
           </div>
         </div>
-        <div style="display:flex;gap:8px;align-items:center;margin-top:4px">
-          <p style="font-size:12px;color:var(--muted);margin:0;flex:1">Max 20MB. Supports JPG, PNG, WebP, GIF, BMP, HEIC, SVG and more. Save product first.</p>
-          <button type="button" class="btn btn-outline btn-sm" onclick="renameImages()">
-            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-            Rename to SKU_Name
-          </button>
-        </div>
+        <p style="font-size:12px;color:var(--muted);margin:4px 0 0">Max 20MB. Supports JPG, PNG, WebP, GIF, BMP, HEIC, SVG and more. Save product first.</p>
       </div>
 
       <div class="modal-footer">
