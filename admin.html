@@ -8,36 +8,64 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
   <style>
-    .nav-sec { padding: 10px 12px 4px; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .7px; }
-    .member-row { display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+    /* ── Stat strip ── */
+    .stat-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+    .stat-box { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; display: flex; align-items: center; gap: 14px; }
+    .stat-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .stat-body { min-width: 0; }
+    .stat-val { font-size: 22px; font-weight: 700; line-height: 1; }
+    .stat-lbl { font-size: 11px; color: var(--muted); margin-top: 3px; text-transform: uppercase; letter-spacing: .5px; font-weight: 600; }
+
+    /* ── 3-column grid ── */
+    .admin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; align-items: start; }
+
+    /* ── Card overrides (compact) ── */
+    .admin-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+    .ac-head { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px 11px; border-bottom: 1px solid var(--border); }
+    .ac-head h3 { font-size: 13px; font-weight: 700; margin: 0; }
+    .ac-count { font-size: 11px; color: var(--muted); font-weight: 600; }
+
+    /* ── Member rows ── */
+    .member-row { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-bottom: 1px solid var(--border); }
     .member-row:last-child { border-bottom: none; }
-    .member-av { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0; }
-    .member-info { flex: 1; min-width: 0; }
-    .member-name { font-size: 14px; font-weight: 600; }
-    .member-role { font-size: 12px; color: var(--muted); margin-top: 1px; }
-    .member-link { font-size: 12px; color: var(--primary); text-decoration: none; }
+    .member-av { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .member-name { font-size: 13px; font-weight: 600; }
+    .member-role { font-size: 11px; color: var(--muted); }
+    .member-link { font-size: 11px; color: var(--primary); text-decoration: none; white-space: nowrap; }
     .member-link:hover { text-decoration: underline; }
-    .color-swatch { width: 20px; height: 20px; border-radius: 50%; border: 2px solid rgba(0,0,0,.1); flex-shrink: 0; }
 
-    /* Add form */
-    .add-form { padding: 16px; border-top: 1px solid var(--border); background: var(--bg); }
-    .add-form .form-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
-    .add-form .fg { display: flex; flex-direction: column; gap: 5px; }
-    .add-form label { font-size: 12px; font-weight: 600; color: var(--muted); }
-    .add-form input[type=text], .add-form input[type=color] { border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; font-size: 13px; font-family: inherit; outline: none; }
-    .add-form input[type=text]:focus { border-color: var(--primary); }
-    .add-form input[type=color] { width: 44px; height: 36px; padding: 2px 3px; cursor: pointer; }
-
-    .color-presets { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
-    .color-preset { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform .12s; }
-    .color-preset:hover { transform: scale(1.2); }
-    .color-preset.sel { border-color: rgba(0,0,0,.3); transform: scale(1.15); }
-
-    /* Tag / Status rows */
-    .tag-row { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--border); }
+    /* ── Tag / status / type rows ── */
+    .tag-row { display: flex; align-items: center; gap: 8px; padding: 7px 14px; border-bottom: 1px solid var(--border); }
     .tag-row:last-child { border-bottom: none; }
-    .tag-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; color: #fff; }
-    .tag-name { flex: 1; font-size: 14px; font-weight: 500; }
+    .tag-chip { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #fff; white-space: nowrap; }
+    .tag-spacer { flex: 1; }
+
+    /* ── Inline add form ── */
+    .add-form { padding: 10px 14px 12px; border-top: 1px solid var(--border); background: var(--bg); }
+    .add-row { display: flex; gap: 7px; align-items: center; }
+    .add-row input[type=text] { flex: 1; min-width: 0; border: 1px solid var(--border); border-radius: 8px; padding: 6px 9px; font-size: 12px; font-family: inherit; outline: none; background: var(--card); color: var(--text); }
+    .add-row input[type=text]:focus { border-color: var(--primary); }
+    .add-row input[type=color] { width: 34px; height: 32px; padding: 2px 3px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; flex-shrink: 0; background: var(--card); }
+    .color-presets { display: flex; gap: 5px; margin-top: 7px; flex-wrap: wrap; }
+    .color-preset { width: 18px; height: 18px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform .1s; }
+    .color-preset:hover { transform: scale(1.25); }
+    .color-preset.sel { border-color: rgba(0,0,0,.35); transform: scale(1.2); }
+
+    /* ── Products panel ── */
+    .prod-actions { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+    .prod-actions a, .prod-actions button { font-size: 12px; }
+    .prod-stat-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .empty-state { padding: 16px; text-align: center; color: var(--muted); font-size: 12px; }
+
+    @media (max-width: 900px) {
+      .admin-grid { grid-template-columns: 1fr 1fr; }
+      .stat-strip { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .admin-grid { grid-template-columns: 1fr; }
+      .stat-strip { grid-template-columns: repeat(2, 1fr); }
+    }
   </style>
 </head>
 <body>
@@ -57,125 +85,137 @@
 </aside>
 
 <div class="main">
-  <div class="topbar">
-    <h2>Admin</h2>
-  </div>
+  <div class="topbar"><h2>Admin</h2></div>
   <div class="content">
 
-    <div class="card" style="margin-bottom:24px;max-width:640px">
-      <div class="card-header">
-        <h3>Team Members</h3>
-        <span style="font-size:12px;color:var(--muted)" id="memberCount"></span>
+    <!-- Stat strip -->
+    <div class="stat-strip">
+      <div class="stat-box">
+        <div class="stat-icon" style="background:#ede9fe">📦</div>
+        <div class="stat-body">
+          <div class="stat-val" id="statProducts">—</div>
+          <div class="stat-lbl">Products</div>
+        </div>
       </div>
-      <div id="memberList"></div>
-      <div class="add-form">
-        <div style="font-size:13px;font-weight:600;margin-bottom:10px">Add New Member</div>
-        <div class="add-form form-row">
-          <div class="fg">
-            <label>Name *</label>
-            <input type="text" id="newName" placeholder="Team member name" style="width:160px" onkeydown="if(event.key==='Enter')addMember()" />
-          </div>
-          <div class="fg">
-            <label>Role</label>
-            <input type="text" id="newRole" placeholder="e.g. Sales, Support" style="width:140px" />
-          </div>
-          <div class="fg">
-            <label>Color</label>
+      <div class="stat-box">
+        <div class="stat-icon" style="background:#dbeafe">👥</div>
+        <div class="stat-body">
+          <div class="stat-val" id="statMembers">—</div>
+          <div class="stat-lbl">Team Members</div>
+        </div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-icon" style="background:#dcfce7">🏷️</div>
+        <div class="stat-body">
+          <div class="stat-val" id="statTags">—</div>
+          <div class="stat-lbl">Tags</div>
+        </div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-icon" style="background:#fef9c3">📊</div>
+        <div class="stat-body">
+          <div class="stat-val" id="statStatuses">—</div>
+          <div class="stat-lbl">Statuses</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3-column grid -->
+    <div class="admin-grid">
+
+      <!-- ── Col 1: Team Members ── -->
+      <div class="admin-card">
+        <div class="ac-head">
+          <h3>👥 Team Members</h3>
+          <span class="ac-count" id="memberCount"></span>
+        </div>
+        <div id="memberList"></div>
+        <div class="add-form">
+          <div class="add-row">
+            <input type="text" id="newName" placeholder="Name *" onkeydown="if(event.key==='Enter')addMember()" />
+            <input type="text" id="newRole" placeholder="Role" style="width:90px;flex:none" />
             <input type="color" id="newColor" value="#4f46e5" />
+            <button class="btn btn-primary btn-sm" onclick="addMember()">Add</button>
           </div>
-          <button class="btn btn-primary" onclick="addMember()" style="align-self:flex-end">Add Member</button>
+          <div class="color-presets" id="colorPresets"></div>
         </div>
-        <div class="color-presets" id="colorPresets"></div>
       </div>
-    </div>
 
-    <!-- Products -->
-    <div class="card" style="margin-bottom:24px;max-width:640px">
-      <div class="card-header">
-        <h3>Products</h3>
-        <span style="font-size:12px;color:var(--muted)" id="productAdminCount"></span>
-      </div>
-      <div style="padding:16px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <a href="products.html?add=1" class="btn btn-primary">
-          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="margin-right:6px"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-          Add Product
-        </a>
-        <a href="products.html" class="btn btn-outline">View All Products</a>
-        <a href="/api/download/products.csv" class="btn btn-outline">Download SKU CSV</a>
-      </div>
-    </div>
+      <!-- ── Col 2: Customer Types + Tags ── -->
+      <div style="display:flex;flex-direction:column;gap:18px">
 
-    <!-- Tags Management -->
-    <div class="card" style="margin-bottom:24px;max-width:640px">
-      <div class="card-header">
-        <h3>Tags</h3>
-        <span style="font-size:12px;color:var(--muted)" id="tagCount"></span>
-      </div>
-      <div id="tagList"></div>
-      <div class="add-form">
-        <div style="font-size:13px;font-weight:600;margin-bottom:10px">Create New Tag</div>
-        <div class="add-form form-row">
-          <div class="fg">
-            <label>Tag Name *</label>
-            <input type="text" id="newTagName" placeholder="e.g. Hot Lead, VIP, Follow-up" style="width:200px" onkeydown="if(event.key==='Enter')addTag()" />
+        <div class="admin-card">
+          <div class="ac-head">
+            <h3>🏢 Customer Types</h3>
+            <span class="ac-count" id="ctypeCount"></span>
           </div>
-          <div class="fg">
-            <label>Color</label>
-            <input type="color" id="newTagColor" value="#6366f1" />
+          <div id="ctypeList"></div>
+          <div class="add-form">
+            <div class="add-row">
+              <input type="text" id="newCtypeName" placeholder="Type name *" onkeydown="if(event.key==='Enter')addCtype()" />
+              <input type="color" id="newCtypeColor" value="#0ea5e9" />
+              <button class="btn btn-primary btn-sm" onclick="addCtype()">Add</button>
+            </div>
+            <div class="color-presets" id="ctypeColorPresets"></div>
           </div>
-          <button class="btn btn-primary" onclick="addTag()" style="align-self:flex-end">Add Tag</button>
         </div>
-        <div class="color-presets" id="tagColorPresets"></div>
-      </div>
-    </div>
 
-    <!-- Customer Types -->
-    <div class="card" style="margin-bottom:24px;max-width:640px">
-      <div class="card-header">
-        <h3>Customer Types</h3>
-        <span style="font-size:12px;color:var(--muted)" id="ctypeCount"></span>
-      </div>
-      <div id="ctypeList"></div>
-      <div class="add-form">
-        <div style="font-size:13px;font-weight:600;margin-bottom:10px">Create New Type</div>
-        <div class="add-form form-row">
-          <div class="fg">
-            <label>Type Name *</label>
-            <input type="text" id="newCtypeName" placeholder="e.g. EV Battery, Supplier, OEM" style="width:200px" onkeydown="if(event.key==='Enter')addCtype()" />
+        <div class="admin-card">
+          <div class="ac-head">
+            <h3>🏷️ Tags</h3>
+            <span class="ac-count" id="tagCount"></span>
           </div>
-          <div class="fg">
-            <label>Color</label>
-            <input type="color" id="newCtypeColor" value="#0ea5e9" />
+          <div id="tagList"></div>
+          <div class="add-form">
+            <div class="add-row">
+              <input type="text" id="newTagName" placeholder="Tag name *" onkeydown="if(event.key==='Enter')addTag()" />
+              <input type="color" id="newTagColor" value="#6366f1" />
+              <button class="btn btn-primary btn-sm" onclick="addTag()">Add</button>
+            </div>
+            <div class="color-presets" id="tagColorPresets"></div>
           </div>
-          <button class="btn btn-primary" onclick="addCtype()" style="align-self:flex-end">Add Type</button>
         </div>
-        <div class="color-presets" id="ctypeColorPresets"></div>
-      </div>
-    </div>
 
-    <!-- Statuses Management -->
-    <div class="card" style="max-width:640px">
-      <div class="card-header">
-        <h3>Customer Statuses</h3>
-        <span style="font-size:12px;color:var(--muted)" id="statusCount"></span>
       </div>
-      <div id="statusList"></div>
-      <div class="add-form">
-        <div style="font-size:13px;font-weight:600;margin-bottom:10px">Create New Status</div>
-        <div class="add-form form-row">
-          <div class="fg">
-            <label>Status Name *</label>
-            <input type="text" id="newStatusName" placeholder="e.g. Negotiating, Trial, Churned" style="width:200px" onkeydown="if(event.key==='Enter')addStatus()" />
+
+      <!-- ── Col 3: Statuses + Products ── -->
+      <div style="display:flex;flex-direction:column;gap:18px">
+
+        <div class="admin-card">
+          <div class="ac-head">
+            <h3>📊 Customer Statuses</h3>
+            <span class="ac-count" id="statusCount"></span>
           </div>
-          <div class="fg">
-            <label>Color</label>
-            <input type="color" id="newStatusColor" value="#6366f1" />
+          <div id="statusList"></div>
+          <div class="add-form">
+            <div class="add-row">
+              <input type="text" id="newStatusName" placeholder="Status name *" onkeydown="if(event.key==='Enter')addStatus()" />
+              <input type="color" id="newStatusColor" value="#6366f1" />
+              <button class="btn btn-primary btn-sm" onclick="addStatus()">Add</button>
+            </div>
+            <div class="color-presets" id="statusColorPresets"></div>
           </div>
-          <button class="btn btn-primary" onclick="addStatus()" style="align-self:flex-end">Add Status</button>
         </div>
-        <div class="color-presets" id="statusColorPresets"></div>
+
+        <div class="admin-card">
+          <div class="ac-head">
+            <h3>📦 Products</h3>
+            <span class="ac-count" id="productAdminCount"></span>
+          </div>
+          <div class="prod-actions">
+            <a href="products.html?add=1" class="btn btn-primary btn-sm" style="text-align:center">
+              + Add Product
+            </a>
+            <div class="prod-stat-row">
+              <a href="products.html" class="btn btn-outline btn-sm" style="flex:1;text-align:center">View All</a>
+              <a href="/api/download/products.csv" class="btn btn-outline btn-sm" style="flex:1;text-align:center">Export CSV</a>
+            </div>
+          </div>
+        </div>
+
       </div>
-    </div>
+
+    </div><!-- /admin-grid -->
 
   </div>
 </div>
@@ -199,157 +239,89 @@ async function init() {
     fetch('/api/customer-types').then(r => r.json()),
   ]);
   members = mr.data || [];
-  tags = tr.data || [];
+  tags    = tr.data || [];
   statuses = sr.data || [];
-  ctypes = ctr.data || [];
+  ctypes  = ctr.data || [];
   const products = pr.data || [];
-  const el = document.getElementById('productAdminCount');
-  if (el) el.textContent = products.length + ' product' + (products.length !== 1 ? 's' : '');
-  renderMembers();
-  renderTags();
-  renderStatuses();
-  renderCtypes();
+
+  document.getElementById('statProducts').textContent = products.length;
+  document.getElementById('statMembers').textContent  = members.length;
+  document.getElementById('statTags').textContent     = tags.length;
+  document.getElementById('statStatuses').textContent = statuses.length;
+  document.getElementById('productAdminCount').textContent = products.length + ' product' + (products.length !== 1 ? 's' : '');
+
+  renderMembers(); renderTags(); renderStatuses(); renderCtypes();
 }
 
 function renderPresets(elId, inputId, cb) {
   const el = document.getElementById(elId);
   const colorInput = document.getElementById(inputId);
-  el.innerHTML = PRESET_COLORS.map(c => `<div class="color-preset${colorInput.value===c?' sel':''}" style="background:${c}" onclick="(${cb.toString()})('${c}')"></div>`).join('');
+  el.innerHTML = PRESET_COLORS.map(c =>
+    `<div class="color-preset${colorInput.value===c?' sel':''}" style="background:${c}" onclick="(${cb.toString()})('${c}')"></div>`
+  ).join('');
 }
 
-function selectMemberColor(c) {
-  document.getElementById('newColor').value = c;
-  renderPresets('colorPresets', 'newColor', selectMemberColor);
-}
-function selectTagColor(c) {
-  document.getElementById('newTagColor').value = c;
-  renderPresets('tagColorPresets', 'newTagColor', selectTagColor);
-}
-function selectStatusColor(c) {
-  document.getElementById('newStatusColor').value = c;
-  renderPresets('statusColorPresets', 'newStatusColor', selectStatusColor);
-}
-function selectCtypeColor(c) {
-  document.getElementById('newCtypeColor').value = c;
-  renderPresets('ctypeColorPresets', 'newCtypeColor', selectCtypeColor);
-}
+function selectMemberColor(c) { document.getElementById('newColor').value = c; renderPresets('colorPresets','newColor',selectMemberColor); }
+function selectTagColor(c)    { document.getElementById('newTagColor').value = c; renderPresets('tagColorPresets','newTagColor',selectTagColor); }
+function selectStatusColor(c) { document.getElementById('newStatusColor').value = c; renderPresets('statusColorPresets','newStatusColor',selectStatusColor); }
+function selectCtypeColor(c)  { document.getElementById('newCtypeColor').value = c; renderPresets('ctypeColorPresets','newCtypeColor',selectCtypeColor); }
 
-function renderCtypes() {
-  document.getElementById('ctypeCount').textContent = ctypes.length + ' type' + (ctypes.length !== 1 ? 's' : '');
-  const el = document.getElementById('ctypeList');
-  if (!ctypes.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No customer types yet</div>'; return; }
-  el.innerHTML = ctypes.map(t => `
-    <div class="tag-row" id="ct-${t.id}">
-      <span class="tag-chip" style="background:${t.color}">${esc(t.name)}</span>
-      <span style="flex:1"></span>
-      <button class="btn btn-danger btn-sm" onclick="deleteCtype(${t.id},'${esc(t.name).replace(/'/g,"\\'")}')">Delete</button>
+/* ── Render helpers ── */
+function renderMembers() {
+  document.getElementById('memberCount').textContent = members.length + ' member' + (members.length!==1?'s':'');
+  const el = document.getElementById('memberList');
+  if (!members.length) { el.innerHTML = '<div class="empty-state">No team members yet</div>'; return; }
+  el.innerHTML = members.map(m => `
+    <div class="member-row" id="mr-${m.id}">
+      <div class="member-av" style="background:${m.color}">${(m.name||'?')[0].toUpperCase()}</div>
+      <div style="flex:1;min-width:0">
+        <div class="member-name">${esc(m.name)}</div>
+        <div class="member-role">${m.role ? esc(m.role) : '<em style="opacity:.5">No role</em>'}</div>
+      </div>
+      <a href="team.html?name=${encodeURIComponent(m.name)}" class="member-link">View →</a>
+      <button class="btn btn-danger btn-sm" style="font-size:11px;padding:3px 8px" onclick="deleteMember(${m.id},'${esc(m.name).replace(/'/g,"\\'")}')">✕</button>
     </div>`).join('');
 }
 
-async function addCtype() {
-  const name = document.getElementById('newCtypeName').value.trim();
-  const color = document.getElementById('newCtypeColor').value;
-  if (!name) { toast('Type name is required', 'error'); return; }
-  const r = await fetch('/api/customer-types', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name, color}) });
-  const d = await r.json();
-  if (d.error) { toast(d.error, 'error'); return; }
-  ctypes.push({ id: d.id, name: d.name, color });
-  document.getElementById('newCtypeName').value = '';
-  renderCtypes();
-  toast('Customer type created', 'success');
-}
-
-async function deleteCtype(id, name) {
-  if (!confirm(`Delete type "${name}"? Customers with this type will be untyped.`)) return;
-  await fetch(`/api/customer-types/${id}`, { method:'DELETE' });
-  ctypes = ctypes.filter(t => t.id !== id);
-  renderCtypes();
-  toast('Type deleted', 'success');
+function renderCtypes() {
+  document.getElementById('ctypeCount').textContent = ctypes.length + ' type' + (ctypes.length!==1?'s':'');
+  const el = document.getElementById('ctypeList');
+  if (!ctypes.length) { el.innerHTML = '<div class="empty-state">No customer types yet</div>'; return; }
+  el.innerHTML = ctypes.map(t => `
+    <div class="tag-row" id="ct-${t.id}">
+      <span class="tag-chip" style="background:${t.color}">${esc(t.name)}</span>
+      <span class="tag-spacer"></span>
+      <button class="btn btn-danger btn-sm" style="font-size:11px;padding:3px 8px" onclick="deleteCtype(${t.id},'${esc(t.name).replace(/'/g,"\\'")}')">✕</button>
+    </div>`).join('');
 }
 
 function renderTags() {
-  document.getElementById('tagCount').textContent = tags.length + ' tag' + (tags.length !== 1 ? 's' : '');
+  document.getElementById('tagCount').textContent = tags.length + ' tag' + (tags.length!==1?'s':'');
+  document.getElementById('statTags').textContent = tags.length;
   const el = document.getElementById('tagList');
-  if (!tags.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No tags yet</div>'; return; }
+  if (!tags.length) { el.innerHTML = '<div class="empty-state">No tags yet</div>'; return; }
   el.innerHTML = tags.map(t => `
     <div class="tag-row" id="tr-${t.id}">
       <span class="tag-chip" style="background:${t.color}">${esc(t.name)}</span>
-      <span class="tag-name" style="color:var(--muted);font-size:12px">${t.color}</span>
-      <button class="btn btn-danger btn-sm" onclick="deleteTag(${t.id},'${esc(t.name).replace(/'/g,"\\'")}')">Delete</button>
+      <span class="tag-spacer"></span>
+      <button class="btn btn-danger btn-sm" style="font-size:11px;padding:3px 8px" onclick="deleteTag(${t.id},'${esc(t.name).replace(/'/g,"\\'")}')">✕</button>
     </div>`).join('');
 }
 
 function renderStatuses() {
-  document.getElementById('statusCount').textContent = statuses.length + ' status' + (statuses.length !== 1 ? 'es' : '');
+  document.getElementById('statusCount').textContent = statuses.length + ' status' + (statuses.length!==1?'es':'');
+  document.getElementById('statStatuses').textContent = statuses.length;
   const el = document.getElementById('statusList');
-  if (!statuses.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No statuses yet</div>'; return; }
+  if (!statuses.length) { el.innerHTML = '<div class="empty-state">No statuses yet</div>'; return; }
   el.innerHTML = statuses.map(s => `
     <div class="tag-row" id="sr-${s.id}">
       <span class="tag-chip" style="background:${s.color}">${esc(s.name)}</span>
-      <span style="flex:1"></span>
-      <button class="btn btn-danger btn-sm" onclick="deleteStatus(${s.id},'${esc(s.name).replace(/'/g,"\\'")}')">Delete</button>
+      <span class="tag-spacer"></span>
+      <button class="btn btn-danger btn-sm" style="font-size:11px;padding:3px 8px" onclick="deleteStatus(${s.id},'${esc(s.name).replace(/'/g,"\\'")}')">✕</button>
     </div>`).join('');
 }
 
-async function addTag() {
-  const name = document.getElementById('newTagName').value.trim();
-  const color = document.getElementById('newTagColor').value;
-  if (!name) { toast('Tag name is required', 'error'); return; }
-  const r = await fetch('/api/tags', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name, color}) });
-  const d = await r.json();
-  if (d.error) { toast(d.error, 'error'); return; }
-  tags.push({ id: d.id, name: d.name, color });
-  document.getElementById('newTagName').value = '';
-  renderTags();
-  toast('Tag created', 'success');
-}
-
-async function deleteTag(id, name) {
-  if (!confirm(`Delete tag "${name}"? It will be removed from all customers.`)) return;
-  await fetch(`/api/tags/${id}`, { method:'DELETE' });
-  tags = tags.filter(t => t.id !== id);
-  renderTags();
-  toast('Tag deleted', 'success');
-}
-
-async function addStatus() {
-  const name = document.getElementById('newStatusName').value.trim();
-  const color = document.getElementById('newStatusColor').value;
-  if (!name) { toast('Status name is required', 'error'); return; }
-  const r = await fetch('/api/statuses', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name, color}) });
-  const d = await r.json();
-  if (d.error) { toast(d.error, 'error'); return; }
-  statuses.push({ id: d.id, name: d.name, color });
-  document.getElementById('newStatusName').value = '';
-  renderStatuses();
-  toast('Status created', 'success');
-}
-
-async function deleteStatus(id, name) {
-  if (!confirm(`Delete status "${name}"? Customers with this status will keep it but it won't appear in filters.`)) return;
-  await fetch(`/api/statuses/${id}`, { method:'DELETE' });
-  statuses = statuses.filter(s => s.id !== id);
-  renderStatuses();
-  toast('Status deleted', 'success');
-}
-
-function renderMembers() {
-  document.getElementById('memberCount').textContent = members.length + ' member' + (members.length!==1?'s':'');
-  const el = document.getElementById('memberList');
-  if (!members.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No team members yet</div>'; return; }
-  el.innerHTML = members.map(m => `
-    <div class="member-row" id="mr-${m.id}">
-      <div class="member-av" style="background:${m.color}">${(m.name||'?')[0].toUpperCase()}</div>
-      <div class="member-info">
-        <div class="member-name">${esc(m.name)}</div>
-        <div class="member-role">${m.role ? esc(m.role) : '<em style="opacity:.6">No role set</em>'}</div>
-      </div>
-      <a href="team.html?name=${encodeURIComponent(m.name)}" class="member-link">View Dashboard →</a>
-      <div class="color-swatch" style="background:${m.color}" title="${m.color}"></div>
-      <button class="btn btn-danger btn-sm" onclick="deleteMember(${m.id},'${esc(m.name).replace(/'/g,"\\'")}')">Remove</button>
-    </div>`).join('');
-}
-
+/* ── Add / Delete ── */
 async function addMember() {
   const name = document.getElementById('newName').value.trim();
   const role = document.getElementById('newRole').value.trim();
@@ -361,16 +333,69 @@ async function addMember() {
   members.push({ id:d.id, name:d.name, role, color });
   document.getElementById('newName').value = '';
   document.getElementById('newRole').value = '';
-  renderMembers();
-  toast('Team member added', 'success');
+  document.getElementById('statMembers').textContent = members.length;
+  renderMembers(); toast('Team member added', 'success');
 }
-
 async function deleteMember(id, name) {
-  if (!confirm(`Remove ${name} from the team? Their customers will become unassigned.`)) return;
+  if (!confirm(`Remove ${name}?`)) return;
   await fetch(`/api/team-members/${id}`, { method:'DELETE' });
   members = members.filter(m => m.id !== id);
-  renderMembers();
-  toast('Member removed', 'success');
+  document.getElementById('statMembers').textContent = members.length;
+  renderMembers(); toast('Member removed', 'success');
+}
+
+async function addCtype() {
+  const name = document.getElementById('newCtypeName').value.trim();
+  const color = document.getElementById('newCtypeColor').value;
+  if (!name) { toast('Type name is required', 'error'); return; }
+  const r = await fetch('/api/customer-types', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name, color}) });
+  const d = await r.json();
+  if (d.error) { toast(d.error, 'error'); return; }
+  ctypes.push({ id:d.id, name:d.name, color });
+  document.getElementById('newCtypeName').value = '';
+  renderCtypes(); toast('Customer type created', 'success');
+}
+async function deleteCtype(id, name) {
+  if (!confirm(`Delete type "${name}"?`)) return;
+  await fetch(`/api/customer-types/${id}`, { method:'DELETE' });
+  ctypes = ctypes.filter(t => t.id !== id);
+  renderCtypes(); toast('Type deleted', 'success');
+}
+
+async function addTag() {
+  const name = document.getElementById('newTagName').value.trim();
+  const color = document.getElementById('newTagColor').value;
+  if (!name) { toast('Tag name is required', 'error'); return; }
+  const r = await fetch('/api/tags', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name, color}) });
+  const d = await r.json();
+  if (d.error) { toast(d.error, 'error'); return; }
+  tags.push({ id:d.id, name:d.name, color });
+  document.getElementById('newTagName').value = '';
+  renderTags(); toast('Tag created', 'success');
+}
+async function deleteTag(id, name) {
+  if (!confirm(`Delete tag "${name}"?`)) return;
+  await fetch(`/api/tags/${id}`, { method:'DELETE' });
+  tags = tags.filter(t => t.id !== id);
+  renderTags(); toast('Tag deleted', 'success');
+}
+
+async function addStatus() {
+  const name = document.getElementById('newStatusName').value.trim();
+  const color = document.getElementById('newStatusColor').value;
+  if (!name) { toast('Status name is required', 'error'); return; }
+  const r = await fetch('/api/statuses', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name, color}) });
+  const d = await r.json();
+  if (d.error) { toast(d.error, 'error'); return; }
+  statuses.push({ id:d.id, name:d.name, color });
+  document.getElementById('newStatusName').value = '';
+  renderStatuses(); toast('Status created', 'success');
+}
+async function deleteStatus(id, name) {
+  if (!confirm(`Delete status "${name}"?`)) return;
+  await fetch(`/api/statuses/${id}`, { method:'DELETE' });
+  statuses = statuses.filter(s => s.id !== id);
+  renderStatuses(); toast('Status deleted', 'success');
 }
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
