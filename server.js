@@ -681,6 +681,45 @@ Omit any field not clearly mentioned in the transcript. Today is ${new Date().to
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── AI: daily brief for team member ──────────────────────────────────
+app.post('/api/ai/daily-brief', async (req, res) => {
+  try {
+    const { person } = req.body;
+    if (!person) return res.status(400).json({ error: 'person required' });
+    const today = new Date().toISOString().split('T')[0];
+    const customers = db.prepare(`
+      SELECT c.id, c.name, c.company, c.phone, c.status, c.next_followup, c.requirement,
+        (SELECT note FROM discussions WHERE customer_id=c.id AND type!='activity' ORDER BY created_at DESC LIMIT 1) as last_note,
+        (SELECT created_at FROM discussions WHERE customer_id=c.id AND type!='activity' ORDER BY created_at DESC LIMIT 1) as last_contact
+      FROM customers_v2 c WHERE c.assigned_to=? ORDER BY c.next_followup ASC NULLS LAST
+    `).all(person);
+    const overdue   = customers.filter(c => c.next_followup && c.next_followup < today);
+    const dueToday  = customers.filter(c => c.next_followup === today);
+    const upcoming  = customers.filter(c => c.next_followup && c.next_followup > today);
+    const noDate    = customers.filter(c => !c.next_followup && c.status !== 'Onboarded');
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const msg = await client.messages.create({
+      model: 'claude-sonnet-4-6', max_tokens: 900,
+      system: `You are a sales coach writing a sharp daily briefing for ${person}. Be direct, specific, no fluff. Use short paragraphs. Today is ${today}.`,
+      messages: [{ role: 'user', content: `Generate today's briefing for ${person}.
+
+OVERDUE (${overdue.length}): ${overdue.slice(0,6).map(c=>`${c.name} [${c.status}, due ${c.next_followup}${c.last_note?', last note: '+c.last_note.slice(0,40):''}]`).join(' | ')}
+DUE TODAY (${dueToday.length}): ${dueToday.map(c=>`${c.name} [${c.status}${c.requirement?', needs: '+c.requirement.slice(0,40):''}]`).join(' | ')}
+UPCOMING THIS WEEK (${upcoming.filter(c=>c.next_followup<=(new Date(Date.now()+7*86400000).toISOString().slice(0,10))).length}): ${upcoming.slice(0,4).map(c=>`${c.name} [${c.next_followup}]`).join(' | ')}
+NO FOLLOW-UP DATE (${noDate.length}): ${noDate.slice(0,5).map(c=>c.name).join(', ')}
+TOTAL MANAGED: ${customers.length}
+
+Write:
+1. One opening line (today's overview, 1 sentence)
+2. "TODAY'S PRIORITIES" — bullet list of specific actions (overdue first, then due today)
+3. "THIS WEEK" — 2-3 lines about upcoming customers
+4. "ATTENTION NEEDED" — flag customers with no follow-up date set (if any)
+Keep it under 250 words. Be specific — use customer names.` }]
+    });
+    res.json({ brief: msg.content[0].text.trim(), stats: { total: customers.length, overdue: overdue.length, dueToday: dueToday.length, noDate: noDate.length } });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 // ── Image rename to id_sku_category_name_N ───────────────────────────
 app.post('/api/products/:id/rename-images', (req, res) => {
   try {

@@ -213,6 +213,23 @@
     /* Delete code modal */
     .del-code-input { letter-spacing: 8px; font-size: 22px; text-align: center; font-weight: 700; }
 
+    /* Assignment panel */
+    .ap-member-card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:12px 14px; }
+    .ap-member-name { font-size:13px; font-weight:700; margin-bottom:6px; }
+    .ap-member-stats { display:flex; flex-direction:column; gap:3px; }
+    .ap-stat { font-size:11px; display:flex; justify-content:space-between; }
+    .ap-stat-red { color:var(--danger); font-weight:600; }
+    .ap-stat-amber { color:#f59e0b; font-weight:600; }
+    .ap-report-member { margin-bottom:14px; background:var(--card); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+    .ap-report-head { padding:9px 14px; background:var(--surface); border-bottom:1px solid var(--border); font-size:13px; font-weight:600; display:flex; align-items:center; gap:8px; }
+    .ap-report-items { padding:8px 14px; }
+    .ap-report-row { display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid var(--border); font-size:12px; }
+    .ap-report-row:last-child { border:none; }
+    .ap-unassigned-row { display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); }
+    .ap-unassigned-row:last-child { border:none; }
+    .ap-av { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#fff; flex-shrink:0; background:#6366f1; }
+    .ap-assign-sel { border:1px solid var(--border); border-radius:7px; padding:4px 8px; font-size:12px; font-family:inherit; outline:none; background:var(--card); color:var(--text); }
+
     /* Tags */
     .tag-badge { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; }
     .tag-badge .tag-x { cursor:pointer; opacity:.6; font-size:13px; line-height:1; margin-left:2px; }
@@ -265,6 +282,7 @@
   <div class="topbar">
     <h2>CRM</h2>
     <div class="topbar-actions">
+      <button class="btn btn-outline" onclick="openAssignPanel()">👥 Assignments</button>
       <button class="btn btn-primary" onclick="openAdd()">
         <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
         Add Customer
@@ -319,6 +337,31 @@
         <span id="mobileBackName"></span>
       </div>
       <div class="detail-scroll" id="detailContent" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Assignment Panel ── -->
+<div class="modal-overlay" id="assignPanel">
+  <div class="modal" style="width:720px;max-width:97vw;max-height:90vh;overflow:hidden;display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0;padding-bottom:12px;border-bottom:1px solid var(--border)">
+      <h3>👥 Assignments &amp; Team Report</h3>
+      <button class="modal-close" onclick="closeAssignPanel()">×</button>
+    </div>
+    <div style="overflow-y:auto;flex:1;padding-top:14px">
+      <!-- Team overview -->
+      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Team Overview</div>
+      <div id="apTeamGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:20px"></div>
+
+      <!-- Per-member report -->
+      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">What Needs Attention</div>
+      <div id="apReport" style="margin-bottom:20px"></div>
+
+      <!-- Unassigned pool -->
+      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">
+        Unassigned Customers <span id="apUnassignedCount" style="background:var(--danger);color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:600;margin-left:4px"></span>
+      </div>
+      <div id="apUnassignedList"></div>
     </div>
   </div>
 </div>
@@ -1504,6 +1547,100 @@ async function extractAndFill() {
   } catch(err) { toast('AI error: '+err.message, 'error'); }
   btn.disabled = false; btn.textContent = '✨ Auto-fill with AI';
 }
+
+// ── Assignment Panel ──────────────────────────────────────────
+async function openAssignPanel() {
+  document.getElementById('assignPanel').classList.add('open');
+  renderAssignPanel();
+}
+function closeAssignPanel() { document.getElementById('assignPanel').classList.remove('open'); }
+
+async function renderAssignPanel() {
+  const today = todayISO();
+  const [crmR, membersR] = await Promise.all([
+    fetch('/api/crm/customers').then(r=>r.json()),
+    fetch('/api/team-members').then(r=>r.json())
+  ]);
+  const allC = crmR.data || [];
+  const members = (membersR.data || []).map(m => m.name);
+  const unassigned = allC.filter(c => !c.assigned_to || c.assigned_to === 'Unassigned' || c.assigned_to === '');
+
+  // ── Team overview cards ──
+  const teamGrid = document.getElementById('apTeamGrid');
+  const assignedMembers = [...new Set([...members, ...allC.map(c=>c.assigned_to).filter(n=>n&&n!=='Unassigned')])];
+  teamGrid.innerHTML = assignedMembers.map(name => {
+    const mine = allC.filter(c => c.assigned_to === name);
+    const ov = mine.filter(c => c.next_followup && c.next_followup < today).length;
+    const td = mine.filter(c => c.next_followup === today).length;
+    const nd = mine.filter(c => !c.next_followup && c.status !== 'Onboarded').length;
+    return `<div class="ap-member-card">
+      <div class="ap-member-name">👤 ${esc(name)}</div>
+      <div class="ap-member-stats">
+        <div class="ap-stat"><span>Total</span><span><b>${mine.length}</b></span></div>
+        <div class="ap-stat"><span>Overdue</span><span class="${ov?'ap-stat-red':''}">${ov}</span></div>
+        <div class="ap-stat"><span>Due today</span><span class="${td?'ap-stat-amber':''}">${td}</span></div>
+        <div class="ap-stat"><span>No date set</span><span class="${nd?'ap-stat-amber':''}">${nd}</span></div>
+        <div class="ap-stat" style="margin-top:4px"><a href="team.html?name=${encodeURIComponent(name)}" style="color:var(--primary);font-size:11px">Open Dashboard →</a></div>
+      </div>
+    </div>`;
+  }).join('') || '<div style="color:var(--muted);font-size:13px">No team members found</div>';
+
+  // ── Per-member attention report ──
+  const report = document.getElementById('apReport');
+  const reportHtml = assignedMembers.map(name => {
+    const mine = allC.filter(c => c.assigned_to === name);
+    const issues = [
+      ...mine.filter(c=>c.next_followup&&c.next_followup<today).map(c=>({c,label:'⚠ Overdue',cls:'ap-stat-red'})),
+      ...mine.filter(c=>c.next_followup===today).map(c=>({c,label:'📅 Due today',cls:'ap-stat-amber'})),
+      ...mine.filter(c=>!c.next_followup&&c.status!=='Onboarded'&&c.status!=='Lead').map(c=>({c,label:'⏰ No follow-up date',cls:''})),
+    ];
+    if (!issues.length) return `<div class="ap-report-member"><div class="ap-report-head"><span>${esc(name)}</span><span style="color:#16a34a;font-size:11px;font-weight:500">✅ All clear</span></div></div>`;
+    return `<div class="ap-report-member">
+      <div class="ap-report-head">${esc(name)} <span style="color:var(--danger);font-size:11px">${issues.length} need attention</span></div>
+      <div class="ap-report-items">${issues.slice(0,10).map(({c,label,cls})=>`
+        <div class="ap-report-row">
+          <span class="${cls}" style="width:130px;flex-shrink:0">${label}</span>
+          <span style="flex:1;font-weight:500">${esc(c.name)}</span>
+          <span style="color:var(--muted)">${esc(c.company||c.city||'')}</span>
+          <button onclick="document.getElementById('assignPanel').classList.remove('open');selectC(${c.id})" style="background:none;border:none;color:var(--primary);cursor:pointer;font-size:11px;padding:0 4px">View →</button>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+  report.innerHTML = reportHtml;
+
+  // ── Unassigned pool ──
+  document.getElementById('apUnassignedCount').textContent = unassigned.length;
+  const ulist = document.getElementById('apUnassignedList');
+  if (!unassigned.length) { ulist.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0">All customers are assigned!</div>'; return; }
+  const memberOptions = assignedMembers.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+  ulist.innerHTML = unassigned.slice(0,30).map(c=>`
+    <div class="ap-unassigned-row">
+      <div class="ap-av">${initials(c.name)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600">${esc(c.name)}</div>
+        <div style="font-size:11px;color:var(--muted)">${[c.company,c.phone,c.status].filter(Boolean).map(esc).join(' · ')}</div>
+      </div>
+      <select class="ap-assign-sel" id="asel-${c.id}" onchange="assignCustomer(${c.id},this)">
+        <option value="">Assign to…</option>
+        ${memberOptions}
+      </select>
+    </div>`).join('');
+  if(unassigned.length>30) ulist.innerHTML += `<div style="font-size:12px;color:var(--muted);padding:8px 0">+${unassigned.length-30} more — use filters in main list</div>`;
+}
+
+async function assignCustomer(cid, sel) {
+  const name = sel.value; if(!name) return;
+  const r = await fetch(`/api/crm/customers/${cid}`);
+  const c = await r.json();
+  const body={...c,assigned_to:name}; delete body.discussions; delete body.interests;
+  await fetch(`/api/crm/customers/${cid}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  toast(`Assigned to ${name}`,'success');
+  renderAssignPanel();
+  await loadAll(); applyFilters();
+}
+
+document.getElementById('assignPanel').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAssignPanel();});
 
 // ── Utilities ─────────────────────────────────────────────────
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
