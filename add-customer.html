@@ -170,7 +170,7 @@
 </div>
 
 <script>
-let _img = null, _mime = null, _mediaRec = null, _rec = false, _audio = '', _audioChunks = [];
+let _img = null, _mime = null, _recog = null, _rec = false, _audio = '';
 
 document.getElementById('evtTag').value = '4th Jun Exhibition';
 
@@ -211,67 +211,48 @@ function removeCard() {
   setExtractReady();
 }
 
-// ── Voice recording → Whisper AI ─────────────────────────────────────
-async function toggleMic() {
-  if (_rec) { stopRecording(); return; }
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    _audioChunks = [];
-    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus'
-                   : MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : 'audio/webm';
-    _mediaRec = new MediaRecorder(stream, { mimeType });
-    _mediaRec.ondataavailable = e => { if (e.data && e.data.size > 0) _audioChunks.push(e.data); };
-    _mediaRec.onstop = () => transcribeAudio(mimeType, stream);
-    _mediaRec.start(250); // collect chunks every 250ms
-    _rec = true;
-    document.getElementById('micBtn').classList.add('rec');
-    document.getElementById('micIcon').textContent = '🔴';
-    document.getElementById('micText').textContent = 'Recording… tap to stop';
-  } catch(e) {
-    alert('Microphone access denied. Please allow microphone and try again.');
-  }
-}
-
-function stopRecording() {
-  _rec = false;
-  if (_mediaRec && _mediaRec.state !== 'inactive') _mediaRec.stop();
-  document.getElementById('micBtn').classList.remove('rec');
-  document.getElementById('micIcon').textContent = '⏳';
-  document.getElementById('micText').textContent = 'Transcribing with AI…';
-  document.getElementById('micBtn').disabled = true;
-}
-
-async function transcribeAudio(mimeType, stream) {
-  // Stop all mic tracks
-  stream.getTracks().forEach(t => t.stop());
-  const ext = mimeType.includes('mp4') ? 'm4a' : 'webm';
-  const blob = new Blob(_audioChunks, { type: mimeType });
-  const fd = new FormData();
-  fd.append('audio', blob, `voice.${ext}`);
-  try {
-    const r = await fetch('/api/ai/transcribe-audio', { method: 'POST', body: fd });
-    const d = await r.json();
-    if (!d.success) throw new Error(d.error || 'Transcription failed');
-    const newText = d.text.trim();
-    if (newText) {
-      _audio = (_audio + ' ' + newText).trim();
-      const el = document.getElementById('transcript');
-      el.style.display = 'block';
-      el.textContent = _audio;
-      // If review form already open, push into requirement field
-      if (document.getElementById('formCard').style.display !== 'none') {
-        const req = document.getElementById('fReq');
-        const existing = req.value.trim();
-        req.value = existing ? existing + '\n' + newText : newText;
-      }
+// ── Voice recording — Chrome Web Speech API ───────────────────────────
+function toggleMic() {
+  if (_rec) { stopMic(); return; }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert('Use Chrome for voice notes.'); return; }
+  _recog = new SR();
+  _recog.continuous = true;
+  _recog.interimResults = true;
+  _recog.lang = 'en-IN';
+  _recog.onresult = e => {
+    let fin = '', interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) fin += e.results[i][0].transcript + ' ';
+      else interim += e.results[i][0].transcript;
     }
-    document.getElementById('micIcon').textContent = '🎤';
-    document.getElementById('micText').textContent = _audio ? '✅ Saved — tap to add more' : 'Tap to record voice notes';
-  } catch(e) {
-    document.getElementById('micIcon').textContent = '🎤';
-    document.getElementById('micText').textContent = '⚠ Transcription failed — tap to retry';
+    if (fin) _audio += fin;
+    const el = document.getElementById('transcript');
+    el.style.display = 'block';
+    el.textContent = _audio + interim;
+    setExtractReady();
+  };
+  _recog.onerror = () => stopMic();
+  _recog.onend = () => { if (_rec) _recog.start(); };
+  _recog.start();
+  _rec = true;
+  document.getElementById('micBtn').classList.add('rec');
+  document.getElementById('micIcon').textContent = '🔴';
+  document.getElementById('micText').textContent = 'Recording… tap to stop';
+}
+
+function stopMic() {
+  if (_recog) { try { _recog.stop(); } catch(e){} _recog = null; }
+  _rec = false;
+  document.getElementById('micBtn').classList.remove('rec');
+  document.getElementById('micIcon').textContent = '🎤';
+  document.getElementById('micText').textContent = _audio.trim() ? '✅ Saved — tap to add more' : 'Tap to record voice notes';
+  // Push transcript into requirement field if form is already visible
+  if (_audio.trim() && document.getElementById('formCard').style.display !== 'none') {
+    const req = document.getElementById('fReq');
+    const existing = req.value.trim();
+    if (!existing.includes(_audio.trim())) req.value = existing ? existing + '\n' + _audio.trim() : _audio.trim();
   }
-  document.getElementById('micBtn').disabled = false;
   setExtractReady();
 }
 
@@ -286,8 +267,7 @@ async function doExtract() {
   const sl = document.getElementById('statusLine');
   const btn = document.getElementById('extractBtn');
   if (!_img && !_audio.trim()) return;
-  // Stop recording if still going
-  if (_rec) { stopRecording(); await new Promise(r => setTimeout(r, 800)); }
+  if (_rec) stopMic();
   btn.disabled = true;
   sl.className = 'status-line loading'; sl.textContent = '⏳ Reading card and extracting details…';
   try {
@@ -377,9 +357,8 @@ async function doSave() {
 
 // ── Reset ─────────────────────────────────────────────────────────────
 function resetAll() {
-  _img = null; _mime = null; _audio = ''; _rec = false; _audioChunks = [];
-  if (_mediaRec && _mediaRec.state !== 'inactive') { try { _mediaRec.stop(); } catch(e){} }
-  _mediaRec = null;
+  _img = null; _mime = null; _audio = ''; _rec = false;
+  if (_recog) { try { _recog.stop(); } catch(e){} _recog = null; }
   document.getElementById('mainForm').style.display     = 'block';
   document.getElementById('successScreen').style.display = 'none';
   document.getElementById('previewWrap').style.display   = 'none';
@@ -395,7 +374,6 @@ function resetAll() {
   document.getElementById('camIcon').textContent = '📷';
   document.getElementById('camText').textContent = 'Tap to photograph visiting card';
   document.getElementById('cardFile').value = '';
-  document.getElementById('micBtn').disabled    = false;
   document.getElementById('micIcon').textContent = '🎤';
   document.getElementById('micText').textContent = 'Tap to record voice notes';
   document.getElementById('saveBtn').disabled    = false;
