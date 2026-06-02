@@ -50,7 +50,7 @@
     .mic-btn:hover { border-color: #ef4444; background: #fff5f5; }
     .mic-btn.rec { background: #fef2f2; border-color: #ef4444; color: #ef4444; animation: pulse 1.2s infinite; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.65} }
-    .transcript-box { margin-top: 10px; font-size: 13px; line-height: 1.6; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; min-height: 44px; display: none; white-space: pre-wrap; }
+    .transcript-box { margin-top: 10px; font-size: 13px; line-height: 1.6; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; min-height: 64px; display: none; white-space: pre-wrap; width: 100%; box-sizing: border-box; font-family: inherit; resize: vertical; }
 
     /* Extract button */
     .extract-btn { width: 100%; padding: 14px; border-radius: 11px; border: none; background: linear-gradient(135deg, var(--primary), #8b5cf6); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; letter-spacing: .2px; transition: opacity .15s; box-shadow: 0 2px 8px rgba(99,102,241,.35); }
@@ -129,7 +129,7 @@
         <span id="micIcon">🎤</span>
         <span id="micText">Tap to record voice notes</span>
       </button>
-      <div class="transcript-box" id="transcript"></div>
+      <textarea class="transcript-box" id="transcript" placeholder="Voice transcript will appear here — you can edit it…"></textarea>
     </div>
 
     <!-- Step 2: Extract -->
@@ -229,7 +229,7 @@ function toggleMic() {
     if (fin) _audio += fin;
     const el = document.getElementById('transcript');
     el.style.display = 'block';
-    el.textContent = _audio + interim;
+    el.value = _audio + interim;
     setExtractReady();
   };
   _recog.onerror = () => stopMic();
@@ -247,11 +247,13 @@ function stopMic() {
   document.getElementById('micBtn').classList.remove('rec');
   document.getElementById('micIcon').textContent = '🎤';
   document.getElementById('micText').textContent = _audio.trim() ? '✅ Saved — tap to add more' : 'Tap to record voice notes';
-  // Push transcript into requirement field if form is already visible
+  // Sync _audio from textarea (captures any live edits made mid-session)
+  const tEl = document.getElementById('transcript');
+  if (tEl.value.trim()) _audio = tEl.value.trim();
+  // Push to requirement field if form is already visible
   if (_audio.trim() && document.getElementById('formCard').style.display !== 'none') {
     const req = document.getElementById('fReq');
-    const existing = req.value.trim();
-    if (!existing.includes(_audio.trim())) req.value = existing ? existing + '\n' + _audio.trim() : _audio.trim();
+    req.value = _audio.trim();
   }
   setExtractReady();
 }
@@ -268,12 +270,13 @@ async function doExtract() {
   const btn = document.getElementById('extractBtn');
   if (!_img && !_audio.trim()) return;
   if (_rec) stopMic();
+  const audioText = document.getElementById('transcript').value.trim() || _audio.trim();
   btn.disabled = true;
   sl.className = 'status-line loading'; sl.textContent = '⏳ Reading card and extracting details…';
   try {
     const r = await fetch('/api/ai/extract-card', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageBase64: _img, mimeType: _mime, audioText: _audio })
+      body: JSON.stringify({ imageBase64: _img, mimeType: _mime, audioText })
     });
     if (!r.ok) throw new Error('Server error ' + r.status);
     const d = await r.json();
@@ -311,11 +314,12 @@ function fillForm(d) {
   document.getElementById('fCity').value    = d.city    || '';
   document.getElementById('fState').value   = d.state   || '';
   document.getElementById('fGst').value     = d.gst_number || '';
+  const voiceText = document.getElementById('transcript').value.trim() || _audio.trim();
   const extras = [
     d.designation ? 'Designation: ' + d.designation : '',
     d.website     ? 'Website: '     + d.website     : '',
     d.notes       || '',
-    _audio.trim()
+    voiceText
   ].filter(Boolean).join('\n').trim();
   document.getElementById('fReq').value = extras;
 }
@@ -364,7 +368,7 @@ function resetAll() {
   document.getElementById('previewWrap').style.display   = 'none';
   document.getElementById('previewImg').src = '';
   document.getElementById('transcript').style.display   = 'none';
-  document.getElementById('transcript').textContent     = '';
+  document.getElementById('transcript').value           = '';
   document.getElementById('formCard').style.display     = 'none';
   document.getElementById('statusLine').textContent     = '';
   document.getElementById('statusLine').className       = 'status-line';

@@ -136,7 +136,7 @@
     .acp-mic-btn:hover { border-color:#ef4444; }
     .acp-mic-btn.rec { background:#fef2f2; border-color:#ef4444; color:#ef4444; animation:pulse 1.2s infinite; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.7} }
-    .acp-transcript { margin-top:8px; font-size:12px; line-height:1.55; color:var(--text); background:var(--card); border:1px solid var(--border); border-radius:8px; padding:8px 10px; min-height:40px; display:none; white-space:pre-wrap; }
+    .acp-transcript { margin-top:8px; font-size:12px; line-height:1.55; color:var(--text); background:var(--card); border:1px solid var(--border); border-radius:8px; padding:8px 10px; min-height:60px; display:none; white-space:pre-wrap; width:100%; box-sizing:border-box; font-family:inherit; resize:vertical; }
     .acp-extract-btn { width:100%; padding:12px; border-radius:10px; border:none; background:var(--primary); color:#fff; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; transition:opacity .15s; }
     .acp-extract-btn:disabled { opacity:.4; cursor:default; }
     .acp-extract-btn:not(:disabled):hover { opacity:.88; }
@@ -294,7 +294,7 @@
           <span id="acpMicIcon">🎤</span>
           <span id="acpMicText">Tap to record voice notes</span>
         </button>
-        <div class="acp-transcript" id="acpTranscript"></div>
+        <textarea class="acp-transcript" id="acpTranscript" placeholder="Voice transcript — you can edit it…"></textarea>
       </div>
 
       <!-- Extract -->
@@ -594,7 +594,7 @@ function resetACP(){
   if(_acpRecog){try{_acpRecog.stop();}catch(e){}_acpRecog=null;}
   ['acpPreview','acpTranscript','acpForm'].forEach(id=>{ document.getElementById(id).style.display='none'; });
   document.getElementById('acpPreviewImg').src='';
-  document.getElementById('acpTranscript').textContent='';
+  document.getElementById('acpTranscript').value='';
   document.getElementById('acpStatus').textContent='';
   document.getElementById('acpStatus').className='acp-status';
   document.getElementById('acpExtractBtn').disabled=true;
@@ -652,7 +652,7 @@ function toggleAcpMic(){
     }
     if(fin) _acpAudio+=fin;
     const el=document.getElementById('acpTranscript');
-    el.style.display='block'; el.textContent=_acpAudio+interim;
+    el.style.display='block'; el.value=_acpAudio+interim;
     document.getElementById('acpExtractBtn').disabled=false;
   };
   _acpRecog.onerror=()=>stopAcpMic();
@@ -669,12 +669,12 @@ function stopAcpMic(){
   document.getElementById('acpMicBtn').classList.remove('rec');
   document.getElementById('acpMicIcon').textContent='🎤';
   document.getElementById('acpMicText').textContent=_acpAudio.trim()?'✅ Saved — tap to add more':'Tap to record voice notes';
+  // Sync _acpAudio from textarea (captures manual edits)
+  const tEl=document.getElementById('acpTranscript');
+  if(tEl.value.trim()) _acpAudio=tEl.value.trim();
   // Push to requirement field if form already open
   if(_acpAudio.trim()&&document.getElementById('acpForm').style.display!=='none'){
-    const req=document.getElementById('acpReq');
-    const ex=req.value.trim();
-    const clean=_acpAudio.trim();
-    if(!ex.includes(clean)) req.value=ex?ex+'\n'+clean:clean;
+    document.getElementById('acpReq').value=_acpAudio.trim();
   }
   document.getElementById('acpExtractBtn').disabled=!(_acpImg||_acpAudio.trim());
 }
@@ -684,11 +684,12 @@ async function extractAcp(){
   const btn=document.getElementById('acpExtractBtn');
   if(!_acpImg&&!_acpAudio.trim())return;
   if(_acpRec) stopAcpMic();
+  const acpAudioText=document.getElementById('acpTranscript').value.trim()||_acpAudio.trim();
   btn.disabled=true;
   status.className='acp-status loading'; status.textContent='⏳ Extracting customer info from card…';
   try{
     const r=await fetch('/api/ai/extract-card',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({imageBase64:_acpImg,mimeType:_acpMime,audioText:_acpAudio})});
+      body:JSON.stringify({imageBase64:_acpImg,mimeType:_acpMime,audioText:acpAudioText})});
     const d=await r.json();
     if(!d.success) throw new Error(d.error||'Extraction failed');
     fillAcpForm(d.data);
@@ -711,11 +712,12 @@ function fillAcpForm(d){
   document.getElementById('acpCity').value    = d.city||'';
   document.getElementById('acpState').value   = d.state||'';
   document.getElementById('acpGst').value     = d.gst_number||'';
+  const acpVoice=document.getElementById('acpTranscript').value.trim()||_acpAudio.trim();
   const extras=[
     d.designation ? 'Designation: '+d.designation : '',
     d.website     ? 'Website: '+d.website : '',
     d.notes       || '',
-    _acpAudio.trim()
+    acpVoice
   ].filter(Boolean).join('\n').trim();
   document.getElementById('acpReq').value = extras;
 }
