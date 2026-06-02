@@ -170,10 +170,11 @@
 </div>
 
 <script>
-let _img = null, _mime = null, _recog = null, _rec = false, _audio = '';
+let _img = null, _mime = null, _mediaRec = null, _rec = false, _audio = '', _audioChunks = [];
 
 document.getElementById('evtTag').value = '4th Jun Exhibition';
 
+// ── Card capture ──────────────────────────────────────────────────────
 function onCardFile(inp) {
   const file = inp.files[0]; if (!file) return;
   const reader = new FileReader();
@@ -181,20 +182,18 @@ function onCardFile(inp) {
     const url = e.target.result;
     document.getElementById('previewImg').src = url;
     document.getElementById('previewWrap').style.display = 'block';
-    const lbl = document.getElementById('camLabel');
-    lbl.classList.add('done');
+    document.getElementById('camLabel').classList.add('done');
     document.getElementById('camIcon').textContent = '✅';
-    document.getElementById('camText').textContent  = 'Card captured — tap to replace';
-    // Resize then store
+    document.getElementById('camText').textContent = 'Card captured — tap to replace';
     const img = new Image();
     img.onload = () => {
       const scale = Math.min(1, 1024 / img.width);
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width * scale; canvas.height = img.height * scale;
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-      const out = canvas.toDataURL('image/jpeg', 0.82);
+      const c = document.createElement('canvas');
+      c.width = img.width * scale; c.height = img.height * scale;
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      const out = c.toDataURL('image/jpeg', 0.82);
       _img = out.split(',')[1]; _mime = 'image/jpeg';
-      setExtractReady(); // just enable Extract button — don't auto-run, let them add voice first
+      setExtractReady();
     };
     img.src = url;
   };
@@ -205,62 +204,78 @@ function removeCard() {
   _img = null;
   document.getElementById('previewWrap').style.display = 'none';
   document.getElementById('previewImg').src = '';
-  const lbl = document.getElementById('camLabel');
-  lbl.classList.remove('done');
+  document.getElementById('camLabel').classList.remove('done');
   document.getElementById('camIcon').textContent = '📷';
-  document.getElementById('camText').textContent  = 'Tap to photograph visiting card';
+  document.getElementById('camText').textContent = 'Tap to photograph visiting card';
   document.getElementById('cardFile').value = '';
   setExtractReady();
 }
 
-function toggleMic() {
-  if (_rec) { stopMic(); return; }
-  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-    alert('Speech recognition not supported in this browser. Please type notes manually.');
-    return;
+// ── Voice recording → Whisper AI ─────────────────────────────────────
+async function toggleMic() {
+  if (_rec) { stopRecording(); return; }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    _audioChunks = [];
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus'
+                   : MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : 'audio/webm';
+    _mediaRec = new MediaRecorder(stream, { mimeType });
+    _mediaRec.ondataavailable = e => { if (e.data && e.data.size > 0) _audioChunks.push(e.data); };
+    _mediaRec.onstop = () => transcribeAudio(mimeType, stream);
+    _mediaRec.start(250); // collect chunks every 250ms
+    _rec = true;
+    document.getElementById('micBtn').classList.add('rec');
+    document.getElementById('micIcon').textContent = '🔴';
+    document.getElementById('micText').textContent = 'Recording… tap to stop';
+  } catch(e) {
+    alert('Microphone access denied. Please allow microphone and try again.');
   }
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  _recog = new SR(); _recog.continuous = true; _recog.interimResults = true; _recog.lang = 'en-IN';
-  _recog.onresult = e => {
-    let fin = '', int = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) fin += e.results[i][0].transcript + ' ';
-      else int += e.results[i][0].transcript;
-    }
-    if (fin) _audio += fin;
-    const el = document.getElementById('transcript');
-    el.style.display = 'block'; el.textContent = _audio + int;
-    setExtractReady();
-  };
-  _recog.onerror = () => stopMic();
-  _recog.onend = () => { if (_rec) _recog.start(); };
-  _recog.start(); _rec = true;
-  const btn = document.getElementById('micBtn');
-  btn.classList.add('rec');
-  document.getElementById('micIcon').textContent = '🔴';
-  document.getElementById('micText').textContent  = 'Recording… tap to stop';
 }
 
-function stopMic() {
-  if (_recog) { try { _recog.stop(); } catch(e){} _recog = null; }
+function stopRecording() {
   _rec = false;
-  const btn = document.getElementById('micBtn');
-  btn.classList.remove('rec');
-  document.getElementById('micIcon').textContent = '🎤';
-  document.getElementById('micText').textContent  = _audio.trim() ? '✅ Voice note saved — tap to add more' : 'Tap to record voice notes';
-  // If form is already visible, push transcript into the requirement field
-  if (_audio.trim() && document.getElementById('formCard').style.display !== 'none') {
-    const reqEl = document.getElementById('fReq');
-    const existing = reqEl.value.trim();
-    const audioClean = _audio.trim();
-    // Avoid duplicating if already present
-    if (!existing.includes(audioClean)) {
-      reqEl.value = existing ? existing + '\n' + audioClean : audioClean;
+  if (_mediaRec && _mediaRec.state !== 'inactive') _mediaRec.stop();
+  document.getElementById('micBtn').classList.remove('rec');
+  document.getElementById('micIcon').textContent = '⏳';
+  document.getElementById('micText').textContent = 'Transcribing with AI…';
+  document.getElementById('micBtn').disabled = true;
+}
+
+async function transcribeAudio(mimeType, stream) {
+  // Stop all mic tracks
+  stream.getTracks().forEach(t => t.stop());
+  const ext = mimeType.includes('mp4') ? 'm4a' : 'webm';
+  const blob = new Blob(_audioChunks, { type: mimeType });
+  const fd = new FormData();
+  fd.append('audio', blob, `voice.${ext}`);
+  try {
+    const r = await fetch('/api/ai/transcribe-audio', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error || 'Transcription failed');
+    const newText = d.text.trim();
+    if (newText) {
+      _audio = (_audio + ' ' + newText).trim();
+      const el = document.getElementById('transcript');
+      el.style.display = 'block';
+      el.textContent = _audio;
+      // If review form already open, push into requirement field
+      if (document.getElementById('formCard').style.display !== 'none') {
+        const req = document.getElementById('fReq');
+        const existing = req.value.trim();
+        req.value = existing ? existing + '\n' + newText : newText;
+      }
     }
+    document.getElementById('micIcon').textContent = '🎤';
+    document.getElementById('micText').textContent = _audio ? '✅ Saved — tap to add more' : 'Tap to record voice notes';
+  } catch(e) {
+    document.getElementById('micIcon').textContent = '🎤';
+    document.getElementById('micText').textContent = '⚠ Transcription failed — tap to retry';
   }
+  document.getElementById('micBtn').disabled = false;
   setExtractReady();
 }
 
+// ── Extract / form ────────────────────────────────────────────────────
 function setExtractReady() {
   const ready = !!_img || !!_audio.trim();
   document.getElementById('extractBtn').disabled = !ready;
@@ -271,16 +286,16 @@ async function doExtract() {
   const sl = document.getElementById('statusLine');
   const btn = document.getElementById('extractBtn');
   if (!_img && !_audio.trim()) return;
-  stopMic();
+  // Stop recording if still going
+  if (_rec) { stopRecording(); await new Promise(r => setTimeout(r, 800)); }
   btn.disabled = true;
   sl.className = 'status-line loading'; sl.textContent = '⏳ Reading card and extracting details…';
   try {
     const r = await fetch('/api/ai/extract-card', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ imageBase64: _img, mimeType: _mime, audioText: _audio })
     });
-    if (!r.ok) throw new Error(`Server error ${r.status}`);
+    if (!r.ok) throw new Error('Server error ' + r.status);
     const d = await r.json();
     if (!d.success) throw new Error(d.error || 'Extraction failed');
     fillForm(d.data);
@@ -325,6 +340,7 @@ function fillForm(d) {
   document.getElementById('fReq').value = extras;
 }
 
+// ── Save ─────────────────────────────────────────────────────────────
 async function doSave() {
   const name = document.getElementById('fName').value.trim();
   if (!name) { document.getElementById('fName').focus(); document.getElementById('fName').style.borderColor = '#ef4444'; return; }
@@ -349,8 +365,8 @@ async function doSave() {
     const d = await r.json();
     if (!d.success) throw new Error('Save failed');
     document.getElementById('successName').textContent = '🎉 ' + name + ' added!';
-    document.getElementById('successSub').textContent  = `Saved as Lead · Source: ${body.source || '—'} · Assigned to team for follow-up.`;
-    document.getElementById('mainForm').style.display    = 'none';
+    document.getElementById('successSub').textContent  = `Saved as Lead · Source: ${body.source} · Assigned to team.`;
+    document.getElementById('mainForm').style.display     = 'none';
     document.getElementById('successScreen').style.display = 'block';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch(e) {
@@ -359,10 +375,12 @@ async function doSave() {
   }
 }
 
+// ── Reset ─────────────────────────────────────────────────────────────
 function resetAll() {
-  _img = null; _mime = null; _audio = ''; _rec = false;
-  stopMic();
-  document.getElementById('mainForm').style.display    = 'block';
+  _img = null; _mime = null; _audio = ''; _rec = false; _audioChunks = [];
+  if (_mediaRec && _mediaRec.state !== 'inactive') { try { _mediaRec.stop(); } catch(e){} }
+  _mediaRec = null;
+  document.getElementById('mainForm').style.display     = 'block';
   document.getElementById('successScreen').style.display = 'none';
   document.getElementById('previewWrap').style.display   = 'none';
   document.getElementById('previewImg').src = '';
@@ -375,11 +393,13 @@ function resetAll() {
   document.getElementById('manualLink').style.display   = 'none';
   document.getElementById('camLabel').classList.remove('done');
   document.getElementById('camIcon').textContent = '📷';
-  document.getElementById('camText').textContent  = 'Tap to photograph visiting card';
+  document.getElementById('camText').textContent = 'Tap to photograph visiting card';
   document.getElementById('cardFile').value = '';
+  document.getElementById('micBtn').disabled    = false;
+  document.getElementById('micIcon').textContent = '🎤';
+  document.getElementById('micText').textContent = 'Tap to record voice notes';
   document.getElementById('saveBtn').disabled    = false;
   document.getElementById('saveBtn').textContent = '💾 Save Customer';
-  // Clear form
   ['fName','fCompany','fPhone','fEmail','fCity','fState','fGst','fReq'].forEach(id => document.getElementById(id).value = '');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }

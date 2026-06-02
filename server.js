@@ -142,6 +142,7 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname.replace(/[^a-zA-Z0-9.]/g, '-')),
 });
 const upload = multer({ storage, limits: { fileSize: 20 * 1024 * 1024 } });
+const audioUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
 
 function genId() {
   return Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 5).toUpperCase();
@@ -751,6 +752,22 @@ No explanation — just raw JSON.`;
     const match = text.match(/\{[\s\S]*\}/);
     const data = match ? JSON.parse(match[0]) : {};
     res.json({ success: true, data });
+  } catch(e) { res.status(500).json({ success: false, error: e.message }); }
+});
+
+// ── AI: Transcribe audio with Whisper ────────────────────────────────
+app.post('/api/ai/transcribe-audio', audioUpload.single('audio'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, error: 'No audio file received' });
+    if (!process.env.OPENAI_API_KEY) return res.status(500).json({ success: false, error: 'OPENAI_API_KEY not configured' });
+    const { OpenAI } = require('openai');
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const mimeType = req.file.mimetype || 'audio/webm';
+    const ext = mimeType.includes('mp4') || mimeType.includes('m4a') ? 'm4a' : mimeType.includes('ogg') ? 'ogg' : 'webm';
+    const { toFile } = require('openai');
+    const audioFile = await toFile(req.file.buffer, `recording.${ext}`, { type: mimeType });
+    const result = await openai.audio.transcriptions.create({ file: audioFile, model: 'whisper-1', language: 'en' });
+    res.json({ success: true, text: result.text });
   } catch(e) { res.status(500).json({ success: false, error: e.message }); }
 });
 

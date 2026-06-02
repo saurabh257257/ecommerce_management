@@ -582,7 +582,7 @@ document.getElementById('fuModal').addEventListener('click',e=>{if(e.target===e.
 document.getElementById('acpOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeACP();});
 
 // ── Add Customer Panel ────────────────────────────────────────────────
-let _acpImg=null, _acpMime=null, _acpRecog=null, _acpRec=false, _acpAudio='';
+let _acpImg=null, _acpMime=null, _acpMediaRec=null, _acpRec=false, _acpAudio='', _acpChunks=[];
 
 function openACP(){
   document.getElementById('acpTag').value='4th Jun Exhibition';
@@ -590,17 +590,20 @@ function openACP(){
 }
 function closeACP(){ document.getElementById('acpOverlay').classList.remove('open'); resetACP(); }
 function resetACP(){
-  _acpImg=null;_acpMime=null;_acpAudio='';
-  stopAcpMic();
-  const ids=['acpPreview','acpTranscript','acpForm'];
-  ids.forEach(id=>{ document.getElementById(id).style.display='none'; });
+  _acpImg=null;_acpMime=null;_acpAudio='';_acpChunks=[];
+  if(_acpMediaRec&&_acpMediaRec.state!=='inactive'){try{_acpMediaRec.stop();}catch(e){}} _acpMediaRec=null; _acpRec=false;
+  ['acpPreview','acpTranscript','acpForm'].forEach(id=>{ document.getElementById(id).style.display='none'; });
   document.getElementById('acpPreviewImg').src='';
   document.getElementById('acpTranscript').textContent='';
   document.getElementById('acpStatus').textContent='';
   document.getElementById('acpStatus').className='acp-status';
   document.getElementById('acpExtractBtn').disabled=true;
+  document.getElementById('acpMicBtn').disabled=false;
   document.getElementById('acpCamIcon').textContent='📷';
   document.getElementById('acpCamText').textContent='Tap to take photo or upload card';
+  document.getElementById('acpMicIcon').textContent='🎤';
+  document.getElementById('acpMicText').textContent='Tap to record voice notes';
+  document.getElementById('acpMicBtn').classList.remove('rec');
   document.getElementById('acpFileInput').value='';
 }
 
@@ -613,17 +616,14 @@ function onAcpCardFile(inp){
     document.getElementById('acpPreview').style.display='block';
     document.getElementById('acpCamIcon').textContent='✅';
     document.getElementById('acpCamText').textContent='Card captured — tap to replace';
-    // Resize to max 1024px then extract
     const img=new Image();
     img.onload=()=>{
       const scale=Math.min(1,1024/img.width);
       const c=document.createElement('canvas');
       c.width=img.width*scale; c.height=img.height*scale;
       c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-      const out=c.toDataURL('image/jpeg',0.85);
-      _acpImg=out.split(',')[1]; _acpMime='image/jpeg';
+      _acpImg=c.toDataURL('image/jpeg',0.85).split(',')[1]; _acpMime='image/jpeg';
       document.getElementById('acpExtractBtn').disabled=false;
-      // don't auto-extract — let user add voice notes first
     };
     img.src=url;
   };
@@ -640,51 +640,69 @@ function removeAcpCard(){
   if(!_acpAudio.trim()) document.getElementById('acpExtractBtn').disabled=true;
 }
 
-function toggleAcpMic(){
-  if(_acpRec){stopAcpMic();return;}
-  if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)) return toast('Speech recognition not supported','error');
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  _acpRecog=new SR(); _acpRecog.continuous=true; _acpRecog.interimResults=true; _acpRecog.lang='en-IN';
-  _acpRecog.onresult=e=>{
-    let fin='',int='';
-    for(let i=e.resultIndex;i<e.results.length;i++){
-      if(e.results[i].isFinal) fin+=e.results[i][0].transcript+' ';
-      else int+=e.results[i][0].transcript;
-    }
-    if(fin) _acpAudio+=fin;
-    const el=document.getElementById('acpTranscript');
-    el.style.display='block'; el.textContent=_acpAudio+int;
-    document.getElementById('acpExtractBtn').disabled=false;
-  };
-  _acpRecog.onerror=()=>stopAcpMic();
-  _acpRecog.onend=()=>{ if(_acpRec) _acpRecog.start(); };
-  _acpRecog.start(); _acpRec=true;
-  document.getElementById('acpMicBtn').classList.add('rec');
-  document.getElementById('acpMicIcon').textContent='🔴';
-  document.getElementById('acpMicText').textContent='Recording… tap to stop';
+async function toggleAcpMic(){
+  if(_acpRec){stopAcpRecording();return;}
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    _acpChunks=[];
+    const mt=MediaRecorder.isTypeSupported('audio/webm;codecs=opus')?'audio/webm;codecs=opus':
+              MediaRecorder.isTypeSupported('audio/mp4')?'audio/mp4':'audio/webm';
+    _acpMediaRec=new MediaRecorder(stream,{mimeType:mt});
+    _acpMediaRec.ondataavailable=e=>{if(e.data&&e.data.size>0)_acpChunks.push(e.data);};
+    _acpMediaRec.onstop=()=>transcribeAcpAudio(mt,stream);
+    _acpMediaRec.start(250); _acpRec=true;
+    document.getElementById('acpMicBtn').classList.add('rec');
+    document.getElementById('acpMicIcon').textContent='🔴';
+    document.getElementById('acpMicText').textContent='Recording… tap to stop';
+  }catch(e){ toast('Microphone access denied','error'); }
 }
-function stopAcpMic(){
-  if(_acpRecog){try{_acpRecog.stop();}catch(e){}_acpRecog=null;}
+
+function stopAcpRecording(){
   _acpRec=false;
-  const btn=document.getElementById('acpMicBtn');
-  if(btn){ btn.classList.remove('rec');
+  if(_acpMediaRec&&_acpMediaRec.state!=='inactive') _acpMediaRec.stop();
+  document.getElementById('acpMicBtn').classList.remove('rec');
+  document.getElementById('acpMicIcon').textContent='⏳';
+  document.getElementById('acpMicText').textContent='Transcribing with AI…';
+  document.getElementById('acpMicBtn').disabled=true;
+}
+
+async function transcribeAcpAudio(mimeType,stream){
+  stream.getTracks().forEach(t=>t.stop());
+  const ext=mimeType.includes('mp4')?'m4a':mimeType.includes('ogg')?'ogg':'webm';
+  const blob=new Blob(_acpChunks,{type:mimeType});
+  const fd=new FormData(); fd.append('audio',blob,`voice.${ext}`);
+  try{
+    const r=await fetch('/api/ai/transcribe-audio',{method:'POST',body:fd});
+    const d=await r.json();
+    if(!d.success) throw new Error(d.error||'Transcription failed');
+    const newText=d.text.trim();
+    if(newText){
+      _acpAudio=(_acpAudio+' '+newText).trim();
+      const el=document.getElementById('acpTranscript');
+      el.style.display='block'; el.textContent=_acpAudio;
+      // Push to form if already open
+      if(document.getElementById('acpForm').style.display!=='none'){
+        const req=document.getElementById('acpReq');
+        const ex=req.value.trim();
+        req.value=ex?ex+'\n'+newText:newText;
+      }
+    }
     document.getElementById('acpMicIcon').textContent='🎤';
-    document.getElementById('acpMicText').textContent=_acpAudio.trim()?'✅ Voice saved — tap to add more':'Tap to record voice notes';
+    document.getElementById('acpMicText').textContent=_acpAudio?'✅ Saved — tap to add more':'Tap to record voice notes';
+    document.getElementById('acpExtractBtn').disabled=!(_acpImg||_acpAudio.trim());
+  }catch(e){
+    document.getElementById('acpMicIcon').textContent='🎤';
+    document.getElementById('acpMicText').textContent='⚠ Failed — tap to retry';
+    toast('Transcription failed: '+e.message,'error');
   }
-  // Push transcript into requirement field if form is already open
-  if(_acpAudio.trim() && document.getElementById('acpForm').style.display!=='none'){
-    const el=document.getElementById('acpReq');
-    const existing=el.value.trim();
-    const clean=_acpAudio.trim();
-    if(!existing.includes(clean)) el.value=existing?existing+'\n'+clean:clean;
-  }
+  document.getElementById('acpMicBtn').disabled=false;
 }
 
 async function extractAcp(){
   const status=document.getElementById('acpStatus');
   const btn=document.getElementById('acpExtractBtn');
   if(!_acpImg&&!_acpAudio.trim())return;
-  stopAcpMic();
+  if(_acpRec){stopAcpRecording();await new Promise(r=>setTimeout(r,800));}
   btn.disabled=true;
   status.className='acp-status loading'; status.textContent='⏳ Extracting customer info from card…';
   try{
