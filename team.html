@@ -114,6 +114,42 @@
     .btn-amber { background:#fef9c3; color:#854d0e; border:1px solid #fef08a; }
     .btn-amber:hover { background:#fef08a; }
     .nav-sec { padding:10px 12px 4px; font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.7px; }
+
+    /* ── Add Customer Panel ────────────────────────────────── */
+    .acp-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:500; opacity:0; pointer-events:none; transition:opacity .2s; }
+    .acp-overlay.open { opacity:1; pointer-events:all; }
+    .acp-panel { position:fixed; top:0; right:0; width:440px; max-width:100vw; height:100%; background:var(--surface); display:flex; flex-direction:column; transform:translateX(110%); transition:transform .25s cubic-bezier(.4,0,.2,1); box-shadow:-6px 0 24px rgba(0,0,0,.18); z-index:501; }
+    .acp-overlay.open .acp-panel { transform:none; }
+    .acp-head { padding:15px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+    .acp-close { background:none; border:none; cursor:pointer; font-size:18px; color:var(--muted); padding:2px 6px; line-height:1; }
+    .acp-close:hover { color:var(--text); }
+    .acp-body { flex:1; overflow-y:auto; padding:16px 18px 24px; }
+    .acp-sec { margin-bottom:18px; }
+    .acp-lbl { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin-bottom:7px; }
+    .acp-tag-inp { width:100%; border:2px solid var(--primary); border-radius:9px; padding:9px 13px; font-size:13px; font-family:inherit; outline:none; background:var(--card); color:var(--text); box-sizing:border-box; font-weight:600; }
+    .acp-cam-lbl { display:flex; align-items:center; justify-content:center; gap:9px; width:100%; padding:20px; border:2px dashed var(--border); border-radius:12px; cursor:pointer; font-size:13px; font-weight:500; background:var(--card); color:var(--text); transition:all .15s; box-sizing:border-box; }
+    .acp-cam-lbl:hover { border-color:var(--primary); color:var(--primary); background:#f0f4ff; }
+    .acp-preview { width:100%; border-radius:10px; overflow:hidden; margin-top:10px; display:none; position:relative; border:1px solid var(--border); }
+    .acp-preview img { width:100%; display:block; }
+    .acp-preview-rm { position:absolute; top:6px; right:6px; background:rgba(0,0,0,.65); color:#fff; border:none; border-radius:50%; width:26px; height:26px; cursor:pointer; font-size:12px; line-height:26px; text-align:center; }
+    .acp-mic-btn { display:flex; align-items:center; gap:9px; padding:10px 14px; border:1px solid var(--border); border-radius:9px; cursor:pointer; font-size:13px; background:var(--card); font-family:inherit; color:var(--text); transition:all .15s; width:100%; box-sizing:border-box; }
+    .acp-mic-btn:hover { border-color:#ef4444; }
+    .acp-mic-btn.rec { background:#fef2f2; border-color:#ef4444; color:#ef4444; animation:pulse 1.2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.7} }
+    .acp-transcript { margin-top:8px; font-size:12px; line-height:1.55; color:var(--text); background:var(--card); border:1px solid var(--border); border-radius:8px; padding:8px 10px; min-height:40px; display:none; white-space:pre-wrap; }
+    .acp-extract-btn { width:100%; padding:12px; border-radius:10px; border:none; background:var(--primary); color:#fff; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; transition:opacity .15s; }
+    .acp-extract-btn:disabled { opacity:.4; cursor:default; }
+    .acp-extract-btn:not(:disabled):hover { opacity:.88; }
+    .acp-status { font-size:12px; padding:5px 0 2px; min-height:20px; }
+    .acp-status.loading { color:var(--primary); }
+    .acp-status.ok  { color:#16a34a; }
+    .acp-status.err { color:var(--danger); }
+    .acp-field { border:1px solid var(--border); border-radius:8px; padding:8px 11px; font-size:13px; font-family:inherit; outline:none; background:var(--card); color:var(--text); width:100%; box-sizing:border-box; margin-bottom:8px; }
+    .acp-field:focus { border-color:var(--primary); }
+    .acp-form-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px; }
+    .acp-form-row .acp-field { margin-bottom:0; }
+    .acp-area { height:72px; resize:none; }
+    .acp-divider { border:none; border-top:1px solid var(--border); margin:18px 0; }
   </style>
 </head>
 <body>
@@ -136,6 +172,7 @@
   <div class="topbar" style="flex-shrink:0">
     <h2 id="pageTitle">Dashboard</h2>
     <div class="topbar-actions">
+      <button class="btn btn-primary btn-sm" onclick="openACP()">➕ Add Customer</button>
       <button class="btn btn-outline btn-sm" onclick="showBrief()">🤖 Brief</button>
       <button class="btn btn-outline btn-sm" onclick="location.reload()">↻ Refresh</button>
       <a href="customers.html" class="btn btn-outline btn-sm">Full CRM</a>
@@ -220,6 +257,74 @@
 </div>
 
 <div id="toast"></div>
+
+<!-- ── Add Customer Panel ──────────────────────────────────────── -->
+<div class="acp-overlay" id="acpOverlay">
+  <div class="acp-panel" id="acpPanel">
+    <div class="acp-head">
+      <span style="font-size:15px;font-weight:700">➕ Add Customer</span>
+      <button class="acp-close" onclick="closeACP()">✕</button>
+    </div>
+    <div class="acp-body">
+
+      <!-- Event Tag -->
+      <div class="acp-sec">
+        <div class="acp-lbl">Event / Source Tag</div>
+        <input type="text" class="acp-tag-inp" id="acpTag" placeholder="e.g. 4 Jun Exhibition" />
+      </div>
+
+      <!-- Visiting Card -->
+      <div class="acp-sec">
+        <div class="acp-lbl">Visiting Card Photo</div>
+        <label class="acp-cam-lbl" for="acpFileInput">
+          <span id="acpCamIcon">📷</span>
+          <span id="acpCamText">Tap to take photo or upload card</span>
+        </label>
+        <input type="file" id="acpFileInput" accept="image/*" capture="environment" style="display:none" onchange="onAcpCardFile(this)" />
+        <div class="acp-preview" id="acpPreview">
+          <img id="acpPreviewImg" src="" alt="Card preview" />
+          <button class="acp-preview-rm" onclick="removeAcpCard()" title="Remove">✕</button>
+        </div>
+      </div>
+
+      <!-- Voice Notes -->
+      <div class="acp-sec">
+        <div class="acp-lbl">Voice Notes <span style="font-weight:400;color:var(--muted);text-transform:none;font-size:11px">(optional — speak extra details)</span></div>
+        <button class="acp-mic-btn" id="acpMicBtn" onclick="toggleAcpMic()">
+          <span id="acpMicIcon">🎤</span>
+          <span id="acpMicText">Tap to record voice notes</span>
+        </button>
+        <div class="acp-transcript" id="acpTranscript"></div>
+      </div>
+
+      <!-- Extract -->
+      <div class="acp-sec">
+        <button class="acp-extract-btn" id="acpExtractBtn" onclick="extractAcp()" disabled>✨ Extract Customer Info</button>
+        <div class="acp-status" id="acpStatus"></div>
+      </div>
+
+      <!-- Review Form -->
+      <div id="acpForm" style="display:none">
+        <hr class="acp-divider" />
+        <div class="acp-lbl" style="margin-bottom:12px">Review &amp; Edit</div>
+        <input  type="text" class="acp-field" id="acpName"    placeholder="Name *" />
+        <input  type="text" class="acp-field" id="acpCompany" placeholder="Company" />
+        <input  type="text" class="acp-field" id="acpPhone"   placeholder="Phone" />
+        <input  type="text" class="acp-field" id="acpEmail"   placeholder="Email" />
+        <div class="acp-form-row">
+          <input type="text" class="acp-field" id="acpCity"  placeholder="City" />
+          <input type="text" class="acp-field" id="acpState" placeholder="State" />
+        </div>
+        <input  type="text" class="acp-field" id="acpGst"     placeholder="GST Number" />
+        <textarea class="acp-field acp-area"  id="acpReq"     placeholder="Requirement / Notes…"></textarea>
+        <button class="btn btn-primary" style="width:100%;padding:12px;font-size:14px;margin-top:2px" onclick="saveACP()">
+          💾 Save Customer
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
 
 <script>
 const PERSON = new URLSearchParams(location.search).get('name') || 'Rohan';
@@ -474,6 +579,170 @@ function toast(msg,type=''){const el=document.getElementById('toast');el.textCon
 
 document.getElementById('qnModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeQN();});
 document.getElementById('fuModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeFU();});
+document.getElementById('acpOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeACP();});
+
+// ── Add Customer Panel ────────────────────────────────────────────────
+let _acpImg=null, _acpMime=null, _acpRecog=null, _acpRec=false, _acpAudio='';
+
+function openACP(){
+  const today=new Date();
+  const mn=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('acpTag').value=`${today.getDate()} ${mn[today.getMonth()]} Exhibition`;
+  document.getElementById('acpOverlay').classList.add('open');
+}
+function closeACP(){ document.getElementById('acpOverlay').classList.remove('open'); resetACP(); }
+function resetACP(){
+  _acpImg=null;_acpMime=null;_acpAudio='';
+  stopAcpMic();
+  const ids=['acpPreview','acpTranscript','acpForm'];
+  ids.forEach(id=>{ document.getElementById(id).style.display='none'; });
+  document.getElementById('acpPreviewImg').src='';
+  document.getElementById('acpTranscript').textContent='';
+  document.getElementById('acpStatus').textContent='';
+  document.getElementById('acpStatus').className='acp-status';
+  document.getElementById('acpExtractBtn').disabled=true;
+  document.getElementById('acpCamIcon').textContent='📷';
+  document.getElementById('acpCamText').textContent='Tap to take photo or upload card';
+  document.getElementById('acpFileInput').value='';
+}
+
+function onAcpCardFile(inp){
+  const file=inp.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const url=e.target.result;
+    document.getElementById('acpPreviewImg').src=url;
+    document.getElementById('acpPreview').style.display='block';
+    document.getElementById('acpCamIcon').textContent='✅';
+    document.getElementById('acpCamText').textContent='Card captured — tap to replace';
+    // Resize to max 1024px then extract
+    const img=new Image();
+    img.onload=()=>{
+      const scale=Math.min(1,1024/img.width);
+      const c=document.createElement('canvas');
+      c.width=img.width*scale; c.height=img.height*scale;
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      const out=c.toDataURL('image/jpeg',0.85);
+      _acpImg=out.split(',')[1]; _acpMime='image/jpeg';
+      document.getElementById('acpExtractBtn').disabled=false;
+      extractAcp();  // auto-extract on capture
+    };
+    img.src=url;
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeAcpCard(){
+  _acpImg=null;
+  document.getElementById('acpPreview').style.display='none';
+  document.getElementById('acpPreviewImg').src='';
+  document.getElementById('acpCamIcon').textContent='📷';
+  document.getElementById('acpCamText').textContent='Tap to take photo or upload card';
+  document.getElementById('acpFileInput').value='';
+  if(!_acpAudio.trim()) document.getElementById('acpExtractBtn').disabled=true;
+}
+
+function toggleAcpMic(){
+  if(_acpRec){stopAcpMic();return;}
+  if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)) return toast('Speech recognition not supported','error');
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  _acpRecog=new SR(); _acpRecog.continuous=true; _acpRecog.interimResults=true; _acpRecog.lang='en-IN';
+  _acpRecog.onresult=e=>{
+    let fin='',int='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal) fin+=e.results[i][0].transcript+' ';
+      else int+=e.results[i][0].transcript;
+    }
+    if(fin) _acpAudio+=fin;
+    const el=document.getElementById('acpTranscript');
+    el.style.display='block'; el.textContent=_acpAudio+int;
+    document.getElementById('acpExtractBtn').disabled=false;
+  };
+  _acpRecog.onerror=()=>stopAcpMic();
+  _acpRecog.onend=()=>{ if(_acpRec) _acpRecog.start(); };
+  _acpRecog.start(); _acpRec=true;
+  document.getElementById('acpMicBtn').classList.add('rec');
+  document.getElementById('acpMicIcon').textContent='🔴';
+  document.getElementById('acpMicText').textContent='Recording… tap to stop';
+}
+function stopAcpMic(){
+  if(_acpRecog){try{_acpRecog.stop();}catch(e){}_acpRecog=null;}
+  _acpRec=false;
+  const btn=document.getElementById('acpMicBtn');
+  if(btn){ btn.classList.remove('rec');
+    document.getElementById('acpMicIcon').textContent='🎤';
+    document.getElementById('acpMicText').textContent='Tap to record voice notes';
+  }
+}
+
+async function extractAcp(){
+  const status=document.getElementById('acpStatus');
+  const btn=document.getElementById('acpExtractBtn');
+  if(!_acpImg&&!_acpAudio.trim())return;
+  stopAcpMic();
+  btn.disabled=true;
+  status.className='acp-status loading'; status.textContent='⏳ Extracting customer info from card…';
+  try{
+    const r=await fetch('/api/ai/extract-card',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({imageBase64:_acpImg,mimeType:_acpMime,audioText:_acpAudio})});
+    const d=await r.json();
+    if(!d.success) throw new Error(d.error||'Extraction failed');
+    fillAcpForm(d.data);
+    status.className='acp-status ok'; status.textContent='✅ Info extracted — review and save below';
+    document.getElementById('acpForm').style.display='block';
+    setTimeout(()=>document.getElementById('acpName').focus(),100);
+  }catch(e){
+    status.className='acp-status err'; status.textContent='⚠ '+e.message+' — fill form manually';
+    fillAcpForm({});
+    document.getElementById('acpForm').style.display='block';
+  }
+  btn.disabled=false;
+}
+
+function fillAcpForm(d){
+  document.getElementById('acpName').value    = d.name||'';
+  document.getElementById('acpCompany').value = d.company||'';
+  document.getElementById('acpPhone').value   = d.phone||'';
+  document.getElementById('acpEmail').value   = d.email||'';
+  document.getElementById('acpCity').value    = d.city||'';
+  document.getElementById('acpState').value   = d.state||'';
+  document.getElementById('acpGst').value     = d.gst_number||'';
+  const extras=[
+    d.designation ? 'Designation: '+d.designation : '',
+    d.website     ? 'Website: '+d.website : '',
+    d.notes       || '',
+    _acpAudio.trim()
+  ].filter(Boolean).join('\n').trim();
+  document.getElementById('acpReq').value = extras;
+}
+
+async function saveACP(){
+  const name=document.getElementById('acpName').value.trim();
+  if(!name)return toast('Name is required','error');
+  const body={
+    name, company:document.getElementById('acpCompany').value.trim(),
+    phone:document.getElementById('acpPhone').value.trim(),
+    email:document.getElementById('acpEmail').value.trim(),
+    city:document.getElementById('acpCity').value.trim(),
+    state:document.getElementById('acpState').value.trim(),
+    gst_number:document.getElementById('acpGst').value.trim(),
+    requirement:document.getElementById('acpReq').value.trim(),
+    source:document.getElementById('acpTag').value.trim(),
+    assigned_to:PERSON, status:'Lead'
+  };
+  const r=await fetch('/api/crm/customers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d=await r.json();
+  if(!d.success)return toast('Save failed','error');
+  toast(name+' added!','success');
+  closeACP();
+  // Refresh list and open new customer
+  const rf=await fetch('/api/crm/customers');
+  const all=(await rf.json()).data||[];
+  mine=all.filter(c=>(c.assigned_to||'').trim()===PERSON);
+  renderStats(); buildFilterTabs(); renderList();
+  if(d.id) selectC(d.id);
+}
+
 init();
 </script>
 <script src="js/nav.js"></script>

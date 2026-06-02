@@ -720,6 +720,40 @@ Keep it under 250 words. Be specific — use customer names.` }]
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── AI: Extract visiting card info ───────────────────────────────────
+app.post('/api/ai/extract-card', async (req, res) => {
+  try {
+    const { imageBase64, mimeType, audioText } = req.body;
+    if (!imageBase64 && !audioText) return res.status(400).json({ success: false, error: 'Provide image or audio text' });
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const content = [];
+    if (imageBase64) {
+      content.push({ type: 'image', source: { type: 'base64', media_type: mimeType || 'image/jpeg', data: imageBase64 } });
+    }
+    let prompt = `Extract contact/customer details from this visiting card image.
+Return ONLY a JSON object with these exact fields (use empty string "" if not found):
+name, company, phone, email, city, state, gst_number, designation, website
+No explanation, no markdown — just the raw JSON object.`;
+    if (audioText) {
+      prompt += `\n\nAdditional spoken notes from the user: "${audioText}"\nUse these to supplement missing fields. Put any extra context in a "notes" field.`;
+    }
+    if (!imageBase64 && audioText) {
+      prompt = `Extract customer details from these spoken notes: "${audioText}"
+Return ONLY a JSON object with: name, company, phone, email, city, state, gst_number, designation, website, notes
+No explanation — just raw JSON.`;
+    }
+    content.push({ type: 'text', text: prompt });
+    const msg = await client.messages.create({
+      model: 'claude-sonnet-4-6', max_tokens: 400,
+      messages: [{ role: 'user', content }]
+    });
+    const text = msg.content[0].text.trim();
+    const match = text.match(/\{[\s\S]*\}/);
+    const data = match ? JSON.parse(match[0]) : {};
+    res.json({ success: true, data });
+  } catch(e) { res.status(500).json({ success: false, error: e.message }); }
+});
+
 // ── Image rename to id_sku_category_name_N ───────────────────────────
 app.post('/api/products/:id/rename-images', (req, res) => {
   try {
