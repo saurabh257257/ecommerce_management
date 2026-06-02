@@ -129,7 +129,7 @@ try { db.exec("INSERT OR IGNORE INTO statuses (name,color,sort_order) VALUES ('L
 // Seed default customer types
 try { db.exec("INSERT OR IGNORE INTO customer_types (name,color,sort_order) VALUES ('EV Battery','#22c55e',1),('Supplier','#f97316',2),('Retailer','#3b82f6',3),('Distributor','#8b5cf6',4)"); } catch(e) {}
 
-app.use(express.json());
+app.use(express.json({ limit: '15mb' }));
 app.use(express.static(path.join(__dirname)));
 
 // ── Image upload setup ────────────────────────────────────────
