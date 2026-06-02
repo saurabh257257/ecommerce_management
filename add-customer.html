@@ -172,14 +172,7 @@
 <script>
 let _img = null, _mime = null, _recog = null, _rec = false, _audio = '';
 
-// Pre-fill event tag from URL param or today's date
-(function(){
-  const params = new URLSearchParams(location.search);
-  const tag = params.get('event');
-  const today = new Date();
-  const mn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  document.getElementById('evtTag').value = tag || `${today.getDate()} ${mn[today.getMonth()]} Exhibition`;
-})();
+document.getElementById('evtTag').value = '4th Jun Exhibition';
 
 function onCardFile(inp) {
   const file = inp.files[0]; if (!file) return;
@@ -201,8 +194,7 @@ function onCardFile(inp) {
       canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
       const out = canvas.toDataURL('image/jpeg', 0.82);
       _img = out.split(',')[1]; _mime = 'image/jpeg';
-      setExtractReady();
-      doExtract(); // auto-extract on capture
+      setExtractReady(); // just enable Extract button — don't auto-run, let them add voice first
     };
     img.src = url;
   };
@@ -255,7 +247,18 @@ function stopMic() {
   const btn = document.getElementById('micBtn');
   btn.classList.remove('rec');
   document.getElementById('micIcon').textContent = '🎤';
-  document.getElementById('micText').textContent  = 'Tap to record voice notes';
+  document.getElementById('micText').textContent  = _audio.trim() ? '✅ Voice note saved — tap to add more' : 'Tap to record voice notes';
+  // If form is already visible, push transcript into the requirement field
+  if (_audio.trim() && document.getElementById('formCard').style.display !== 'none') {
+    const reqEl = document.getElementById('fReq');
+    const existing = reqEl.value.trim();
+    const audioClean = _audio.trim();
+    // Avoid duplicating if already present
+    if (!existing.includes(audioClean)) {
+      reqEl.value = existing ? existing + '\n' + audioClean : audioClean;
+    }
+  }
+  setExtractReady();
 }
 
 function setExtractReady() {

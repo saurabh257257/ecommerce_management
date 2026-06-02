@@ -585,9 +585,7 @@ document.getElementById('acpOverlay').addEventListener('click',e=>{if(e.target==
 let _acpImg=null, _acpMime=null, _acpRecog=null, _acpRec=false, _acpAudio='';
 
 function openACP(){
-  const today=new Date();
-  const mn=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  document.getElementById('acpTag').value=`${today.getDate()} ${mn[today.getMonth()]} Exhibition`;
+  document.getElementById('acpTag').value='4th Jun Exhibition';
   document.getElementById('acpOverlay').classList.add('open');
 }
 function closeACP(){ document.getElementById('acpOverlay').classList.remove('open'); resetACP(); }
@@ -625,7 +623,7 @@ function onAcpCardFile(inp){
       const out=c.toDataURL('image/jpeg',0.85);
       _acpImg=out.split(',')[1]; _acpMime='image/jpeg';
       document.getElementById('acpExtractBtn').disabled=false;
-      extractAcp();  // auto-extract on capture
+      // don't auto-extract — let user add voice notes first
     };
     img.src=url;
   };
@@ -671,7 +669,14 @@ function stopAcpMic(){
   const btn=document.getElementById('acpMicBtn');
   if(btn){ btn.classList.remove('rec');
     document.getElementById('acpMicIcon').textContent='🎤';
-    document.getElementById('acpMicText').textContent='Tap to record voice notes';
+    document.getElementById('acpMicText').textContent=_acpAudio.trim()?'✅ Voice saved — tap to add more':'Tap to record voice notes';
+  }
+  // Push transcript into requirement field if form is already open
+  if(_acpAudio.trim() && document.getElementById('acpForm').style.display!=='none'){
+    const el=document.getElementById('acpReq');
+    const existing=el.value.trim();
+    const clean=_acpAudio.trim();
+    if(!existing.includes(clean)) el.value=existing?existing+'\n'+clean:clean;
   }
 }
 
