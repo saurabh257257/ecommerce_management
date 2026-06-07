@@ -823,6 +823,49 @@ async function waApiCall(body) {
   return j;
 }
 
+// Upload a local file to Meta's media endpoint, returns a media id we can attach to a message
+async function waUploadMedia(filePath, mimeType) {
+  const buf = fs.readFileSync(filePath);
+  const form = new FormData();
+  form.append('messaging_product', 'whatsapp');
+  form.append('file', new Blob([buf], { type: mimeType }), path.basename(filePath));
+  const r = await fetch(`https://graph.facebook.com/v21.0/${WA_PHONE_ID}/media`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${WA_TOKEN}` },
+    body: form
+  });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error?.message || 'Media upload failed');
+  return j.id;
+}
+
+// Send an image / document / video / audio attachment (optionally with a caption)
+app.post('/api/whatsapp/send-media', upload.single('file'), async (req, res) => {
+  try {
+    const { customerId, phone, caption, author } = req.body;
+    if (!phone || !req.file) return res.status(400).json({ error: 'phone and file required' });
+    const to = waToE164(phone);
+    const mime = req.file.mimetype || 'application/octet-stream';
+    let kind = 'document';
+    if (mime.startsWith('image/')) kind = 'image';
+    else if (mime.startsWith('video/')) kind = 'video';
+    else if (mime.startsWith('audio/')) kind = 'audio';
+
+    const mediaId = await waUploadMedia(req.file.path, mime);
+    const payload = { messaging_product: 'whatsapp', to, type: kind };
+    payload[kind] = { id: mediaId };
+    if (caption && (kind === 'image' || kind === 'video' || kind === 'document')) payload[kind].caption = caption;
+    if (kind === 'document') payload[kind].filename = req.file.originalname;
+
+    const result = await waApiCall(payload);
+    const waId = result.messages?.[0]?.id || '';
+    const label = `[${kind}: ${req.file.originalname}]${caption ? ' ' + caption : ''}`;
+    db.prepare(`INSERT INTO wa_messages (customer_id, phone, direction, body, msg_type, wa_msg_id, status, author) VALUES (?,?,?,?,?,?,?,?)`)
+      .run(customerId || null, phone, 'out', label, kind, waId, 'sent', author || '');
+    res.json({ success: true, wa_msg_id: waId });
+  } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+});
+
 // Send a free-form text message (only works inside the 24-hour customer-service window)
 app.post('/api/whatsapp/send', async (req, res) => {
   try {

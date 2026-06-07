@@ -725,6 +725,8 @@ function renderDetail() {
         </div>
         <div class="wa-thread" id="waThread-${c.id}"><div class="wa-empty">Loading conversation…</div></div>
         <div class="wa-compose">
+          <input type="file" id="waFile-${c.id}" style="display:none" onchange="sendWaFile(${c.id},'${esc(c.phone||'')}')">
+          <button title="Attach image, document, video…" onclick="document.getElementById('waFile-${c.id}').click()">📎</button>
           <input type="text" id="waInput-${c.id}" placeholder="Type a message (works within 24h of their last reply)…" onkeydown="if(event.key==='Enter')sendWaText(${c.id},'${esc(c.phone||'')}')">
           <button onclick="sendWaText(${c.id},'${esc(c.phone||'')}')">➤</button>
         </div>
@@ -825,6 +827,26 @@ async function sendWaText(cid,phone) {
     loadWaThread(cid);
   } catch(e){ toast(e.message.includes('window')||e.message.includes('24')?'Outside 24h window — use a template instead':e.message,'error'); inp.value=text; }
   inp.disabled=false; inp.focus();
+}
+async function sendWaFile(cid,phone) {
+  phone=_waPhone(cid,phone);
+  const inp=document.getElementById('waFile-'+cid);
+  const file=inp.files && inp.files[0];
+  if(!file)return;
+  if(!phone){ toast('No phone number on file','error'); inp.value=''; return; }
+  if(file.size > 16*1024*1024){ toast('File too large — WhatsApp limit is 16MB','error'); inp.value=''; return; }
+  const caption=(prompt('Add a caption (optional):')||'').trim();
+  toast('Uploading & sending…','success');
+  try {
+    const fd=new FormData();
+    fd.append('file',file); fd.append('customerId',cid); fd.append('phone',phone); fd.append('caption',caption); fd.append('author',PERSON);
+    const r=await fetch('/api/whatsapp/send-media',{method:'POST',body:fd});
+    const j=await r.json();
+    if(!j.success) throw new Error(j.error||'Send failed');
+    toast('Attachment sent','success');
+    loadWaThread(cid);
+  } catch(e){ toast(e.message.includes('window')||e.message.includes('24')?'Outside 24h window — use a template instead':e.message,'error'); }
+  inp.value='';
 }
 async function sendWaTemplate(cid,phone,name) {
   phone=_waPhone(cid,phone);
