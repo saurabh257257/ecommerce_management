@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>(function(){try{var a=JSON.parse(sessionStorage.getItem("arambhika_auth")||"null");if(!a||!a.role){location.replace("login.html");return;}window.__AUTH=a;if(a.role==="member"){var p=location.pathname.split("/").pop();if(p!=="team.html"){location.replace("team.html?name="+encodeURIComponent(a.name));}}}catch(e){location.replace("login.html");}})();</script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Arambhika Enablers — Admin Dashboard</title>
@@ -78,6 +79,10 @@
     <a href="database.html" class="nav-link">
       <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>
       Database
+    </a>
+    <a href="#" class="nav-link" onclick="sessionStorage.removeItem('arambhika_auth');location.replace('login.html');return false;">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+      Logout
     </a>
   </nav>
 </aside>

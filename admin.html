@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>(function(){try{var a=JSON.parse(sessionStorage.getItem("arambhika_auth")||"null");if(!a||!a.role){location.replace("login.html");return;}window.__AUTH=a;if(a.role==="member"){var p=location.pathname.split("/").pop();if(p!=="team.html"){location.replace("team.html?name="+encodeURIComponent(a.name));}}}catch(e){location.replace("login.html");}})();</script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin — Arambhika Enablers</title>
@@ -272,11 +273,15 @@ function renderMembers() {
   const el = document.getElementById('memberList');
   if (!members.length) { el.innerHTML = '<div class="empty-state">No team members yet</div>'; return; }
   el.innerHTML = members.map(m => `
-    <div class="member-row" id="mr-${m.id}">
+    <div class="member-row" id="mr-${m.id}" style="flex-wrap:wrap">
       <div class="member-av" style="background:${m.color}">${(m.name||'?')[0].toUpperCase()}</div>
       <div style="flex:1;min-width:0">
         <div class="member-name">${esc(m.name)}</div>
         <div class="member-role">${m.role ? esc(m.role) : '<em style="opacity:.5">No role</em>'}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="text" id="mpw-${m.id}" placeholder="Login password" value="${esc(m.password||'')}" style="font-size:12px;padding:5px 9px;border:1px solid var(--border);border-radius:7px;width:130px">
+        <button class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 9px" onclick="saveMemberPassword(${m.id})">Save</button>
       </div>
       <a href="team.html?name=${encodeURIComponent(m.name)}" class="member-link">View →</a>
       <button class="btn btn-danger btn-sm" style="font-size:11px;padding:3px 8px" onclick="deleteMember(${m.id},'${esc(m.name).replace(/'/g,"\\'")}')">✕</button>
@@ -335,6 +340,15 @@ async function addMember() {
   document.getElementById('newRole').value = '';
   document.getElementById('statMembers').textContent = members.length;
   renderMembers(); toast('Team member added', 'success');
+}
+async function saveMemberPassword(id) {
+  const pwInput = document.getElementById('mpw-'+id);
+  const password = pwInput.value.trim();
+  if (password.toLowerCase() === 'admin') { toast('That password is reserved for Admin — choose another', 'error'); return; }
+  const m = members.find(x => x.id === id);
+  await fetch(`/api/team-members/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ color: m.color, role: m.role, password }) });
+  if (m) m.password = password;
+  toast(password ? `Login password set for ${m.name}` : `Password cleared for ${m.name}`, 'success');
 }
 async function deleteMember(id, name) {
   if (!confirm(`Remove ${name}?`)) return;
