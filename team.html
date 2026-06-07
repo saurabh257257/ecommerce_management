@@ -59,8 +59,11 @@
     .tm-stat.warn   .tm-stat-v { color:#f59e0b; }
     .tm-stat.ok     .tm-stat-v { color:#16a34a; }
 
-    /* AI brief — right panel */
-    .tm-brief-view { flex:1; display:flex; flex-direction:column; overflow:hidden; background:var(--bg); }
+    /* AI brief — slide-over panel (opens on click, closes on click) */
+    .brief-overlay { position:fixed; inset:0; background:rgba(15,23,42,.4); z-index:200; display:none; align-items:stretch; justify-content:flex-end; }
+    .brief-overlay.open { display:flex; }
+    .tm-brief-view { width:420px; max-width:92vw; display:flex; flex-direction:column; overflow:hidden; background:var(--surface); box-shadow:-8px 0 30px rgba(0,0,0,.15); transform:translateX(100%); transition:transform .22s ease; }
+    .brief-overlay.open .tm-brief-view { transform:translateX(0); }
     .brief-rh { padding:14px 20px 12px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; gap:10px; }
     .brief-rh-title { font-size:15px; font-weight:700; }
     .brief-rh-ts    { font-size:11px; color:var(--muted); margin-top:2px; }
@@ -202,6 +205,56 @@
     .acp-form-row .acp-field { margin-bottom:0; }
     .acp-area { height:72px; resize:none; }
     .acp-divider { border:none; border-top:1px solid var(--border); margin:18px 0; }
+
+    /* ── Mobile-friendly layout ──────────────────────────────────── */
+    .tm-filters-toggle, .tm-bottom-nav { display:none; }
+    @media (max-width: 860px) {
+      html,body { overflow:auto; }
+      .sidebar { display:none !important; }
+      .main { margin-left:0 !important; }
+      .tm-page { height:auto; min-height:calc(100vh - 54px); padding-bottom:62px; }
+      .topbar h2 { font-size:16px; }
+      .topbar-actions a[href="customers.html"] { display:none; } /* "Full CRM" link redundant on mobile */
+
+      /* Tiles: smaller, horizontally scrollable, snap */
+      .tm-tiles { padding:10px 12px; gap:8px; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; }
+      .tm-tile { min-width:118px; padding:10px 12px; scroll-snap-align:start; }
+      .tm-tile-val { font-size:19px; }
+
+      /* Stack: filters become a collapsible drawer, list/detail are single full-width panes that slide */
+      .tm-wrap { position:relative; flex-direction:column; overflow:visible; }
+      .tm-filters-toggle { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 14px; background:var(--surface); border-bottom:1px solid var(--border); font-size:12px; font-weight:600; color:var(--text); cursor:pointer; }
+      .tm-filters-toggle .arr { transition:transform .15s; color:var(--muted); }
+      .tm-filters-toggle.open .arr { transform:rotate(180deg); }
+      .tm-filters { display:none; width:auto; border-right:none; border-bottom:1px solid var(--border); max-height:46vh; }
+      .tm-filters.open { display:block; }
+
+      .tm-left { width:auto; border-right:none; }
+      .tm-list { -webkit-overflow-scrolling:touch; }
+      .tm-item { padding:13px 16px; }
+
+      /* Slide list <-> detail like a native app */
+      .tm-detail { position:absolute; inset:0; background:var(--bg); z-index:5; transform:translateX(100%); transition:transform .2s ease; padding:14px 14px 90px; }
+      .tm-wrap.show-detail .tm-detail { transform:translateX(0); display:block !important; }
+      .tm-wrap.show-detail .tm-left { display:none; }
+
+      .d-grid { grid-template-columns:1fr 1fr !important; }
+      .d-actions { flex-wrap:wrap; gap:6px; }
+      .d-actions .btn { font-size:11px; padding:6px 9px; }
+
+      /* Brief slide-over takes full width on mobile */
+      .tm-brief-view { width:100vw; max-width:100vw; }
+
+      /* Bottom app-style nav bar */
+      .tm-bottom-nav { display:flex; position:fixed; left:0; right:0; bottom:0; z-index:120; background:var(--surface); border-top:1px solid var(--border); box-shadow:0 -2px 14px rgba(0,0,0,.06); }
+      .tm-bottom-nav a, .tm-bottom-nav button { flex:1; border:none; background:none; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:8px 4px 9px; font-size:10px; font-weight:600; color:var(--muted); text-decoration:none; cursor:pointer; font-family:inherit; }
+      .tm-bottom-nav .ic { font-size:17px; line-height:1; }
+      .tm-bottom-nav a.active { color:var(--primary); }
+      .tm-bottom-nav a:active, .tm-bottom-nav button:active { color:var(--primary); }
+    }
+    @media (min-width: 861px) {
+      .tm-filters-toggle { display:none !important; }
+    }
   </style>
 </head>
 <body>
@@ -225,7 +278,7 @@
     <h2 id="pageTitle">Dashboard</h2>
     <div class="topbar-actions">
       <button class="btn btn-primary btn-sm" onclick="openACP()">➕ Add Customer</button>
-      <button class="btn btn-outline btn-sm" onclick="showBrief()">🤖 Brief</button>
+      <button class="btn btn-outline btn-sm" onclick="openBrief()">🤖 Brief</button>
       <button class="btn btn-outline btn-sm" onclick="location.reload()">↻ Refresh</button>
       <a href="customers.html" class="btn btn-outline btn-sm">Full CRM</a>
     </div>
@@ -236,6 +289,11 @@
   <div class="tm-tiles" id="tmTiles"></div>
 
   <div class="tm-wrap">
+    <!-- Mobile-only: collapsible filters drawer toggle -->
+    <div class="tm-filters-toggle" id="tmFiltToggle" onclick="toggleFiltersDrawer()">
+      <span>🔎 Filters &amp; views</span>
+      <span class="arr">▾</span>
+    </div>
     <!-- FILTERS SIDEBAR -->
     <div class="tm-filters" id="tmFilters">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
@@ -256,27 +314,38 @@
       </div>
     </div>
 
-    <!-- RIGHT: AI brief (default) + customer detail -->
-    <div class="tm-right">
-      <!-- AI Brief view -->
-      <div class="tm-brief-view" id="tmBriefView">
-        <div class="brief-rh">
-          <div>
-            <div class="brief-rh-title">🤖 AI Daily Brief</div>
-            <div class="brief-rh-ts" id="briefTimestamp">—</div>
-          </div>
-          <div class="brief-rh-actions">
-            <button class="btn btn-outline btn-sm" id="briefRefreshBtn" onclick="loadBrief()">🔄 Refresh</button>
-          </div>
-        </div>
-        <div class="brief-body" id="briefBody">
-          <div class="brief-empty">Click <strong>🔄 Refresh</strong> to generate your daily brief.</div>
-        </div>
-      </div>
-      <!-- Customer detail view (hidden by default) -->
-      <div class="tm-detail" id="tmDetail" style="display:none"></div>
-    </div>
+    <!-- Customer detail (shown in place of list on mobile when a customer is selected) -->
+    <div class="tm-detail" id="tmDetail" style="display:none"></div>
   </div>
+  </div>
+</div>
+
+<!-- Mobile bottom app-style navigation -->
+<nav class="tm-bottom-nav" id="tmBottomNav">
+  <a href="index.html" class="nav-link"><span class="ic">🏠</span>Dashboard</a>
+  <a href="customers.html" class="nav-link"><span class="ic">👥</span>CRM</a>
+  <a href="products.html" class="nav-link"><span class="ic">📦</span>Products</a>
+  <a href="orders.html" class="nav-link"><span class="ic">🧾</span>Orders</a>
+  <button onclick="openBrief()"><span class="ic">🤖</span>Brief</button>
+  <button onclick="logout()"><span class="ic">⏻</span>Logout</button>
+</nav>
+
+<!-- AI Brief — slide-over panel, opens/closes on click -->
+<div class="brief-overlay" id="briefOverlay" onclick="if(event.target===this)closeBrief()">
+  <div class="tm-brief-view" id="tmBriefView">
+    <div class="brief-rh">
+      <div>
+        <div class="brief-rh-title">🤖 AI Daily Brief</div>
+        <div class="brief-rh-ts" id="briefTimestamp">—</div>
+      </div>
+      <div class="brief-rh-actions">
+        <button class="btn btn-outline btn-sm" id="briefRefreshBtn" onclick="loadBrief()">🔄 Refresh</button>
+        <button class="btn btn-outline btn-sm" onclick="closeBrief()" title="Close">✕</button>
+      </div>
+    </div>
+    <div class="brief-body" id="briefBody">
+      <div class="brief-empty">Click <strong>🔄 Refresh</strong> to generate your daily brief.</div>
+    </div>
   </div>
 </div>
 
@@ -412,6 +481,9 @@ async function init() {
     if (main) main.style.marginLeft = '0';
     const fullCrm = document.querySelector('.topbar-actions a[href="customers.html"]');
     if (fullCrm) fullCrm.remove();
+    // Trim the mobile bottom nav too — members only get their dashboard, brief & logout
+    const nav = document.getElementById('tmBottomNav');
+    if (nav) nav.querySelectorAll('a[href="customers.html"], a[href="products.html"], a[href="orders.html"]').forEach(a=>a.remove());
   }
   const [custR, tmR, stR, ctR, tgR] = await Promise.all([
     fetch('/api/crm/customers'), fetch('/api/team-members'),
@@ -452,7 +524,18 @@ function renderTiles() {
   }
   el.innerHTML = html;
 }
-function setScope(s){ scope=s; sideFilter={type:null,status:null,tag:null}; tabFilter='All'; renderTiles(); renderFilterSidebar(); buildFilterTabs(); renderList(); }
+function setScope(s){
+  scope=s; sideFilter={type:null,status:null,tag:null}; tabFilter='All';
+  renderTiles(); renderFilterSidebar(); buildFilterTabs(); renderList();
+  // On mobile, collapse the drawer after picking a scope so the list is immediately visible
+  const drawer=document.getElementById('tmFilters'), toggle=document.getElementById('tmFiltToggle');
+  if (drawer && drawer.classList.contains('open') && window.innerWidth<=860){ drawer.classList.remove('open'); toggle.classList.remove('open'); }
+}
+function toggleFiltersDrawer(){
+  const drawer=document.getElementById('tmFilters'), toggle=document.getElementById('tmFiltToggle');
+  if(!drawer)return;
+  drawer.classList.toggle('open'); toggle.classList.toggle('open');
+}
 
 // ── Filters sidebar (Customer Type / Status / Tags) ──────────────
 function renderFilterSidebar() {
@@ -485,6 +568,8 @@ function renderFilterSidebar() {
 function toggleSideFilter(key, val){
   sideFilter[key] = (sideFilter[key]===val) ? null : val;
   renderFilterSidebar(); renderList();
+  const drawer=document.getElementById('tmFilters'), toggle=document.getElementById('tmFiltToggle');
+  if (drawer && drawer.classList.contains('open') && window.innerWidth<=860){ drawer.classList.remove('open'); toggle.classList.remove('open'); }
 }
 function clearSideFilters(){ sideFilter={type:null,status:null,tag:null}; renderFilterSidebar(); renderList(); }
 
@@ -556,20 +641,28 @@ async function selectC(id) {
   selId=id;
   document.querySelectorAll('.tm-item').forEach(el=>el.classList.remove('active'));
   const li=document.getElementById('li-'+id); if(li) li.classList.add('active');
-  document.getElementById('tmBriefView').style.display='none';
   const detail=document.getElementById('tmDetail');
   detail.style.display='block';
   detail.innerHTML='<div style="padding:40px;text-align:center;color:var(--muted)">Loading…</div>';
+  document.querySelector('.tm-wrap').classList.add('show-detail');
   const r=await fetch(`/api/crm/customers/${id}`);
   selCust=await r.json();
   renderDetail();
 }
 
 function showBrief() {
+  // Closes the customer detail and returns to the list (mobile: slides list back into view)
   selId=null; selCust=null;
   document.querySelectorAll('.tm-item').forEach(el=>el.classList.remove('active'));
   document.getElementById('tmDetail').style.display='none';
-  document.getElementById('tmBriefView').style.display='flex';
+  document.querySelector('.tm-wrap').classList.remove('show-detail');
+}
+
+function openBrief() {
+  document.getElementById('briefOverlay').classList.add('open');
+}
+function closeBrief() {
+  document.getElementById('briefOverlay').classList.remove('open');
 }
 
 function renderDetail() {
@@ -588,7 +681,7 @@ function renderDetail() {
   }).join(''):'<div style="color:var(--muted);font-size:12px">No activity yet</div>';
 
   document.getElementById('tmDetail').innerHTML=`
-    <button class="detail-back" onclick="showBrief()">← Back to Brief</button>
+    <button class="detail-back" onclick="showBrief()">← Back to list</button>
     <div class="d-head">
       <div>
         <div class="d-name">${esc(c.name)}</div>
@@ -600,7 +693,6 @@ function renderDetail() {
         <button class="btn btn-amber btn-sm" onclick="markNoAnswer(${c.id})">📵 No Answer</button>
         <button class="btn btn-outline btn-sm" onclick="openQN(${c.id},'${esc(c.name).replace(/'/g,"\\'")}')">📝 Note</button>
         <button class="btn btn-outline btn-sm" onclick="openFU(${c.id})">📅 Follow-up</button>
-        <a href="customers.html?id=${c.id}" class="btn btn-outline btn-sm" target="_blank">↗ Full Profile</a>
       </div>
     </div>
     <div class="acc-sec" id="accSec-details-${c.id}">
@@ -805,8 +897,6 @@ function renderBriefContent(text, ts) {
 async function loadBrief() {
   const btn = document.getElementById('briefRefreshBtn');
   const body = document.getElementById('briefBody');
-  // Switch to brief view if on customer detail
-  showBrief();
   body.innerHTML = '<div class="brief-loading">⏳ Generating your daily brief…</div>';
   document.getElementById('briefTimestamp').textContent = 'Generating…';
   btn.disabled = true; btn.textContent = '⏳ Loading…';
