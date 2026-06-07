@@ -353,7 +353,7 @@ const PERSON = (window.__AUTH && window.__AUTH.role === 'member')
   : (new URLSearchParams(location.search).get('name') || 'Rohan');
 function logout(){ sessionStorage.removeItem('arambhika_auth'); location.replace('login.html'); }
 const S_MAP  = { Lead:'s-lead', Contacted:'s-contacted', 'Contacted but No Response':'s-noresp', Onboarded:'s-onboarded' };
-let mine = [], selCust = null, selId = null, tabFilter = 'All', qnActiveCid = null, fuActiveCid = null;
+let mine = [], unassigned = [], selCust = null, selId = null, tabFilter = 'All', qnActiveCid = null, fuActiveCid = null;
 
 async function init() {
   document.title = PERSON + "'s Dashboard — Arambhika";
@@ -364,9 +364,19 @@ async function init() {
     const el = document.getElementById(id);
     if (el && el.textContent.trim() === PERSON) el.classList.add('active');
   });
+  // Team members get a locked-down view: only their own page, no sidebar/links to other areas
+  if (window.__AUTH && window.__AUTH.role === 'member') {
+    const aside = document.querySelector('aside.sidebar');
+    if (aside) aside.style.display = 'none';
+    const main = document.querySelector('.main');
+    if (main) main.style.marginLeft = '0';
+    const fullCrm = document.querySelector('.topbar-actions a[href="customers.html"]');
+    if (fullCrm) fullCrm.remove();
+  }
   const r = await fetch('/api/crm/customers');
   const all = (await r.json()).data || [];
   mine = all.filter(c => (c.assigned_to||'').trim() === PERSON);
+  unassigned = all.filter(c => { const a=(c.assigned_to||'').trim(); return a==='' || a==='Unassigned'; });
   renderStats(); buildFilterTabs(); renderList();
   // Load last stored brief from localStorage
   loadStoredBrief();
@@ -388,7 +398,8 @@ function buildFilterTabs() {
   el.innerHTML = statuses.map(s=>`<span class="tm-tab${s==='All'?' on':''}" onclick="setTab(this,'${s.replace(/'/g,"\\'")}' )">${s}</span>`).join('')
     + '<span class="tm-tab" onclick="setTab(this,\'overdue\')">⚠ Overdue</span>'
     + '<span class="tm-tab" onclick="setTab(this,\'today\')">📅 Today</span>'
-    + '<span class="tm-tab" onclick="setTab(this,\'nodate\')">⏰ No Date</span>';
+    + '<span class="tm-tab" onclick="setTab(this,\'nodate\')">⏰ No Date</span>'
+    + `<span class="tm-tab" onclick="setTab(this,'unassigned')" style="background:#fff7ed;border-color:#f59e0b;color:#b45309">🆕 Unassigned (${unassigned.length})</span>`;
 }
 
 function setTab(el, val) {
@@ -399,28 +410,47 @@ function setTab(el, val) {
 function renderList() {
   const q = (document.getElementById('tmSearch').value||'').toLowerCase();
   const t = todayISO();
-  let list = mine;
+  const isUnassigned = tabFilter==='unassigned';
+  let list = isUnassigned ? unassigned : mine;
   if      (tabFilter==='overdue') list=list.filter(c=>c.next_followup&&c.next_followup<t);
   else if (tabFilter==='today')   list=list.filter(c=>c.next_followup===t);
   else if (tabFilter==='nodate')  list=list.filter(c=>!c.next_followup&&c.status!=='Onboarded');
-  else if (tabFilter!=='All')     list=list.filter(c=>c.status===tabFilter);
+  else if (!isUnassigned && tabFilter!=='All') list=list.filter(c=>c.status===tabFilter);
   if (q) list=list.filter(c=>[c.name,c.company,c.phone,c.email,c.city,c.state,c.gst_number,c.source,c.requirement].join(' ').toLowerCase().includes(q));
   list.sort((a,b)=>{
     const rank=x=>!x.next_followup?3:x.next_followup<t?0:x.next_followup===t?1:2;
     return rank(a)-rank(b)||(a.next_followup||'9').localeCompare(b.next_followup||'9');
   });
   const el = document.getElementById('tmList');
-  if (!list.length){el.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">No customers match</div>';return;}
+  if (!list.length){el.innerHTML=`<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">${isUnassigned?'No unassigned customers 🎉':'No customers match'}</div>`;return;}
   el.innerHTML = list.map(c=>{
     const ov=c.next_followup&&c.next_followup<t, td=c.next_followup===t;
     const fuLabel=c.next_followup?(ov?`⚠ ${fmtD(c.next_followup)}`:(td?'📅 Today':fmtD(c.next_followup))):'No follow-up set';
     const fuCls=!c.next_followup?'none':ov?'ov':td?'td':'ok';
+    const assignBtn=isUnassigned?`<button class="btn btn-primary btn-sm" style="margin-top:5px;font-size:11px;padding:3px 9px" onclick="event.stopPropagation();assignToMe(${c.id})">➕ Assign to me</button>`:'';
     return `<div class="tm-item${selId===c.id?' active':''}" id="li-${c.id}" onclick="selectC(${c.id})">
       <div class="tm-item-name">${esc(c.name)}<span class="s-badge ${S_MAP[c.status]||''}" style="margin-left:6px">${c.status||'—'}</span></div>
       <div class="tm-item-sub">${[c.company,c.phone].filter(Boolean).map(esc).join(' · ')}</div>
       <div class="tm-item-fu ${fuCls}">${fuLabel}</div>
+      ${assignBtn}
     </div>`;
   }).join('');
+}
+
+async function assignToMe(cid) {
+  await patchC(cid, { assigned_to: PERSON });
+  const idx = unassigned.findIndex(c=>c.id===cid);
+  if (idx>-1) {
+    const [c] = unassigned.splice(idx,1);
+    c.assigned_to = PERSON;
+    mine.push(c);
+  }
+  renderStats(); buildFilterTabs();
+  // re-select the unassigned tab (rebuilt) to keep context
+  const tabs=document.querySelectorAll('.tm-tab');
+  tabs.forEach(tb=>{ if(tb.textContent.trim().startsWith('🆕 Unassigned')) tb.classList.add('on'); else tb.classList.remove('on'); });
+  renderList();
+  toast('Customer assigned to you','success');
 }
 
 async function selectC(id) {
@@ -858,6 +888,7 @@ async function saveACP(){
   const rf=await fetch('/api/crm/customers');
   const all=(await rf.json()).data||[];
   mine=all.filter(c=>(c.assigned_to||'').trim()===PERSON);
+  unassigned=all.filter(c=>{const a=(c.assigned_to||'').trim();return a===''||a==='Unassigned';});
   renderStats(); buildFilterTabs(); renderList();
   if(d.id) selectC(d.id);
 }
