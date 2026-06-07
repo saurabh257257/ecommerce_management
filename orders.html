@@ -48,9 +48,11 @@
     </a>
   </nav>
 </aside>
+<div class="sidebar-overlay" id="sbOverlay" onclick="document.querySelector(&quot;.sidebar&quot;).classList.remove(&quot;open&quot;);this.classList.remove(&quot;show&quot;)"></div>
 
 <div class="main">
   <div class="topbar">
+    <button class="hamburger" id="hbBtn" onclick="document.querySelector(&quot;.sidebar&quot;).classList.toggle(&quot;open&quot;);document.getElementById(&quot;sbOverlay&quot;).classList.toggle(&quot;show&quot;)" aria-label="Menu"><span></span><span></span><span></span></button>
     <h2>Orders</h2>
     <div class="topbar-actions">
       <button class="btn btn-outline btn-sm" onclick="sessionStorage.removeItem(&quot;arambhika_auth&quot;);location.replace(&quot;login.html&quot;);" title="Sign out">&#9211; Logout</button>
