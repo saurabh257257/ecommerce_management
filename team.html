@@ -62,6 +62,23 @@
     .tm-right  { flex:1; display:flex; flex-direction:column; overflow:hidden; background:var(--bg); }
     .tm-detail { flex:1; overflow-y:auto; padding:18px 22px; }
 
+    /* WhatsApp panel */
+    .wa-panel { border:1px solid var(--border); border-radius:10px; margin-bottom:16px; overflow:hidden; }
+    .wa-head { background:#075e54; color:#fff; padding:10px 14px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; }
+    .wa-head-title { font-weight:600; font-size:13px; display:flex; align-items:center; gap:6px; }
+    .wa-body { display:none; background:#e5ddd5; }
+    .wa-body.open { display:block; }
+    .wa-thread { max-height:340px; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:6px; }
+    .wa-bubble { max-width:75%; padding:7px 10px; border-radius:8px; font-size:13px; line-height:1.4; position:relative; word-wrap:break-word; }
+    .wa-bubble.in  { background:#fff; align-self:flex-start; border-top-left-radius:2px; }
+    .wa-bubble.out { background:#dcf8c6; align-self:flex-end; border-top-right-radius:2px; }
+    .wa-bubble .wa-time { display:block; font-size:10px; color:var(--muted); margin-top:3px; text-align:right; }
+    .wa-compose { display:flex; gap:8px; padding:10px; background:#f0f0f0; border-top:1px solid var(--border); }
+    .wa-compose input { flex:1; border:1px solid var(--border); border-radius:20px; padding:8px 14px; font-size:13px; }
+    .wa-compose button { border:none; background:#25d366; color:#fff; border-radius:50%; width:36px; height:36px; cursor:pointer; font-size:15px; }
+    .wa-empty { text-align:center; color:var(--muted); font-size:12px; padding:24px; }
+    .wa-template-row { display:flex; gap:6px; padding:8px 12px; background:#fff8e1; border-bottom:1px solid var(--border); font-size:12px; align-items:center; flex-wrap:wrap; }
+
     /* Detail */
     .d-head { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px; gap:12px; flex-wrap:wrap; }
     .d-name { font-size:20px; font-weight:700; }
@@ -442,11 +459,29 @@ function renderDetail() {
         <div class="d-co">${[c.company,c.city,c.state].filter(Boolean).map(esc).join(' · ')||'—'}</div>
       </div>
       <div class="d-actions">
+        <button class="btn btn-green btn-sm" onclick="toggleWA(${c.id},'${esc(c.phone||'').replace(/'/g,"\\'")}')">💬 WhatsApp</button>
         <button class="btn btn-green btn-sm" onclick="markCalled(${c.id})">✓ Called</button>
         <button class="btn btn-amber btn-sm" onclick="markNoAnswer(${c.id})">📵 No Answer</button>
         <button class="btn btn-outline btn-sm" onclick="openQN(${c.id},'${esc(c.name).replace(/'/g,"\\'")}')">📝 Note</button>
         <button class="btn btn-outline btn-sm" onclick="openFU(${c.id})">📅 Follow-up</button>
         <a href="customers.html?id=${c.id}" class="btn btn-outline btn-sm" target="_blank">↗ Full Profile</a>
+      </div>
+    </div>
+    <div class="wa-panel" id="waPanel-${c.id}" style="display:none">
+      <div class="wa-head" onclick="toggleWAOpen(${c.id})">
+        <div class="wa-head-title">💬 WhatsApp ${c.phone?('— '+esc(c.phone)):''}</div>
+        <div style="font-size:11px;opacity:.8" id="waToggleIcon-${c.id}">▾</div>
+      </div>
+      <div class="wa-body" id="waBody-${c.id}">
+        <div class="wa-template-row">
+          ⚡ First message or &gt;24h since reply? Use a template:
+          <button class="btn btn-outline btn-sm" style="padding:3px 8px;font-size:11px" onclick="sendWaTemplate(${c.id},'${esc(c.phone||'')}','${esc(c.name).replace(/'/g,"\\'")}')">Send "Order Confirmation" template</button>
+        </div>
+        <div class="wa-thread" id="waThread-${c.id}"><div class="wa-empty">Loading conversation…</div></div>
+        <div class="wa-compose">
+          <input type="text" id="waInput-${c.id}" placeholder="Type a message (works within 24h of their last reply)…" onkeydown="if(event.key==='Enter')sendWaText(${c.id},'${esc(c.phone||'')}')">
+          <button onclick="sendWaText(${c.id},'${esc(c.phone||'')}')">➤</button>
+        </div>
       </div>
     </div>
     <div class="d-grid">
@@ -480,6 +515,67 @@ async function saveInlineNote(cid) {
   const tl=document.getElementById('d-tl');
   if(tl)tl.insertAdjacentHTML('afterbegin',`<div class="tl-item"><div class="tl-av">${PERSON[0]}</div><div style="flex:1"><div class="tl-meta">${esc(PERSON)} · just now</div><div class="tl-note">${esc(text)}</div></div></div>`);
   toast('Note saved','success');
+}
+
+// ── WhatsApp panel ────────────────────────────────────────────────
+let _waOpenCid=null;
+function toggleWA(cid,phone) {
+  const panel=document.getElementById('waPanel-'+cid);
+  if(!panel)return;
+  if(panel.style.display==='none'){ panel.style.display='block'; toggleWAOpen(cid); }
+  else { panel.style.display='none'; }
+}
+function toggleWAOpen(cid) {
+  const body=document.getElementById('waBody-'+cid);
+  const icon=document.getElementById('waToggleIcon-'+cid);
+  if(!body)return;
+  const open=body.classList.toggle('open');
+  if(icon)icon.textContent=open?'▴':'▾';
+  if(open && _waOpenCid!==cid){ _waOpenCid=cid; loadWaThread(cid); }
+}
+async function loadWaThread(cid) {
+  const thread=document.getElementById('waThread-'+cid);
+  if(!thread)return;
+  thread.innerHTML='<div class="wa-empty">Loading conversation…</div>';
+  try {
+    const r=await fetch(`/api/whatsapp/messages/${cid}`);
+    const msgs=await r.json();
+    if(!msgs.length){ thread.innerHTML='<div class="wa-empty">No WhatsApp conversation yet — send the first message below 👇</div>'; return; }
+    thread.innerHTML=msgs.map(m=>{
+      const t=new Date(m.created_at.replace(' ','T')+'Z').toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+      return `<div class="wa-bubble ${m.direction==='out'?'out':'in'}">${esc(m.body)}<span class="wa-time">${t}${m.direction==='out'?(' · '+(m.status||'sent')):''}</span></div>`;
+    }).join('');
+    thread.scrollTop=thread.scrollHeight;
+  } catch(e){ thread.innerHTML='<div class="wa-empty">Could not load messages</div>'; }
+}
+async function sendWaText(cid,phone) {
+  const inp=document.getElementById('waInput-'+cid);
+  const text=inp.value.trim();
+  if(!text)return;
+  if(!phone){ toast('No phone number on file','error'); return; }
+  inp.value=''; inp.disabled=true;
+  try {
+    const r=await fetch('/api/whatsapp/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({customerId:cid,phone,text,author:PERSON})});
+    const j=await r.json();
+    if(!j.success) throw new Error(j.error||'Send failed');
+    toast('Message sent','success');
+    loadWaThread(cid);
+  } catch(e){ toast(e.message.includes('window')||e.message.includes('24')?'Outside 24h window — use a template instead':e.message,'error'); inp.value=text; }
+  inp.disabled=false; inp.focus();
+}
+async function sendWaTemplate(cid,phone,name) {
+  if(!phone){ toast('No phone number on file','error'); return; }
+  if(!confirm(`Send "Order Confirmation" template to ${name} (${phone})?`))return;
+  try {
+    const r=await fetch('/api/whatsapp/send-template',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      customerId:cid, phone, template:'jaspers_market_order_confirmation_v1', language:'en_US',
+      params:[name,'—',new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})], author:PERSON
+    })});
+    const j=await r.json();
+    if(!j.success) throw new Error(j.error||'Send failed');
+    toast('Template sent','success');
+    loadWaThread(cid);
+  } catch(e){ toast(e.message,'error'); }
 }
 
 async function markCalled(cid) {
