@@ -753,10 +753,25 @@ function toggleAcc(key) {
   if(!body)return;
   const open=body.classList.toggle('open');
   if(arrow)arrow.classList.toggle('open',open);
-  if(open && key.startsWith('wa-')){
+  if(key.startsWith('wa-')){
     const cid=key.slice(3);
-    if(_waOpenCid!==cid){ _waOpenCid=cid; loadWaThread(cid); }
+    if(open){
+      if(_waOpenCid!==cid){ _waOpenCid=cid; loadWaThread(cid); }
+      _waStartPoll(cid);
+    } else if(_waOpenCid===cid){
+      _waOpenCid=null; _waStopPoll();
+    }
   }
+}
+
+// Poll the open WhatsApp thread every few seconds so incoming replies show up without manual action
+let _waPollTimer=null;
+function _waStartPoll(cid){
+  _waStopPoll();
+  _waPollTimer=setInterval(()=>{ if(_waOpenCid===cid) loadWaThread(cid,true); }, 6000);
+}
+function _waStopPoll(){
+  if(_waPollTimer){ clearInterval(_waPollTimer); _waPollTimer=null; }
 }
 
 async function saveInlineNote(cid) {
@@ -775,20 +790,21 @@ async function saveInlineNote(cid) {
 
 // ── WhatsApp panel ────────────────────────────────────────────────
 let _waOpenCid=null;
-async function loadWaThread(cid) {
+async function loadWaThread(cid,silent) {
   const thread=document.getElementById('waThread-'+cid);
   if(!thread)return;
-  thread.innerHTML='<div class="wa-empty">Loading conversation…</div>';
+  if(!silent) thread.innerHTML='<div class="wa-empty">Loading conversation…</div>';
   try {
     const r=await fetch(`/api/whatsapp/messages/${cid}`);
     const msgs=await r.json();
     if(!msgs.length){ thread.innerHTML='<div class="wa-empty">No WhatsApp conversation yet — send the first message below 👇</div>'; return; }
+    const wasNearBottom = thread.scrollHeight - thread.scrollTop - thread.clientHeight < 80;
     thread.innerHTML=msgs.map(m=>{
       const t=new Date(m.created_at.replace(' ','T')+'Z').toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
       return `<div class="wa-bubble ${m.direction==='out'?'out':'in'}">${esc(m.body)}<span class="wa-time">${t}${m.direction==='out'?(' · '+(m.status||'sent')):''}</span></div>`;
     }).join('');
-    thread.scrollTop=thread.scrollHeight;
-  } catch(e){ thread.innerHTML='<div class="wa-empty">Could not load messages</div>'; }
+    if(!silent || wasNearBottom) thread.scrollTop=thread.scrollHeight;
+  } catch(e){ if(!silent) thread.innerHTML='<div class="wa-empty">Could not load messages</div>'; }
 }
 function _waPhone(cid,phone) {
   // Production number — always message the customer's actual phone (no test override)
