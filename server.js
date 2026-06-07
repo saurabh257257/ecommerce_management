@@ -97,6 +97,18 @@ db.exec(`
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
   );
+  CREATE TABLE IF NOT EXISTS wa_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id INTEGER DEFAULT NULL,
+    phone TEXT NOT NULL,
+    direction TEXT NOT NULL,
+    body TEXT DEFAULT '',
+    msg_type TEXT DEFAULT 'text',
+    wa_msg_id TEXT DEFAULT '',
+    status TEXT DEFAULT '',
+    author TEXT DEFAULT '',
+    created_at TEXT DEFAULT (datetime('now'))
+  );
 `);
 
 // ── Idempotent schema migrations ─────────────────────────────
@@ -108,6 +120,8 @@ try { db.exec("ALTER TABLE products ADD COLUMN flag_available INTEGER DEFAULT 0"
 try { db.exec("ALTER TABLE customers_v2 ADD COLUMN customer_type TEXT DEFAULT ''"); } catch(e) {}
 try { db.exec("ALTER TABLE products ADD COLUMN flag_out_of_stock INTEGER DEFAULT 0"); } catch(e) {}
 try { db.exec("ALTER TABLE products ADD COLUMN flag_for_internal INTEGER DEFAULT 0"); } catch(e) {}
+try { db.exec("CREATE INDEX IF NOT EXISTS idx_wa_phone ON wa_messages(phone)"); } catch(e) {}
+try { db.exec("CREATE INDEX IF NOT EXISTS idx_wa_customer ON wa_messages(customer_id)"); } catch(e) {}
 
 // ── Idempotent data migrations ────────────────────────────────
 try {
@@ -752,6 +766,164 @@ No explanation — just raw JSON.`;
     const data = match ? JSON.parse(match[0]) : {};
     res.json({ success: true, data });
   } catch(e) { res.status(500).json({ success: false, error: e.message }); }
+});
+
+// ══════════════════════════════════════════════════════════════════
+// WhatsApp Cloud API integration
+// ══════════════════════════════════════════════════════════════════
+const WA_TOKEN = process.env.WHATSAPP_TOKEN;
+const WA_PHONE_ID = process.env.WHATSAPP_PHONE_ID;
+const WA_VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
+const WA_API = `https://graph.facebook.com/v21.0/${WA_PHONE_ID}/messages`;
+
+// Normalize phone to last-10-digits for matching across formats (+91-..., 91..., 0..., spaces, dashes)
+function waNorm(phone) {
+  const digits = String(phone || '').replace(/\D/g, '');
+  return digits.slice(-10);
+}
+function findCustomerByPhone(phone) {
+  const norm = waNorm(phone);
+  if (!norm) return null;
+  const rows = db.prepare("SELECT id, name, phone FROM customers_v2").all();
+  return rows.find(r => waNorm(r.phone) === norm) || null;
+}
+function waToE164(phone) {
+  // Build a "to" number for the Graph API: digits only, prefixed with 91 if it's a bare 10-digit Indian number
+  const digits = String(phone || '').replace(/\D/g, '');
+  if (digits.length === 10) return '91' + digits;
+  return digits;
+}
+
+async function waApiCall(body) {
+  const r = await fetch(WA_API, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${WA_TOKEN}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error?.message || 'WhatsApp API error');
+  return j;
+}
+
+// Send a free-form text message (only works inside the 24-hour customer-service window)
+app.post('/api/whatsapp/send', async (req, res) => {
+  try {
+    const { customerId, phone, text, author } = req.body;
+    if (!phone || !text) return res.status(400).json({ error: 'phone and text required' });
+    const to = waToE164(phone);
+    const result = await waApiCall({
+      messaging_product: 'whatsapp', to, type: 'text', text: { body: text }
+    });
+    const waId = result.messages?.[0]?.id || '';
+    db.prepare(`INSERT INTO wa_messages (customer_id, phone, direction, body, msg_type, wa_msg_id, status, author) VALUES (?,?,?,?,?,?,?,?)`)
+      .run(customerId || null, phone, 'out', text, 'text', waId, 'sent', author || '');
+    res.json({ success: true, wa_msg_id: waId });
+  } catch(e) { res.status(500).json({ success: false, error: e.message }); }
+});
+
+// Send a pre-approved template message (required for first contact / outside 24h window)
+app.post('/api/whatsapp/send-template', async (req, res) => {
+  try {
+    const { customerId, phone, template, language, params, author } = req.body;
+    if (!phone || !template) return res.status(400).json({ error: 'phone and template required' });
+    const to = waToE164(phone);
+    const components = (params && params.length) ? [{ type: 'body', parameters: params.map(p => ({ type: 'text', text: String(p) })) }] : [];
+    const result = await waApiCall({
+      messaging_product: 'whatsapp', to, type: 'template',
+      template: { name: template, language: { code: language || 'en_US' }, components }
+    });
+    const waId = result.messages?.[0]?.id || '';
+    db.prepare(`INSERT INTO wa_messages (customer_id, phone, direction, body, msg_type, wa_msg_id, status, author) VALUES (?,?,?,?,?,?,?,?)`)
+      .run(customerId || null, phone, 'out', `[template: ${template}]`, 'template', waId, 'sent', author || '');
+    res.json({ success: true, wa_msg_id: waId });
+  } catch(e) { res.status(500).json({ success: false, error: e.message }); }
+});
+
+// Broadcast a template message to multiple customers
+app.post('/api/whatsapp/broadcast', async (req, res) => {
+  try {
+    const { customerIds, template, language, paramsFn, author } = req.body;
+    if (!Array.isArray(customerIds) || !customerIds.length || !template) {
+      return res.status(400).json({ error: 'customerIds[] and template required' });
+    }
+    const results = [];
+    for (const cid of customerIds) {
+      const c = db.prepare('SELECT id,name,phone FROM customers_v2 WHERE id=?').get(cid);
+      if (!c || !c.phone) { results.push({ id: cid, ok: false, error: 'no phone' }); continue; }
+      try {
+        const to = waToE164(c.phone);
+        const params = paramsFn === 'name' ? [{ type: 'text', text: c.name }] : [];
+        const result = await waApiCall({
+          messaging_product: 'whatsapp', to, type: 'template',
+          template: { name: template, language: { code: language || 'en_US' }, components: params.length ? [{ type: 'body', parameters: params }] : [] }
+        });
+        const waId = result.messages?.[0]?.id || '';
+        db.prepare(`INSERT INTO wa_messages (customer_id, phone, direction, body, msg_type, wa_msg_id, status, author) VALUES (?,?,?,?,?,?,?,?)`)
+          .run(c.id, c.phone, 'out', `[broadcast template: ${template}]`, 'template', waId, 'sent', author || '');
+        results.push({ id: cid, ok: true });
+      } catch(e) { results.push({ id: cid, ok: false, error: e.message }); }
+      await new Promise(r => setTimeout(r, 250)); // light rate limiting
+    }
+    res.json({ success: true, results });
+  } catch(e) { res.status(500).json({ success: false, error: e.message }); }
+});
+
+// Get chat history for a customer
+app.get('/api/whatsapp/messages/:customerId', (req, res) => {
+  const rows = db.prepare('SELECT * FROM wa_messages WHERE customer_id=? ORDER BY id ASC').all(req.params.customerId);
+  res.json(rows);
+});
+
+// Get all conversations grouped by phone (for an inbox view)
+app.get('/api/whatsapp/conversations', (req, res) => {
+  const rows = db.prepare(`
+    SELECT phone, customer_id, MAX(id) as last_id, COUNT(*) as msg_count
+    FROM wa_messages GROUP BY phone ORDER BY last_id DESC
+  `).all();
+  const withLast = rows.map(r => {
+    const last = db.prepare('SELECT * FROM wa_messages WHERE id=?').get(r.last_id);
+    const cust = r.customer_id ? db.prepare('SELECT id,name,company FROM customers_v2 WHERE id=?').get(r.customer_id) : null;
+    return { ...r, last_message: last, customer: cust };
+  });
+  res.json(withLast);
+});
+
+// Webhook verification (Meta calls this with GET when you set up the webhook URL)
+app.get('/api/whatsapp/webhook', (req, res) => {
+  const mode = req.query['hub.mode'];
+  const token = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+  if (mode === 'subscribe' && token === WA_VERIFY_TOKEN) {
+    return res.status(200).send(challenge);
+  }
+  res.sendStatus(403);
+});
+
+// Webhook receiver (Meta POSTs incoming messages + status updates here)
+app.post('/api/whatsapp/webhook', (req, res) => {
+  try {
+    const entry = req.body.entry?.[0];
+    const change = entry?.changes?.[0];
+    const value = change?.value;
+    if (value?.messages) {
+      for (const m of value.messages) {
+        const fromPhone = m.from; // e.g. "918886772827"
+        const body = m.text?.body || m.button?.text || m.interactive?.button_reply?.title || `[${m.type}]`;
+        const cust = findCustomerByPhone(fromPhone);
+        db.prepare(`INSERT INTO wa_messages (customer_id, phone, direction, body, msg_type, wa_msg_id, status, author) VALUES (?,?,?,?,?,?,?,?)`)
+          .run(cust ? cust.id : null, fromPhone, 'in', body, m.type || 'text', m.id || '', 'received', '');
+      }
+    }
+    if (value?.statuses) {
+      for (const s of value.statuses) {
+        db.prepare(`UPDATE wa_messages SET status=? WHERE wa_msg_id=?`).run(s.status, s.id);
+      }
+    }
+    res.sendStatus(200);
+  } catch(e) {
+    console.log('WA webhook error:', e.message);
+    res.sendStatus(200); // always 200 so Meta doesn't retry-storm
+  }
 });
 
 // ── Image rename to id_sku_category_name_N ───────────────────────────
