@@ -10,7 +10,41 @@
   <link rel="stylesheet" href="css/style.css" />
   <style>
     html,body { height:100%; overflow:hidden; }
-    .tm-wrap { display:flex; height:calc(100vh - 54px); overflow:hidden; }
+    .tm-page { display:flex; flex-direction:column; height:calc(100vh - 54px); overflow:hidden; }
+
+    /* Tiles row */
+    .tm-tiles { display:flex; gap:12px; padding:14px 18px; overflow-x:auto; flex-shrink:0; background:var(--surface); border-bottom:1px solid var(--border); }
+    .tm-tile { flex:0 0 auto; min-width:148px; background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:14px 16px; cursor:pointer; transition:border-color .15s, box-shadow .15s; }
+    .tm-tile:hover { border-color:var(--primary); box-shadow:0 2px 10px rgba(99,102,241,.10); }
+    .tm-tile.active { border-color:var(--primary); background:#eef2ff; }
+    .tm-tile-label { font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; }
+    .tm-tile-val { font-size:24px; font-weight:800; margin-top:4px; line-height:1; color:var(--text); }
+    .tm-tile-sub { font-size:11px; color:var(--muted); margin-top:5px; display:flex; gap:10px; }
+    .tm-tile-sub b { font-weight:700; }
+    .tm-tile-sub .ov { color:var(--danger); }
+    .tm-tile-sub .ok { color:#16a34a; }
+
+    .tm-wrap { display:flex; flex:1; overflow:hidden; }
+
+    /* Filters sidebar */
+    .tm-filters { width:190px; flex-shrink:0; border-right:1px solid var(--border); background:var(--bg); overflow-y:auto; padding:14px 12px; }
+    .tm-filt-grp { margin-bottom:18px; }
+    .tm-filt-title { font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
+    .tm-filt-opt { display:flex; align-items:center; gap:7px; padding:5px 8px; border-radius:7px; font-size:12px; cursor:pointer; color:var(--text); margin-bottom:2px; }
+    .tm-filt-opt:hover { background:var(--surface); }
+    .tm-filt-opt.on { background:var(--primary); color:#fff; font-weight:600; }
+    .tm-filt-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .tm-filt-count { margin-left:auto; font-size:10px; opacity:.7; }
+    .tm-filt-clear { font-size:11px; color:var(--primary); cursor:pointer; text-decoration:none; }
+
+    /* Accordion sections in detail */
+    .acc-sec { border:1px solid var(--border); border-radius:10px; margin-bottom:12px; overflow:hidden; }
+    .acc-head { padding:11px 16px; background:var(--bg); display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; }
+    .acc-head-title { font-size:13px; font-weight:700; display:flex; align-items:center; gap:7px; }
+    .acc-arrow { font-size:11px; color:var(--muted); transition:transform .15s; }
+    .acc-arrow.open { transform:rotate(90deg); }
+    .acc-body { display:none; padding:14px 16px; }
+    .acc-body.open { display:block; }
 
     /* Left panel */
     .tm-left { width:340px; flex-shrink:0; display:flex; flex-direction:column; border-right:1px solid var(--border); background:var(--bg); }
@@ -197,23 +231,22 @@
     </div>
   </div>
 
+  <div class="tm-page">
+  <!-- TILES ROW -->
+  <div class="tm-tiles" id="tmTiles"></div>
+
   <div class="tm-wrap">
+    <!-- FILTERS SIDEBAR -->
+    <div class="tm-filters" id="tmFilters">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div class="tm-person" id="tmPerson" style="font-size:14px">—</div>
+        <button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="logout()" title="Sign out">⏻</button>
+      </div>
+      <div id="tmFilterGroups"></div>
+    </div>
+
     <!-- LEFT: customer list -->
     <div class="tm-left">
-      <div class="tm-left-head">
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <div class="tm-person" id="tmPerson">—</div>
-          <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 9px" onclick="logout()" title="Sign out">⏻ Logout</button>
-        </div>
-        <div class="tm-date"   id="tmDate"></div>
-        <div class="tm-stats">
-          <div class="tm-stat danger"><div class="tm-stat-v" id="stOv">—</div><div class="tm-stat-l">Overdue</div></div>
-          <div class="tm-stat warn">  <div class="tm-stat-v" id="stTd">—</div><div class="tm-stat-l">Today</div></div>
-          <div class="tm-stat">       <div class="tm-stat-v" id="stTot">—</div><div class="tm-stat-l">Total</div></div>
-          <div class="tm-stat ok">    <div class="tm-stat-v" id="stOn">—</div><div class="tm-stat-l">Onboarded</div></div>
-        </div>
-      </div>
-
       <div class="tm-search-bar">
         <input type="text" id="tmSearch" placeholder="Search name, phone, email, company, city…" oninput="renderList()" />
       </div>
@@ -243,6 +276,7 @@
       <!-- Customer detail view (hidden by default) -->
       <div class="tm-detail" id="tmDetail" style="display:none"></div>
     </div>
+  </div>
   </div>
 </div>
 
@@ -353,19 +387,25 @@ const PERSON = (window.__AUTH && window.__AUTH.role === 'member')
   : (new URLSearchParams(location.search).get('name') || 'Rohan');
 function logout(){ sessionStorage.removeItem('arambhika_auth'); location.replace('login.html'); }
 const S_MAP  = { Lead:'s-lead', Contacted:'s-contacted', 'Contacted but No Response':'s-noresp', Onboarded:'s-onboarded' };
-let mine = [], unassigned = [], selCust = null, selId = null, tabFilter = 'All', qnActiveCid = null, fuActiveCid = null;
+const IS_ADMIN = !!(window.__AUTH && window.__AUTH.role === 'admin');
+let allCust = [], teamMembers = [], allStatuses = [], allTypes = [], allTags = [];
+let scope = IS_ADMIN ? 'all' : 'mine';     // 'all' | 'mine' | 'unassigned' | <member name>
+let sideFilter = { type:null, status:null, tag:null };
+let selCust = null, selId = null, tabFilter = 'All', qnActiveCid = null, fuActiveCid = null;
+
+function todayISO() { return new Date().toISOString().split('T')[0]; }
+function isUnassignedRow(c){ const a=(c.assigned_to||'').trim(); return a===''||a==='Unassigned'; }
 
 async function init() {
   document.title = PERSON + "'s Dashboard — Arambhika";
-  document.getElementById('pageTitle').textContent = PERSON + "'s Dashboard";
+  document.getElementById('pageTitle').textContent = IS_ADMIN ? 'Dashboard · CRM' : (PERSON + "'s Dashboard");
   document.getElementById('tmPerson').textContent  = PERSON;
-  document.getElementById('tmDate').textContent    = new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
   ['navRohan','navSaurabh'].forEach(id => {
     const el = document.getElementById(id);
     if (el && el.textContent.trim() === PERSON) el.classList.add('active');
   });
   // Team members get a locked-down view: only their own page, no sidebar/links to other areas
-  if (window.__AUTH && window.__AUTH.role === 'member') {
+  if (!IS_ADMIN) {
     const aside = document.querySelector('aside.sidebar');
     if (aside) aside.style.display = 'none';
     const main = document.querySelector('.main');
@@ -373,33 +413,97 @@ async function init() {
     const fullCrm = document.querySelector('.topbar-actions a[href="customers.html"]');
     if (fullCrm) fullCrm.remove();
   }
-  const r = await fetch('/api/crm/customers');
-  const all = (await r.json()).data || [];
-  mine = all.filter(c => (c.assigned_to||'').trim() === PERSON);
-  unassigned = all.filter(c => { const a=(c.assigned_to||'').trim(); return a==='' || a==='Unassigned'; });
-  renderStats(); buildFilterTabs(); renderList();
-  // Load last stored brief from localStorage
+  const [custR, tmR, stR, ctR, tgR] = await Promise.all([
+    fetch('/api/crm/customers'), fetch('/api/team-members'),
+    fetch('/api/statuses'), fetch('/api/customer-types'), fetch('/api/tags')
+  ]);
+  allCust = (await custR.json()).data || [];
+  teamMembers = (await tmR.json()).data || [];
+  allStatuses = (await stR.json()).data || [];
+  allTypes = (await ctR.json()).data || [];
+  allTags = (await tgR.json()).data || [];
+  renderTiles(); renderFilterSidebar(); buildFilterTabs(); renderList();
   loadStoredBrief();
 }
 
-function todayISO() { return new Date().toISOString().split('T')[0]; }
-
-function renderStats() {
+// ── Tiles row ─────────────────────────────────────────────────────
+function renderTiles() {
   const t = todayISO();
-  document.getElementById('stOv').textContent  = mine.filter(c=>c.next_followup&&c.next_followup<t).length;
-  document.getElementById('stTd').textContent  = mine.filter(c=>c.next_followup===t).length;
-  document.getElementById('stTot').textContent = mine.length;
-  document.getElementById('stOn').textContent  = mine.filter(c=>c.status==='Onboarded').length;
+  const el = document.getElementById('tmTiles');
+  const unassignedList = allCust.filter(isUnassignedRow);
+  const mk = (key,label,total,overdue,onboarded,extraCls='') =>
+    `<div class="tm-tile${scope===key?' active':''} ${extraCls}" onclick="setScope('${key.replace(/'/g,"\\'")}')">
+       <div class="tm-tile-label">${esc(label)}</div>
+       <div class="tm-tile-val">${total}</div>
+       <div class="tm-tile-sub">${overdue!=null?`<span><b class="ov">${overdue}</b> overdue</span>`:''}${onboarded!=null?`<span><b class="ok">${onboarded}</b> onboarded</span>`:''}</div>
+     </div>`;
+  let html = '';
+  if (IS_ADMIN) {
+    html += mk('all','Total Customers', allCust.length, allCust.filter(c=>c.next_followup&&c.next_followup<t).length, allCust.filter(c=>c.status==='Onboarded').length);
+    html += mk('unassigned','🆕 Unassigned', unassignedList.length, null, null);
+    teamMembers.forEach(m=>{
+      const list = allCust.filter(c=>(c.assigned_to||'').trim()===m.name);
+      html += mk(m.name, m.name, list.length, list.filter(c=>c.next_followup&&c.next_followup<t).length, list.filter(c=>c.status==='Onboarded').length);
+    });
+  } else {
+    const mine = allCust.filter(c=>(c.assigned_to||'').trim()===PERSON);
+    html += mk('mine','My Customers', mine.length, mine.filter(c=>c.next_followup&&c.next_followup<t).length, mine.filter(c=>c.status==='Onboarded').length);
+    html += mk('unassigned','🆕 Unassigned', unassignedList.length, null, null);
+  }
+  el.innerHTML = html;
+}
+function setScope(s){ scope=s; sideFilter={type:null,status:null,tag:null}; tabFilter='All'; renderTiles(); renderFilterSidebar(); buildFilterTabs(); renderList(); }
+
+// ── Filters sidebar (Customer Type / Status / Tags) ──────────────
+function renderFilterSidebar() {
+  const el = document.getElementById('tmFilterGroups');
+  const base = scopedList();
+  const grp = (title, items, key, colorOf) => {
+    if (!items.length) return '';
+    const rows = items.map(it=>{
+      const cnt = base.filter(c=>{
+        if(key==='status') return c.status===it.name;
+        if(key==='type') return (c.customer_type||'')===it.name;
+        if(key==='tag') return (c.tags||[]).some(tg=>tg.id===it.id);
+      }).length;
+      const on = sideFilter[key]===it.name || (key==='tag' && sideFilter[key]===it.id);
+      const val = key==='tag' ? it.id : it.name;
+      return `<div class="tm-filt-opt${on?' on':''}" onclick="toggleSideFilter('${key}',${typeof val==='number'?val:`'`+esc(val).replace(/'/g,"\\'")+`'`})">
+        <span class="tm-filt-dot" style="background:${it.color||'#94a3b8'}"></span>
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(it.name)}</span>
+        <span class="tm-filt-count">${cnt}</span>
+      </div>`;
+    }).join('');
+    return `<div class="tm-filt-grp"><div class="tm-filt-title">${title}</div>${rows}</div>`;
+  };
+  const anyActive = sideFilter.type||sideFilter.status||sideFilter.tag;
+  el.innerHTML = (anyActive?`<div style="margin-bottom:10px"><span class="tm-filt-clear" onclick="clearSideFilters()">✕ Clear filters</span></div>`:'')
+    + grp('Customer Type', allTypes, 'type')
+    + grp('Status', allStatuses, 'status')
+    + grp('Tags', allTags, 'tag');
+}
+function toggleSideFilter(key, val){
+  sideFilter[key] = (sideFilter[key]===val) ? null : val;
+  renderFilterSidebar(); renderList();
+}
+function clearSideFilters(){ sideFilter={type:null,status:null,tag:null}; renderFilterSidebar(); renderList(); }
+
+// Returns the customer list for the current top-level scope (before sidebar/tab/search filters)
+function scopedList(){
+  if (scope==='all') return allCust;
+  if (scope==='unassigned') return allCust.filter(isUnassignedRow);
+  if (scope==='mine') return allCust.filter(c=>(c.assigned_to||'').trim()===PERSON);
+  return allCust.filter(c=>(c.assigned_to||'').trim()===scope); // member name (admin drill-down)
 }
 
 function buildFilterTabs() {
-  const statuses = ['All',...new Set(mine.map(c=>c.status).filter(Boolean))];
+  const base = scopedList();
+  const statuses = ['All',...new Set(base.map(c=>c.status).filter(Boolean))];
   const el = document.getElementById('filterTabs');
-  el.innerHTML = statuses.map(s=>`<span class="tm-tab${s==='All'?' on':''}" onclick="setTab(this,'${s.replace(/'/g,"\\'")}' )">${s}</span>`).join('')
+  el.innerHTML = statuses.map(s=>`<span class="tm-tab${s==='All'&&tabFilter==='All'?' on':''}" onclick="setTab(this,'${s.replace(/'/g,"\\'")}' )">${s}</span>`).join('')
     + '<span class="tm-tab" onclick="setTab(this,\'overdue\')">⚠ Overdue</span>'
     + '<span class="tm-tab" onclick="setTab(this,\'today\')">📅 Today</span>'
-    + '<span class="tm-tab" onclick="setTab(this,\'nodate\')">⏰ No Date</span>'
-    + `<span class="tm-tab" onclick="setTab(this,'unassigned')" style="background:#fff7ed;border-color:#f59e0b;color:#b45309">🆕 Unassigned (${unassigned.length})</span>`;
+    + '<span class="tm-tab" onclick="setTab(this,\'nodate\')">⏰ No Date</span>';
 }
 
 function setTab(el, val) {
@@ -410,24 +514,27 @@ function setTab(el, val) {
 function renderList() {
   const q = (document.getElementById('tmSearch').value||'').toLowerCase();
   const t = todayISO();
-  const isUnassigned = tabFilter==='unassigned';
-  let list = isUnassigned ? unassigned : mine;
+  const isUnassignedScope = scope==='unassigned';
+  let list = scopedList();
   if      (tabFilter==='overdue') list=list.filter(c=>c.next_followup&&c.next_followup<t);
   else if (tabFilter==='today')   list=list.filter(c=>c.next_followup===t);
   else if (tabFilter==='nodate')  list=list.filter(c=>!c.next_followup&&c.status!=='Onboarded');
-  else if (!isUnassigned && tabFilter!=='All') list=list.filter(c=>c.status===tabFilter);
+  else if (tabFilter!=='All')     list=list.filter(c=>c.status===tabFilter);
+  if (sideFilter.type)   list=list.filter(c=>(c.customer_type||'')===sideFilter.type);
+  if (sideFilter.status) list=list.filter(c=>c.status===sideFilter.status);
+  if (sideFilter.tag)    list=list.filter(c=>(c.tags||[]).some(tg=>tg.id===sideFilter.tag));
   if (q) list=list.filter(c=>[c.name,c.company,c.phone,c.email,c.city,c.state,c.gst_number,c.source,c.requirement].join(' ').toLowerCase().includes(q));
   list.sort((a,b)=>{
     const rank=x=>!x.next_followup?3:x.next_followup<t?0:x.next_followup===t?1:2;
     return rank(a)-rank(b)||(a.next_followup||'9').localeCompare(b.next_followup||'9');
   });
   const el = document.getElementById('tmList');
-  if (!list.length){el.innerHTML=`<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">${isUnassigned?'No unassigned customers 🎉':'No customers match'}</div>`;return;}
+  if (!list.length){el.innerHTML=`<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">${isUnassignedScope?'No unassigned customers 🎉':'No customers match'}</div>`;return;}
   el.innerHTML = list.map(c=>{
     const ov=c.next_followup&&c.next_followup<t, td=c.next_followup===t;
     const fuLabel=c.next_followup?(ov?`⚠ ${fmtD(c.next_followup)}`:(td?'📅 Today':fmtD(c.next_followup))):'No follow-up set';
     const fuCls=!c.next_followup?'none':ov?'ov':td?'td':'ok';
-    const assignBtn=isUnassigned?`<button class="btn btn-primary btn-sm" style="margin-top:5px;font-size:11px;padding:3px 9px" onclick="event.stopPropagation();assignToMe(${c.id})">➕ Assign to me</button>`:'';
+    const assignBtn=isUnassignedScope?`<button class="btn btn-primary btn-sm" style="margin-top:5px;font-size:11px;padding:3px 9px" onclick="event.stopPropagation();assignToMe(${c.id})">➕ Assign to me</button>`:'';
     return `<div class="tm-item${selId===c.id?' active':''}" id="li-${c.id}" onclick="selectC(${c.id})">
       <div class="tm-item-name">${esc(c.name)}<span class="s-badge ${S_MAP[c.status]||''}" style="margin-left:6px">${c.status||'—'}</span></div>
       <div class="tm-item-sub">${[c.company,c.phone].filter(Boolean).map(esc).join(' · ')}</div>
@@ -439,17 +546,9 @@ function renderList() {
 
 async function assignToMe(cid) {
   await patchC(cid, { assigned_to: PERSON });
-  const idx = unassigned.findIndex(c=>c.id===cid);
-  if (idx>-1) {
-    const [c] = unassigned.splice(idx,1);
-    c.assigned_to = PERSON;
-    mine.push(c);
-  }
-  renderStats(); buildFilterTabs();
-  // re-select the unassigned tab (rebuilt) to keep context
-  const tabs=document.querySelectorAll('.tm-tab');
-  tabs.forEach(tb=>{ if(tb.textContent.trim().startsWith('🆕 Unassigned')) tb.classList.add('on'); else tb.classList.remove('on'); });
-  renderList();
+  const c = allCust.find(x=>x.id===cid);
+  if (c) c.assigned_to = PERSON;
+  renderTiles(); renderFilterSidebar(); buildFilterTabs(); renderList();
   toast('Customer assigned to you','success');
 }
 
@@ -496,7 +595,7 @@ function renderDetail() {
         <div class="d-co">${[c.company,c.city,c.state].filter(Boolean).map(esc).join(' · ')||'—'}</div>
       </div>
       <div class="d-actions">
-        <button class="btn btn-green btn-sm" onclick="toggleWA(${c.id},'${esc(c.phone||'').replace(/'/g,"\\'")}')">💬 WhatsApp</button>
+        <button class="btn btn-green btn-sm" onclick="toggleAcc('wa-${c.id}')">💬 WhatsApp</button>
         <button class="btn btn-green btn-sm" onclick="markCalled(${c.id})">✓ Called</button>
         <button class="btn btn-amber btn-sm" onclick="markNoAnswer(${c.id})">📵 No Answer</button>
         <button class="btn btn-outline btn-sm" onclick="openQN(${c.id},'${esc(c.name).replace(/'/g,"\\'")}')">📝 Note</button>
@@ -504,12 +603,30 @@ function renderDetail() {
         <a href="customers.html?id=${c.id}" class="btn btn-outline btn-sm" target="_blank">↗ Full Profile</a>
       </div>
     </div>
-    <div class="wa-panel" id="waPanel-${c.id}" style="display:none">
-      <div class="wa-head" onclick="toggleWAOpen(${c.id})">
-        <div class="wa-head-title">💬 WhatsApp ${c.phone?('— '+esc(c.phone)):''}</div>
-        <div style="font-size:11px;opacity:.8" id="waToggleIcon-${c.id}">▾</div>
+    <div class="acc-sec" id="accSec-details-${c.id}">
+      <div class="acc-head" onclick="toggleAcc('details-${c.id}')">
+        <div class="acc-head-title">📋 Details</div>
+        <div class="acc-arrow open" id="accArrow-details-${c.id}">▶</div>
       </div>
-      <div class="wa-body" id="waBody-${c.id}">
+      <div class="acc-body open" id="accBody-details-${c.id}">
+        <div class="d-grid">
+          <div class="d-field"><div class="d-field-label">Status</div><div class="d-field-val"><span class="s-badge ${S_MAP[c.status]||''}">${esc(c.status||'—')}</span></div></div>
+          <div class="d-field"><div class="d-field-label">Follow-up</div><div class="d-field-val" style="color:${ov?'var(--danger)':td?'#f59e0b':'inherit'};font-weight:${ov||td?600:400}">${c.next_followup?(ov?'⚠ Overdue — ':td?'📅 Today — ':'')+fmtD(c.next_followup):'<span style="color:var(--muted)">Not set</span>'}</div></div>
+          <div class="d-field"><div class="d-field-label">Phone</div><div class="d-field-val">${c.phone?`<a href="tel:${esc(c.phone)}">${esc(c.phone)}</a>`:'<span style="color:var(--muted)">—</span>'}</div></div>
+          <div class="d-field"><div class="d-field-label">Email</div><div class="d-field-val">${c.email?`<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>`:'<span style="color:var(--muted)">—</span>'}</div></div>
+          <div class="d-field"><div class="d-field-label">Source</div><div class="d-field-val">${esc(c.source||'—')}</div></div>
+          <div class="d-field"><div class="d-field-label">Customer Type</div><div class="d-field-val">${esc(c.customer_type||'—')}</div></div>
+        </div>
+        <div class="d-sec-title">Requirement / Details</div>
+        <div class="d-req${c.requirement?'':' empty'}">${c.requirement?esc(c.requirement).replace(/\n/g,'<br>'):'No details added yet'}</div>
+      </div>
+    </div>
+    <div class="acc-sec" id="accSec-wa-${c.id}">
+      <div class="acc-head" onclick="toggleAcc('wa-${c.id}')">
+        <div class="acc-head-title">💬 WhatsApp ${c.phone?('— '+esc(c.phone)):''}</div>
+        <div class="acc-arrow" id="accArrow-wa-${c.id}">▶</div>
+      </div>
+      <div class="acc-body" id="accBody-wa-${c.id}">
         <div class="wa-template-row">
           ⚡ First message or &gt;24h since reply? Use a template:
           <button class="btn btn-outline btn-sm" style="padding:3px 8px;font-size:11px" onclick="sendWaTemplate(${c.id},'${esc(c.phone||'')}','${esc(c.name).replace(/'/g,"\\'")}')">Send "Order Confirmation" template</button>
@@ -525,23 +642,33 @@ function renderDetail() {
         </div>
       </div>
     </div>
-    <div class="d-grid">
-      <div class="d-field"><div class="d-field-label">Status</div><div class="d-field-val"><span class="s-badge ${S_MAP[c.status]||''}">${esc(c.status||'—')}</span></div></div>
-      <div class="d-field"><div class="d-field-label">Follow-up</div><div class="d-field-val" style="color:${ov?'var(--danger)':td?'#f59e0b':'inherit'};font-weight:${ov||td?600:400}">${c.next_followup?(ov?'⚠ Overdue — ':td?'📅 Today — ':'')+fmtD(c.next_followup):'<span style="color:var(--muted)">Not set</span>'}</div></div>
-      <div class="d-field"><div class="d-field-label">Phone</div><div class="d-field-val">${c.phone?`<a href="tel:${esc(c.phone)}">${esc(c.phone)}</a>`:'<span style="color:var(--muted)">—</span>'}</div></div>
-      <div class="d-field"><div class="d-field-label">Email</div><div class="d-field-val">${c.email?`<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>`:'<span style="color:var(--muted)">—</span>'}</div></div>
-      <div class="d-field"><div class="d-field-label">Source</div><div class="d-field-val">${esc(c.source||'—')}</div></div>
-      <div class="d-field"><div class="d-field-label">Customer Type</div><div class="d-field-val">${esc(c.customer_type||'—')}</div></div>
-    </div>
-    <div class="d-sec-title">Requirement / Details</div>
-    <div class="d-req${c.requirement?'':' empty'}">${c.requirement?esc(c.requirement).replace(/\n/g,'<br>'):'No details added yet'}</div>
-    <div class="d-sec-title">Timeline — Activity &amp; Notes</div>
-    <div class="tl-compose">
-      <select id="d-nt"><option value="call">📞</option><option value="note">📝</option><option value="meeting">🤝</option><option value="message">💬</option></select>
-      <textarea id="d-ntxt" placeholder="Add a note…"></textarea>
-      <button class="btn btn-primary btn-sm" onclick="saveInlineNote(${c.id})" style="align-self:flex-end">Save</button>
-    </div>
-    <div id="d-tl">${tlHtml}</div>`;
+    <div class="acc-sec" id="accSec-tl-${c.id}">
+      <div class="acc-head" onclick="toggleAcc('tl-${c.id}')">
+        <div class="acc-head-title">🕘 Timeline — Activity &amp; Notes</div>
+        <div class="acc-arrow" id="accArrow-tl-${c.id}">▶</div>
+      </div>
+      <div class="acc-body" id="accBody-tl-${c.id}">
+        <div class="tl-compose">
+          <select id="d-nt"><option value="call">📞</option><option value="note">📝</option><option value="meeting">🤝</option><option value="message">💬</option></select>
+          <textarea id="d-ntxt" placeholder="Add a note…"></textarea>
+          <button class="btn btn-primary btn-sm" onclick="saveInlineNote(${c.id})" style="align-self:flex-end">Save</button>
+        </div>
+        <div id="d-tl">${tlHtml}</div>
+      </div>
+    </div>`;
+}
+
+// ── Accordion toggle (Details / WhatsApp / Timeline) ─────────────
+function toggleAcc(key) {
+  const body=document.getElementById('accBody-'+key);
+  const arrow=document.getElementById('accArrow-'+key);
+  if(!body)return;
+  const open=body.classList.toggle('open');
+  if(arrow)arrow.classList.toggle('open',open);
+  if(open && key.startsWith('wa-')){
+    const cid=key.slice(3);
+    if(_waOpenCid!==cid){ _waOpenCid=cid; loadWaThread(cid); }
+  }
 }
 
 async function saveInlineNote(cid) {
@@ -560,20 +687,6 @@ async function saveInlineNote(cid) {
 
 // ── WhatsApp panel ────────────────────────────────────────────────
 let _waOpenCid=null;
-function toggleWA(cid,phone) {
-  const panel=document.getElementById('waPanel-'+cid);
-  if(!panel)return;
-  if(panel.style.display==='none'){ panel.style.display='block'; toggleWAOpen(cid); }
-  else { panel.style.display='none'; }
-}
-function toggleWAOpen(cid) {
-  const body=document.getElementById('waBody-'+cid);
-  const icon=document.getElementById('waToggleIcon-'+cid);
-  if(!body)return;
-  const open=body.classList.toggle('open');
-  if(icon)icon.textContent=open?'▴':'▾';
-  if(open && _waOpenCid!==cid){ _waOpenCid=cid; loadWaThread(cid); }
-}
 async function loadWaThread(cid) {
   const thread=document.getElementById('waThread-'+cid);
   if(!thread)return;
@@ -704,10 +817,6 @@ async function loadBrief() {
     const ts = new Date().toISOString();
     localStorage.setItem('brief_' + PERSON, JSON.stringify({text, ts}));
     renderBriefContent(text, ts);
-    if (d.stats) {
-      document.getElementById('stOv').textContent = d.stats.overdue;
-      document.getElementById('stTd').textContent = d.stats.dueToday;
-    }
   } catch(e) {
     body.innerHTML = `<div class="brief-empty">Could not load brief: ${esc(e.message)}</div>`;
     document.getElementById('briefTimestamp').textContent = '—';
