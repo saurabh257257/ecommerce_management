@@ -120,6 +120,7 @@ try { db.exec("ALTER TABLE products ADD COLUMN flag_available INTEGER DEFAULT 0"
 try { db.exec("ALTER TABLE customers_v2 ADD COLUMN customer_type TEXT DEFAULT ''"); } catch(e) {}
 try { db.exec("ALTER TABLE products ADD COLUMN flag_out_of_stock INTEGER DEFAULT 0"); } catch(e) {}
 try { db.exec("ALTER TABLE products ADD COLUMN flag_for_internal INTEGER DEFAULT 0"); } catch(e) {}
+try { db.exec("ALTER TABLE team_members ADD COLUMN password TEXT DEFAULT ''"); } catch(e) {}
 try { db.exec("CREATE INDEX IF NOT EXISTS idx_wa_phone ON wa_messages(phone)"); } catch(e) {}
 try { db.exec("CREATE INDEX IF NOT EXISTS idx_wa_customer ON wa_messages(customer_id)"); } catch(e) {}
 
@@ -264,21 +265,38 @@ app.get('/api/team-members', (req, res) => {
   res.json({ data: db.prepare('SELECT * FROM team_members ORDER BY id').all() });
 });
 app.post('/api/team-members', (req, res) => {
-  const { name, color, role } = req.body;
+  const { name, color, role, password } = req.body;
   if (!name) return res.status(400).json({ error: 'Name required' });
   try {
-    const r = db.prepare('INSERT INTO team_members (name,color,role) VALUES (?,?,?)').run(name.trim(), color||'#4f46e5', role||'');
-    res.json({ success:true, id:r.lastInsertRowid, name:name.trim(), color:color||'#4f46e5', role:role||'' });
+    const r = db.prepare('INSERT INTO team_members (name,color,role,password) VALUES (?,?,?,?)').run(name.trim(), color||'#4f46e5', role||'', password||'');
+    res.json({ success:true, id:r.lastInsertRowid, name:name.trim(), color:color||'#4f46e5', role:role||'', password:password||'' });
   } catch(e) { res.status(400).json({ error:'Name already exists' }); }
 });
 app.put('/api/team-members/:id', (req, res) => {
-  const { color, role } = req.body;
-  db.prepare('UPDATE team_members SET color=?,role=? WHERE id=?').run(color||'#4f46e5', role||'', req.params.id);
+  const { color, role, password } = req.body;
+  if (password !== undefined) {
+    db.prepare('UPDATE team_members SET color=?,role=?,password=? WHERE id=?').run(color||'#4f46e5', role||'', password||'', req.params.id);
+  } else {
+    db.prepare('UPDATE team_members SET color=?,role=? WHERE id=?').run(color||'#4f46e5', role||'', req.params.id);
+  }
   res.json({ success:true });
 });
 app.delete('/api/team-members/:id', (req, res) => {
   db.prepare('DELETE FROM team_members WHERE id=?').run(req.params.id);
   res.json({ success:true });
+});
+
+// ── Auth: single-password login → resolves to admin or team member ──
+const ADMIN_PASSWORD = 'admin';
+app.post('/api/auth/login', (req, res) => {
+  const password = (req.body && req.body.password || '').trim();
+  if (!password) return res.status(400).json({ success:false, error:'Password required' });
+  if (password === ADMIN_PASSWORD) {
+    return res.json({ success:true, role:'admin', name:'Admin' });
+  }
+  const m = db.prepare("SELECT id,name FROM team_members WHERE password=? AND password!=''").get(password);
+  if (m) return res.json({ success:true, role:'member', name:m.name, id:m.id });
+  res.status(401).json({ success:false, error:'Incorrect password' });
 });
 
 // ── Customer tags ─────────────────────────────────────────────
