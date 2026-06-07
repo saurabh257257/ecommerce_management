@@ -723,10 +723,6 @@ function renderDetail() {
           ⚡ First message or &gt;24h since reply? Use a template:
           <button class="btn btn-outline btn-sm" style="padding:3px 8px;font-size:11px" onclick="sendWaTemplate(${c.id},'${esc(c.phone||'')}','${esc(c.name).replace(/'/g,"\\'")}')">Send "Order Confirmation" template</button>
         </div>
-        <div class="wa-template-row" style="background:#e8f0fe">
-          🧪 Testing mode — send to: <input type="text" id="waTestPhone-${c.id}" value="8886772827" style="border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:12px;width:120px">
-          <span style="color:var(--muted)">(only verified numbers can receive on the test WhatsApp number)</span>
-        </div>
         <div class="wa-thread" id="waThread-${c.id}"><div class="wa-empty">Loading conversation…</div></div>
         <div class="wa-compose">
           <input type="text" id="waInput-${c.id}" placeholder="Type a message (works within 24h of their last reply)…" onkeydown="if(event.key==='Enter')sendWaText(${c.id},'${esc(c.phone||'')}')">
@@ -795,8 +791,8 @@ async function loadWaThread(cid) {
   } catch(e){ thread.innerHTML='<div class="wa-empty">Could not load messages</div>'; }
 }
 function _waPhone(cid,phone) {
-  const t=document.getElementById('waTestPhone-'+cid);
-  return (t && t.value.trim()) ? t.value.trim() : phone;
+  // Production number — always message the customer's actual phone (no test override)
+  return phone;
 }
 async function sendWaText(cid,phone) {
   phone=_waPhone(cid,phone);
