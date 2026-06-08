@@ -119,9 +119,6 @@
     .tm-search-bar { padding:8px 10px; border-bottom:1px solid var(--border); flex-shrink:0; }
     .tm-search-bar input { width:100%; border:1px solid var(--border); border-radius:8px; padding:7px 10px; font-size:12px; font-family:inherit; outline:none; background:var(--card); color:var(--text); box-sizing:border-box; }
     .tm-search-bar input:focus { border-color:var(--primary); }
-    .tm-filter-tabs { display:flex; gap:4px; padding:6px 10px 6px; flex-shrink:0; flex-wrap:wrap; border-bottom:1px solid var(--border); }
-    .tm-tab { padding:3px 8px; border-radius:10px; font-size:11px; font-weight:500; border:1px solid var(--border); background:var(--bg); cursor:pointer; color:var(--muted); white-space:nowrap; }
-    .tm-tab.on { background:var(--primary); color:#fff; border-color:var(--primary); }
 
     /* Customer list */
     .tm-list { flex:1; overflow-y:auto; }
@@ -421,7 +418,6 @@
       <div class="tm-search-bar">
         <input type="text" id="tmSearch" placeholder="Search name, phone, email, company, city…" oninput="renderList()" />
       </div>
-      <div class="tm-filter-tabs" id="filterTabs"></div>
       <div class="tm-list" id="tmList">
         <div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Loading…</div>
       </div>
@@ -677,7 +673,7 @@ async function init() {
   allTypes = (await ctR.json()).data || [];
   allTags = (await tgR.json()).data || [];
   allProducts = (await prR.json()).data || [];
-  renderTiles(); renderFilterSidebar(); buildFilterTabs(); renderList();
+  renderTiles(); renderFilterSidebar(); renderList();
   loadStoredBrief();
   loadNotifications();
   setInterval(loadNotifications, 20000);
@@ -765,7 +761,7 @@ function renderTiles() {
 }
 function setScope(s){
   scope=s; sideFilter={type:null,status:null,tag:null}; tabFilter='All';
-  renderTiles(); renderFilterSidebar(); buildFilterTabs(); renderList();
+  renderTiles(); renderFilterSidebar(); renderList();
   // On mobile, collapse the drawer after picking a scope so the list is immediately visible
   const drawer=document.getElementById('tmFilters'), toggle=document.getElementById('tmFiltToggle');
   if (drawer && drawer.classList.contains('open') && window.innerWidth<=860){ drawer.classList.remove('open'); toggle.classList.remove('open'); }
@@ -848,21 +844,6 @@ function scopedList(){
   return allCust.filter(c=>(c.assigned_to||'').trim()===scope); // member name (admin drill-down)
 }
 
-function buildFilterTabs() {
-  const base = scopedList();
-  const statuses = ['All',...new Set(base.map(c=>c.status).filter(Boolean))];
-  const el = document.getElementById('filterTabs');
-  el.innerHTML = statuses.map(s=>`<span class="tm-tab${s==='All'&&tabFilter==='All'?' on':''}" onclick="setTab(this,'${s.replace(/'/g,"\\'")}' )">${s}</span>`).join('')
-    + '<span class="tm-tab" onclick="setTab(this,\'overdue\')">⚠ Overdue</span>'
-    + '<span class="tm-tab" onclick="setTab(this,\'today\')">📅 Today</span>'
-    + '<span class="tm-tab" onclick="setTab(this,\'nodate\')">⏰ No Date</span>';
-}
-
-function setTab(el, val) {
-  document.querySelectorAll('.tm-tab').forEach(t=>t.classList.remove('on'));
-  el.classList.add('on'); tabFilter=val; renderList();
-}
-
 function renderList() {
   const q = (document.getElementById('tmSearch').value||'').toLowerCase();
   const t = todayISO();
@@ -900,7 +881,7 @@ async function assignToMe(cid) {
   await patchC(cid, { assigned_to: PERSON });
   const c = allCust.find(x=>x.id===cid);
   if (c) c.assigned_to = PERSON;
-  renderTiles(); renderFilterSidebar(); buildFilterTabs(); renderList();
+  renderTiles(); renderFilterSidebar(); renderList();
   toast('Customer assigned to you','success');
 }
 
@@ -1800,7 +1781,7 @@ async function saveACP(){
   const all=(await rf.json()).data||[];
   mine=all.filter(c=>(c.assigned_to||'').trim()===PERSON);
   unassigned=all.filter(c=>{const a=(c.assigned_to||'').trim();return a===''||a==='Unassigned';});
-  renderStats(); buildFilterTabs(); renderList();
+  renderStats(); renderList();
   if(d.id) selectC(d.id);
 }
 
