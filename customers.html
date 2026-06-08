@@ -145,10 +145,6 @@
     .ppd-empty { padding: 20px; text-align: center; font-size: 13px; color: var(--muted); }
     .ppd-cat-head { padding: 5px 12px; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; background: #f8fafc; border-bottom: 1px solid var(--border); }
 
-    /* AI Summary */
-    .ai-sum-text { font-size: 13px; line-height: 1.75; color: var(--text); white-space: pre-wrap; }
-    .ai-sum-ph { color: var(--muted); font-size: 13px; font-style: italic; }
-
     /* AI Confirm modal */
     .ai-field { display: flex; align-items: flex-start; gap: 8px; padding: 7px 0; border-bottom: 1px solid #ede9fe; }
     .ai-field:last-child { border: none; }
@@ -287,7 +283,6 @@
     <div class="nav-sec">Team</div>
     <a href="rohan.html" class="nav-link"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>Rohan</a>
     <a href="saurabh.html" class="nav-link"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>Saurabh</a>
-    <a href="orders.html" class="nav-link"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>Orders</a>
     <a href="products.html" class="nav-link"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>Products</a>
     <a href="database.html" class="nav-link"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>Database</a>
   </nav>
@@ -758,7 +753,6 @@ function renderDetail() {
   <div class="sec">
     <div class="sec-head">
       <span class="sec-title">📦 Product Interests</span>
-      <button class="btn btn-outline btn-sm" id="suggestBtn" onclick="suggestInterests(${c.id})" style="font-size:11px">✨ AI Suggest</button>
     </div>
     <div class="int-list" id="interestList">${renderIntList(interests, c.id)}</div>
     <div class="int-actions">
@@ -773,19 +767,9 @@ function renderDetail() {
         </div>
       </div>
     </div>
-    <div id="suggestResult" style="display:none;margin-top:8px;padding:10px;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:8px;font-size:13px"></div>
   </div>
 
-  <!-- ── 5. AI Summary ── -->
-  <div class="sec">
-    <div class="sec-head">
-      <span class="sec-title">🤖 AI Summary</span>
-      <button class="sec-btn" id="sumBtn" onclick="generateSummary()">Generate ↻</button>
-    </div>
-    <div id="aiSumText" class="ai-sum-ph">Click "Generate" for an AI summary of this customer.</div>
-  </div>
-
-  <!-- ── 6. Timeline ── -->
+  <!-- ── 5. Timeline ── -->
   <div class="disc-card">
     <div class="disc-head">Timeline — Activity &amp; Notes</div>
     <div class="note-compose">
@@ -1263,58 +1247,6 @@ async function addIntFromPicker(cid, pid, sku, name) {
   await logActivity(`Product added: ${sku ? '['+sku+'] ' : ''}${name}`);
   toast('Product added', 'success');
 }
-async function suggestInterests(cid) {
-  const btn = document.getElementById('suggestBtn');
-  const resultEl = document.getElementById('suggestResult');
-  btn.disabled = true; btn.textContent = '⏳ Analysing…';
-  resultEl.style.display = 'none';
-  try {
-    const res = await fetch('/api/ai/suggest-interests', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({customerId:cid}) });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    if (!data.suggestions?.length) {
-      resultEl.style.display = 'block';
-      resultEl.innerHTML = '<em style="color:var(--muted)">No product interests detected from notes.</em>';
-    } else {
-      resultEl.style.display = 'block';
-      resultEl.innerHTML = '<strong style="font-size:12px;color:#6d28d9">AI Suggestions — click to add:</strong><div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">' +
-        data.suggestions.map(s => `<span style="background:#ede9fe;color:#5b21b6;padding:5px 12px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid #c4b5fd" title="${esc(s.reason||'')}" onclick="addSuggestedInt(${cid},'${esc(s.sku||'')}','${esc(s.name||'')}',this)">${esc(s.name)}${s.sku?` <span style="opacity:.6">(${esc(s.sku)})</span>`:''}</span>`).join('') + '</div>';
-    }
-  } catch(e) {
-    resultEl.style.display = 'block';
-    resultEl.innerHTML = `<span style="color:var(--danger)">${e.message}</span>`;
-  }
-  btn.disabled = false; btn.textContent = '✨ AI Suggest';
-}
-async function addSuggestedInt(cid, sku, name, el) {
-  el.style.opacity = '0.4'; el.style.pointerEvents = 'none';
-  const r = await fetch(`/api/crm/customers/${cid}/interests`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({interest:name,sku,quantity:''})});
-  const d = await r.json();
-  if (!selC.interests) selC.interests = [];
-  selC.interests.push({id: d.id, interest: sku ? `[${sku}] ${name}` : name, quantity: ''});
-  document.getElementById('interestList').innerHTML = renderIntList(selC.interests, cid);
-  el.textContent = '✓ Added';
-  await logActivity(`Product added (AI suggest): ${sku?'['+sku+'] ':''}${name}`);
-}
-
-// ── AI Summary ────────────────────────────────────────────────
-async function generateSummary() {
-  const el = document.getElementById('aiSumText');
-  const btn = document.getElementById('sumBtn');
-  if (!el || !selC) return;
-  el.className = 'ai-sum-ph'; el.textContent = '⏳ Generating summary…';
-  btn.disabled = true;
-  try {
-    const r = await fetch('/api/ai/customer-summary', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({customerId:selC.id})});
-    const d = await r.json();
-    if (d.error) throw new Error(d.error);
-    el.className = 'ai-sum-text'; el.textContent = d.summary;
-  } catch(e) {
-    el.className = 'ai-sum-ph'; el.textContent = 'Could not generate summary: ' + e.message;
-  }
-  btn.disabled = false;
-}
-
 // ── Timeline / Notes ──────────────────────────────────────────
 function renderDiscItem(d) {
   const isSys = d.type === 'activity';
