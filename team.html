@@ -26,28 +26,31 @@
 
     .tm-wrap { display:flex; flex:1; overflow:hidden; }
 
-    /* Filters bar — compact dropdown buttons in a single row, directly under the tiles row */
-    .tm-filters { display:flex; flex-wrap:wrap; align-items:center; gap:10px; width:auto; flex-shrink:0;
+    /* Filters bar — compact toggle buttons; selected group's options expand as a horizontal strip below */
+    .tm-filters { display:flex; flex-direction:column; width:auto; flex-shrink:0;
                   border-right:none; border-bottom:1px solid var(--border); background:var(--bg);
-                  padding:10px 18px; }
+                  padding:10px 18px; gap:8px; }
+    .tm-filters-row { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
     #tmFilterGroups { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
     .tm-filt-dd { position:relative; }
     .tm-filt-dd-btn { display:flex; align-items:center; gap:6px; border:1px solid var(--border); background:var(--card,#fff);
                       color:var(--text); border-radius:8px; padding:6px 11px; font-size:12px; font-family:inherit;
                       cursor:pointer; white-space:nowrap; }
     .tm-filt-dd-btn:hover { border-color:var(--primary); }
-    .tm-filt-dd.active .tm-filt-dd-btn { border-color:var(--primary); background:#eef2ff; color:var(--primary); font-weight:600; }
-    .tm-filt-dd-arr { font-size:9px; color:var(--muted); }
-    .tm-filt-dd-panel { display:none; position:absolute; left:0; top:calc(100% + 6px); min-width:220px; max-width:300px;
-                        max-height:340px; overflow:auto; background:var(--card,#fff); border:1px solid var(--border);
-                        border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,.15); z-index:300; padding:6px; }
-    .tm-filt-dd-panel.open { display:block; }
-    .tm-filt-title { font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
-    .tm-filt-opt { display:flex; align-items:center; gap:7px; padding:6px 8px; border-radius:7px; font-size:12.5px; cursor:pointer; color:var(--text); margin-bottom:2px; white-space:nowrap; }
-    .tm-filt-opt:hover { background:var(--surface); }
-    .tm-filt-opt.on { background:var(--primary); color:#fff; font-weight:600; }
+    .tm-filt-dd.active .tm-filt-dd-btn, .tm-filt-dd.open .tm-filt-dd-btn { border-color:var(--primary); background:#eef2ff; color:var(--primary); font-weight:600; }
+    .tm-filt-dd-arr { font-size:9px; color:var(--muted); transition:transform .15s; }
+    .tm-filt-dd.open .tm-filt-dd-arr { transform:rotate(180deg); }
+    /* Horizontal options strip — sits between the buttons row and the search bar */
+    .tm-filt-opts-row { display:flex; flex-wrap:nowrap; align-items:center; gap:8px; overflow-x:auto;
+                        padding:8px 4px; border-top:1px dashed var(--border); }
+    .tm-filt-opts-row .tm-filt-title { flex-shrink:0; margin:0 4px 0 0; }
+    .tm-filt-title { font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+    .tm-filt-opt { display:flex; align-items:center; gap:6px; padding:6px 12px; border-radius:20px; font-size:12.5px;
+                   cursor:pointer; color:var(--text); white-space:nowrap; flex-shrink:0; border:1px solid var(--border); background:var(--card,#fff); }
+    .tm-filt-opt:hover { border-color:var(--primary); }
+    .tm-filt-opt.on { background:var(--primary); color:#fff; font-weight:600; border-color:var(--primary); }
     .tm-filt-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-    .tm-filt-count { margin-left:auto; font-size:10px; opacity:.7; padding-left:10px; }
+    .tm-filt-count { font-size:10px; opacity:.75; }
     .tm-filt-clear { font-size:11px; color:var(--primary); cursor:pointer; text-decoration:none; white-space:nowrap; padding:6px 4px; }
 
     /* Accordion sections in detail */
@@ -262,10 +265,10 @@
       .tm-filters-toggle { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 14px; background:var(--surface); border-bottom:1px solid var(--border); font-size:12px; font-weight:600; color:var(--text); cursor:pointer; }
       .tm-filters-toggle .arr { transition:transform .15s; color:var(--muted); }
       .tm-filters-toggle.open .arr { transform:rotate(180deg); }
-      .tm-filters { display:none; width:auto; border-right:none; border-bottom:1px solid var(--border); max-height:46vh; overflow-y:auto; }
+      .tm-filters { display:none; flex-direction:column; width:auto; border-right:none; border-bottom:1px solid var(--border); max-height:46vh; overflow-y:auto; }
       .tm-filters.open { display:flex; }
       #tmFilterGroups { flex-wrap:wrap; }
-      .tm-filt-dd-panel { left:0; right:auto; }
+      .tm-filt-opts-row { flex-wrap:wrap; overflow-x:visible; }
 
       .tm-left { width:auto; border-right:none; }
       .tm-list { -webkit-overflow-scrolling:touch; }
@@ -375,11 +378,15 @@
   </div>
   <!-- FILTERS BAR — horizontal, placed right after the tiles row -->
   <div class="tm-filters" id="tmFilters">
-    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-      <div class="tm-person" id="tmPerson" style="font-size:14px">—</div>
-      <button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="logout()" title="Sign out">⏻</button>
+    <div class="tm-filters-row">
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <div class="tm-person" id="tmPerson" style="font-size:14px">—</div>
+        <button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="logout()" title="Sign out">⏻</button>
+      </div>
+      <div id="tmFilterGroups"></div>
     </div>
-    <div id="tmFilterGroups"></div>
+    <!-- Horizontal options strip — appears here (above the search bar) when a filter group is opened -->
+    <div id="filtOptionsRow" class="tm-filt-opts-row" style="display:none"></div>
   </div>
 
   <div class="tm-wrap">
@@ -707,48 +714,57 @@ function toggleFiltersDrawer(){
   drawer.classList.toggle('open'); toggle.classList.toggle('open');
 }
 
-// ── Filters bar — compact dropdowns (Customer Type / Status / Tags) ──
+// ── Filters bar — clicking a group's button expands its options as a   ──
+// ── horizontal strip directly above the search bar (not a dropdown)    ──
+let openFiltGroup = null; // 'type' | 'status' | 'tag' | null
+const FILT_DEFS = { type: ['Customer Type', () => allTypes], status: ['Status', () => allStatuses], tag: ['Tags', () => allTags] };
+
 function renderFilterSidebar() {
   const el = document.getElementById('tmFilterGroups');
-  const base = scopedList();
-  const grp = (title, items, key) => {
+  const groups = [['type',allTypes],['status',allStatuses],['tag',allTags]];
+  el.innerHTML = groups.map(([key,items])=>{
     if (!items.length) return '';
+    const title = FILT_DEFS[key][0];
     const activeItem = items.find(it => sideFilter[key]===it.name || (key==='tag' && sideFilter[key]===it.id));
     const btnLabel = activeItem ? esc(activeItem.name) : title;
-    const rows = items.map(it=>{
-      const cnt = base.filter(c=>{
-        if(key==='status') return c.status===it.name;
-        if(key==='type') return (c.customer_type||'')===it.name;
-        if(key==='tag') return (c.tags||[]).some(tg=>tg.id===it.id);
-      }).length;
-      const on = sideFilter[key]===it.name || (key==='tag' && sideFilter[key]===it.id);
-      const val = key==='tag' ? it.id : it.name;
-      return `<div class="tm-filt-opt${on?' on':''}" onclick="toggleSideFilter('${key}',${typeof val==='number'?val:`'`+esc(val).replace(/'/g,"\\'")+`'`})">
-        <span class="tm-filt-dot" style="background:${it.color||'#94a3b8'}"></span>
-        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(it.name)}</span>
-        <span class="tm-filt-count">${cnt}</span>
-      </div>`;
-    }).join('');
-    return `<div class="tm-filt-dd${activeItem?' active':''}" data-fkey="${key}">
-      <button type="button" class="tm-filt-dd-btn" onclick="toggleFiltDD(event,'${key}')">
+    return `<div class="tm-filt-dd${activeItem?' active':''}${openFiltGroup===key?' open':''}" data-fkey="${key}">
+      <button type="button" class="tm-filt-dd-btn" onclick="toggleFiltGroup(event,'${key}')">
         <span style="overflow:hidden;text-overflow:ellipsis;max-width:140px">${btnLabel}</span><span class="tm-filt-dd-arr">▾</span>
       </button>
-      <div class="tm-filt-dd-panel" id="filtDD-${key}">
-        <div class="tm-filt-title">${title}</div>${rows}
-      </div>
     </div>`;
-  };
-  const anyActive = sideFilter.type||sideFilter.status||sideFilter.tag;
-  el.innerHTML = grp('Customer Type', allTypes, 'type')
-    + grp('Status', allStatuses, 'status')
-    + grp('Tags', allTags, 'tag')
-    + (anyActive?`<span class="tm-filt-clear" onclick="clearSideFilters()">✕ Clear filters</span>`:'');
+  }).join('') + (sideFilter.type||sideFilter.status||sideFilter.tag ? `<span class="tm-filt-clear" onclick="clearSideFilters()">✕ Clear filters</span>` : '');
+  renderFiltOptionsRow();
 }
-function toggleFiltDD(e, key){
+
+function renderFiltOptionsRow() {
+  const row = document.getElementById('filtOptionsRow');
+  if (!openFiltGroup) { row.style.display='none'; row.innerHTML=''; return; }
+  const key = openFiltGroup;
+  const [title, getItems] = FILT_DEFS[key];
+  const items = getItems();
+  const base = scopedList();
+  const chips = items.map(it=>{
+    const cnt = base.filter(c=>{
+      if(key==='status') return c.status===it.name;
+      if(key==='type') return (c.customer_type||'')===it.name;
+      if(key==='tag') return (c.tags||[]).some(tg=>tg.id===it.id);
+    }).length;
+    const on = sideFilter[key]===it.name || (key==='tag' && sideFilter[key]===it.id);
+    const val = key==='tag' ? it.id : it.name;
+    return `<div class="tm-filt-opt${on?' on':''}" onclick="toggleSideFilter('${key}',${typeof val==='number'?val:`'`+esc(val).replace(/'/g,"\\'")+`'`})">
+      <span class="tm-filt-dot" style="background:${it.color||'#94a3b8'}"></span>
+      <span>${esc(it.name)}</span>
+      <span class="tm-filt-count">${cnt}</span>
+    </div>`;
+  }).join('');
+  row.innerHTML = `<span class="tm-filt-title">${title}:</span>${chips}`;
+  row.style.display = 'flex';
+}
+
+function toggleFiltGroup(e, key){
   e.stopPropagation();
-  document.querySelectorAll('.tm-filt-dd-panel.open').forEach(p=>{ if(p.id!=='filtDD-'+key) p.classList.remove('open'); });
-  const panel = document.getElementById('filtDD-'+key);
-  if (panel) panel.classList.toggle('open');
+  openFiltGroup = (openFiltGroup === key) ? null : key;
+  renderFilterSidebar();
 }
 function toggleSideFilter(key, val){
   sideFilter[key] = (sideFilter[key]===val) ? null : val;
@@ -756,9 +772,9 @@ function toggleSideFilter(key, val){
   const drawer=document.getElementById('tmFilters'), toggle=document.getElementById('tmFiltToggle');
   if (drawer && drawer.classList.contains('open') && window.innerWidth<=860){ drawer.classList.remove('open'); toggle.classList.remove('open'); }
 }
-function clearSideFilters(){ sideFilter={type:null,status:null,tag:null}; renderFilterSidebar(); renderList(); }
+function clearSideFilters(){ sideFilter={type:null,status:null,tag:null}; openFiltGroup=null; renderFilterSidebar(); renderList(); }
 document.addEventListener('click', (e) => {
-  if (!e.target.closest('.tm-filt-dd')) document.querySelectorAll('.tm-filt-dd-panel.open').forEach(p=>p.classList.remove('open'));
+  if (!e.target.closest('.tm-filters') && openFiltGroup){ openFiltGroup=null; renderFilterSidebar(); }
 });
 
 // Returns the customer list for the current top-level scope (before sidebar/tab/search filters)
