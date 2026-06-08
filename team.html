@@ -990,7 +990,11 @@ function renderDetail() {
       </div>
       <div class="acc-body" id="accBody-details-${c.id}">
         <div class="d-grid">
-          <div class="d-field"><div class="d-field-label">Status</div><div class="d-field-val"><span class="s-badge ${S_MAP[c.status]||''}">${esc(c.status||'—')}</span></div></div>
+          <div class="d-field"><div class="d-field-label">Status</div><div class="d-field-val">
+            <select class="inline-sel" id="statusSel-${c.id}" onchange="changeCustStatus(${c.id},this.value)" style="font-size:12px;padding:4px 8px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-weight:600;background:var(--card,#fff);color:var(--text)">
+              ${allStatuses.map(s=>`<option value="${esc(s.name)}"${c.status===s.name?' selected':''}>${esc(s.name)}</option>`).join('')}
+            </select>
+          </div></div>
           <div class="d-field" style="grid-column:1/-1">
             <div class="d-field-label">Phone numbers <span style="font-weight:400;color:var(--muted)">(✓ = used for WhatsApp)</span></div>
             <div class="d-field-val" id="phoneList-${c.id}">Loading…</div>
@@ -1492,6 +1496,15 @@ async function commitEditTm(el) {
   }
 }
 
+async function changeCustStatus(cid, val) {
+  await patchC(cid, { status: val });
+  if (selCust && selCust.id === cid) selCust.status = val;
+  const c = allCust.find(x => x.id === cid); if (c) c.status = val;
+  const li = document.querySelector(`#li-${cid} .s-badge`);
+  if (li) { li.textContent = val; li.className = 's-badge ' + (S_MAP[val] || ''); }
+  toast('Status updated', 'success');
+  await logActivity(`Status changed to ${val}`);
+}
 async function patchC(cid,fields){
   const r=await fetch(`/api/crm/customers/${cid}`);const c=await r.json();
   const body={...c,...fields};delete body.discussions;delete body.interests;
