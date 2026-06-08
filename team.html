@@ -278,6 +278,7 @@
     <h2 id="pageTitle">Dashboard</h2>
     <div class="topbar-actions">
       <button class="btn btn-primary btn-sm" onclick="openACP()">➕ Add Customer</button>
+      <button class="btn btn-outline btn-sm" onclick="openBroadcast()">📢 Broadcast</button>
       <button class="btn btn-outline btn-sm" onclick="openBrief()">🤖 Brief</button>
       <button class="btn btn-outline btn-sm" onclick="location.reload()">↻ Refresh</button>
       <a href="customers.html" class="btn btn-outline btn-sm">Full CRM</a>
@@ -376,6 +377,37 @@
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
       <button class="btn btn-outline" onclick="closeFU()">Skip</button>
       <button class="btn btn-primary" onclick="saveFU()">Set Date</button>
+    </div>
+  </div>
+</div>
+
+<!-- Broadcast modal -->
+<div class="qn-overlay" id="bcModal">
+  <div class="qn-box" style="width:460px">
+    <h4>📢 Broadcast a template message</h4>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">
+      Templates are the only way to message customers who haven't replied to you in the last 24h. Create &amp; get your template approved in Meta's WhatsApp Manager first, then send it here to many customers at once.
+    </div>
+    <label style="font-size:12px;font-weight:600;color:var(--muted)">Approved template name (exact, e.g. order_update_v1)</label>
+    <input type="text" id="bcTemplate" placeholder="e.g. order_update_v1" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;margin-bottom:9px;outline:none;background:var(--card);color:var(--text)">
+    <label style="font-size:12px;font-weight:600;color:var(--muted)">Language code</label>
+    <input type="text" id="bcLang" value="en_US" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;margin-bottom:9px;outline:none;background:var(--card);color:var(--text)">
+    <label style="display:flex;align-items:center;gap:6px;font-size:13px;margin-bottom:9px"><input type="checkbox" id="bcUseName" checked> Personalize — pass customer's name as the template's first variable ({{1}})</label>
+
+    <label style="font-size:12px;font-weight:600;color:var(--muted)">Audience</label>
+    <select id="bcAudience" onchange="bcUpdateCount()" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;margin-bottom:9px;outline:none;background:var(--card);color:var(--text)">
+      <option value="mine">My customers (assigned to me)</option>
+      <option value="all">All customers</option>
+    </select>
+    <label style="font-size:12px;font-weight:600;color:var(--muted)">Filter by status (optional)</label>
+    <select id="bcStatus" onchange="bcUpdateCount()" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;margin-bottom:9px;outline:none;background:var(--card);color:var(--text)">
+      <option value="">Any status</option>
+    </select>
+    <div id="bcCount" style="font-size:13px;font-weight:600;margin-bottom:9px"></div>
+    <div id="bcProgress" style="font-size:12px;color:var(--muted);margin-bottom:9px;display:none;max-height:140px;overflow:auto"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeBroadcast()">Close</button>
+      <button class="btn btn-primary" id="bcSendBtn" onclick="sendBroadcast()">Send to all</button>
     </div>
   </div>
 </div>
@@ -907,6 +939,54 @@ async function saveFU(){
   if(selCust&&selCust.id===fuActiveCid){selCust.next_followup=date;}
   closeFU();renderStats();renderList();if(selCust&&selCust.id===fuActiveCid)renderDetail();
   toast('Follow-up date set','success');
+}
+
+// ── Broadcast ─────────────────────────────────────────────────────
+function bcAudienceList(){
+  const aud = document.getElementById('bcAudience').value;
+  const status = document.getElementById('bcStatus').value;
+  let list = aud==='mine' ? allCust.filter(c=>(c.assigned_to||'').trim()===PERSON) : allCust.slice();
+  if (status) list = list.filter(c=>c.status===status);
+  return list.filter(c=>c.phone && String(c.phone).trim());
+}
+function bcUpdateCount(){
+  const n = bcAudienceList().length;
+  document.getElementById('bcCount').textContent = n ? `Will send to ${n} customer${n===1?'':'s'} (only those with a phone number on file).` : 'No customers with a phone number match this audience.';
+}
+function openBroadcast(){
+  const sel = document.getElementById('bcStatus');
+  sel.innerHTML = '<option value="">Any status</option>' + allStatuses.map(s=>`<option value="${esc(s.name||s)}">${esc(s.name||s)}</option>`).join('');
+  document.getElementById('bcAudience').value = 'mine';
+  document.getElementById('bcProgress').style.display='none';
+  document.getElementById('bcProgress').innerHTML='';
+  document.getElementById('bcSendBtn').disabled=false;
+  bcUpdateCount();
+  document.getElementById('bcModal').classList.add('open');
+}
+function closeBroadcast(){ document.getElementById('bcModal').classList.remove('open'); }
+async function sendBroadcast(){
+  const template = document.getElementById('bcTemplate').value.trim();
+  const language = document.getElementById('bcLang').value.trim() || 'en_US';
+  const useName = document.getElementById('bcUseName').checked;
+  if(!template) return toast('Enter the approved template name','error');
+  const list = bcAudienceList();
+  if(!list.length) return toast('No matching customers with a phone number','error');
+  if(!confirm(`Send template "${template}" to ${list.length} customer(s)? This cannot be undone.`)) return;
+
+  const btn = document.getElementById('bcSendBtn'); btn.disabled = true; btn.textContent='Sending…';
+  const prog = document.getElementById('bcProgress'); prog.style.display='block'; prog.innerHTML='Starting…';
+  try {
+    const r = await fetch('/api/whatsapp/broadcast',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      customerIds:list.map(c=>c.id), template, language, paramsFn: useName?'name':null, author:PERSON
+    })});
+    const j = await r.json();
+    if(!j.success) throw new Error(j.error||'Broadcast failed');
+    const ok = j.results.filter(x=>x.ok).length, fail = j.results.filter(x=>!x.ok);
+    prog.innerHTML = `✅ Sent: ${ok} &nbsp;|&nbsp; ❌ Failed: ${fail.length}` +
+      (fail.length ? '<br>' + fail.map(f=>{ const c=list.find(x=>x.id===f.id); return `• ${esc(c?c.name:('#'+f.id))}: ${esc(f.error||'failed')}`; }).join('<br>') : '');
+    toast(`Broadcast done — ${ok} sent, ${fail.length} failed`, fail.length ? 'error' : 'success');
+  } catch(e){ prog.innerHTML = 'Error: '+esc(e.message); toast(e.message,'error'); }
+  btn.disabled = false; btn.textContent = 'Send to all';
 }
 
 function loadStoredBrief() {
