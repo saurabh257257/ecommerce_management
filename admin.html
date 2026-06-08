@@ -66,6 +66,14 @@
     @media (max-width: 600px) {
       .admin-grid { grid-template-columns: 1fr; }
       .stat-strip { grid-template-columns: repeat(2, 1fr); }
+      /* Larger thumb-friendly fields & buttons for template/backup forms */
+      #waTplName, #waTplCategory, #waTplLanguage, #waTplBtnText, #waTplBtnUrl, #waTplBody {
+        font-size: 15px !important; padding: 11px 13px !important;
+      }
+      .add-row { flex-direction: column; align-items: stretch !important; }
+      .add-row > * { width: 100% !important; flex: none !important; }
+      .btn, .btn-sm { min-height: 38px; }
+      #genBackupBtn { width: 100%; min-height: 44px; font-size: 14px; }
     }
   </style>
 </head>

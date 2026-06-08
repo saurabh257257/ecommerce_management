@@ -251,6 +251,35 @@
       .tm-bottom-nav .ic { font-size:17px; line-height:1; }
       .tm-bottom-nav a.active { color:var(--primary); }
       .tm-bottom-nav a:active, .tm-bottom-nav button:active { color:var(--primary); }
+
+      /* ── Mobile-first: WhatsApp panel feels like a real chat app ── */
+      .wa-panel { margin-left:-14px; margin-right:-14px; border-radius:0; border-left:none; border-right:none; }
+      .wa-thread { max-height:calc(100vh - 320px); }
+      .wa-bubble { max-width:85%; font-size:14px; padding:9px 12px; }
+      .wa-compose { padding:10px 12px calc(10px + env(safe-area-inset-bottom)); position:sticky; bottom:0; z-index:6; }
+      .wa-compose input { padding:11px 16px; font-size:15px; }
+      .wa-compose button { width:42px; height:42px; font-size:17px; flex-shrink:0; }
+      .wa-template-row { font-size:13px; padding:10px 12px; }
+      .wa-template-row select, .wa-template-row button { font-size:13px; padding:7px 10px; min-height:38px; }
+
+      /* ── Larger thumb-friendly tap targets everywhere ── */
+      .acc-head { padding:14px 16px; min-height:48px; }
+      .acc-head-title { font-size:14px; }
+      .d-actions .btn { min-height:38px; padding:8px 12px; font-size:12.5px; }
+      .tm-item { padding:14px 16px; }
+      .tm-item-name { font-size:14px; }
+      button, .btn, a.btn { min-height:36px; }
+      .btn-sm { min-height:32px; }
+
+      /* ── Notification panel: full-width drawer on mobile ── */
+      #notifPanel { position:fixed !important; top:54px !important; left:8px !important; right:8px !important; width:auto !important; max-height:75vh; }
+
+      /* ── Forms: single column, larger fields for thumb typing ── */
+      .acp-form-row { grid-template-columns:1fr; gap:0; }
+      .acp-field { padding:12px 14px; font-size:15px; margin-bottom:10px; }
+      .acp-area { height:90px; }
+      .modal { width:100%; max-width:100%; border-radius:16px 16px 0 0; align-self:flex-end; max-height:90vh; overflow-y:auto; margin:0; }
+      .modal-overlay { align-items:flex-end; }
     }
     @media (min-width: 861px) {
       .tm-filters-toggle { display:none !important; }
