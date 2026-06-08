@@ -57,6 +57,8 @@
     .acc-sec { border:1px solid var(--border); border-radius:12px; margin-bottom:16px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.04); border-left-width:4px; }
     .acc-sec.sec-details { border-left-color:#6366f1; }
     .acc-sec.sec-fu      { border-left-color:#0ea5e9; }
+    .acc-sec.sec-pi      { border-left-color:#7c3aed; }
+    .acc-sec.sec-ai      { border-left-color:#db2777; }
     .acc-sec.sec-wa      { border-left-color:#16a34a; }
     .acc-sec.sec-tl      { border-left-color:#f59e0b; }
     /* Inline editable fields — any team member can edit */
@@ -76,6 +78,8 @@
     .acc-head { padding:11px 16px; background:var(--bg); display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; }
     .sec-details > .acc-head { background:#eef2ff; }
     .sec-fu > .acc-head      { background:#f0f9ff; }
+    .sec-pi > .acc-head      { background:#f5f3ff; }
+    .sec-ai > .acc-head      { background:#fdf2f8; }
     .sec-wa > .acc-head      { background:#ecfdf3; }
     .sec-tl > .acc-head      { background:#fffbeb; }
     .acc-head-title { font-size:13px; font-weight:700; display:flex; align-items:center; gap:7px; }
@@ -172,6 +176,31 @@
     .d-sec-title { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
     .d-req { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-size:13px; line-height:1.5; min-height:36px; margin-bottom:14px; }
     .d-req.empty { color:var(--muted); font-style:italic; }
+
+    /* Product Interests + AI Summary — ported from customers.html for parity with admin view */
+    .sec-btn { font-size: 12px; color: var(--primary); cursor: pointer; font-weight: 500; background: none; border: none; font-family: inherit; padding: 0; }
+    .int-list { display: flex; flex-direction: column; gap: 7px; margin-bottom: 10px; }
+    .int-row { display: flex; align-items: center; gap: 8px; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 8px; padding: 7px 10px; }
+    .int-sku { font-size: 10px; color: #7c3aed; font-weight: 700; background: #ede9fe; padding: 2px 6px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; }
+    .int-name { flex: 1; font-size: 13px; font-weight: 500; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .int-qty { width: 90px; border: 1px solid #ddd6fe; border-radius: 6px; padding: 4px 7px; font-size: 12px; font-family: inherit; outline: none; background: #fff; flex-shrink: 0; }
+    .int-del { background: none; border: none; cursor: pointer; color: #a78bfa; font-size: 16px; line-height: 1; padding: 0 2px; flex-shrink: 0; }
+    .int-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; position:relative; }
+    .prod-picker-btn { display: flex; align-items: center; gap: 5px; padding: 5px 12px; border: 1px dashed #a5b4fc; border-radius: 8px; font-size: 12px; color: var(--primary); cursor: pointer; background: none; font-family: inherit; font-weight: 600; }
+    .prod-picker-drop { position: absolute; top: calc(100% + 4px); left: 0; width: 320px; max-width:90vw; max-height: 300px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.14); z-index: 300; overflow: hidden; display: flex; flex-direction: column; }
+    .ppd-search { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+    .ppd-search input { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; font-size: 13px; font-family: inherit; outline: none; }
+    .ppd-search input:focus { border-color: var(--primary); }
+    .ppd-list { overflow-y: auto; flex: 1; }
+    .ppd-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; display: flex; gap: 8px; align-items: center; }
+    .ppd-item:last-child { border: none; }
+    .ppd-item:hover { background: #f5f3ff; }
+    .ppd-sku { font-size: 10px; color: var(--primary); font-weight: 700; background: #eef2ff; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
+    .ppd-name { font-size: 13px; flex: 1; }
+    .ppd-empty { padding: 20px; text-align: center; font-size: 13px; color: var(--muted); }
+    .ppd-cat-head { padding: 5px 12px; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; background: #f8fafc; border-bottom: 1px solid var(--border); }
+    .ai-sum-text { font-size: 13px; line-height: 1.75; color: var(--text); white-space: pre-wrap; }
+    .ai-sum-ph { color: var(--muted); font-size: 13px; font-style: italic; }
 
     /* Timeline */
     .tl-compose { display:flex; gap:6px; margin-bottom:10px; align-items:flex-start; }
@@ -581,6 +610,7 @@ let allCust = [], teamMembers = [], allStatuses = [], allTypes = [], allTags = [
 let scope = IS_ADMIN ? 'all' : 'mine';     // 'all' | 'mine' | 'unassigned' | <member name>
 let sideFilter = { type:null, status:null, tag:null };
 let selCust = null, selId = null, tabFilter = 'All', qnActiveCid = null, fuActiveCid = null;
+let allProducts = [], pickerOpen = false, pickerOpenCid = null;
 
 function todayISO() { return new Date().toISOString().split('T')[0]; }
 function isUnassignedRow(c){ const a=(c.assigned_to||'').trim(); return a===''||a==='Unassigned'; }
@@ -608,15 +638,16 @@ async function init() {
     const nav = document.getElementById('tmBottomNav');
     if (nav) nav.querySelectorAll('a[href="customers.html"], a[href="products.html"], a[href="orders.html"]').forEach(a=>a.remove());
   }
-  const [custR, tmR, stR, ctR, tgR] = await Promise.all([
+  const [custR, tmR, stR, ctR, tgR, prR] = await Promise.all([
     fetch('/api/crm/customers'), fetch('/api/team-members'),
-    fetch('/api/statuses'), fetch('/api/customer-types'), fetch('/api/tags')
+    fetch('/api/statuses'), fetch('/api/customer-types'), fetch('/api/tags'), fetch('/api/products')
   ]);
   allCust = (await custR.json()).data || [];
   teamMembers = (await tmR.json()).data || [];
   allStatuses = (await stR.json()).data || [];
   allTypes = (await ctR.json()).data || [];
   allTags = (await tgR.json()).data || [];
+  allProducts = (await prR.json()).data || [];
   renderTiles(); renderFilterSidebar(); buildFilterTabs(); renderList();
   loadStoredBrief();
   loadNotifications();
@@ -626,6 +657,7 @@ async function init() {
     const wrap = panel && panel.parentElement;
     if (panel && panel.style.display === 'block' && wrap && !wrap.contains(e.target)) panel.style.display = 'none';
   });
+  document.addEventListener('click', pickerOutside);
 }
 
 // ── Notifications ──────────────────────────────────────────────
@@ -985,6 +1017,43 @@ function renderDetail() {
         <button class="btn btn-outline btn-sm" style="margin-top:10px" onclick="openFU(${c.id})">${c.next_followup?'Change date':'Set follow-up date'}</button>
       </div>
     </div>
+    <div class="acc-sec sec-pi" id="accSec-pi-${c.id}">
+      <div class="acc-head" onclick="toggleAcc('pi-${c.id}')">
+        <div class="acc-head-title">📦 Product Interests</div>
+        <div class="acc-arrow" id="accArrow-pi-${c.id}">▶</div>
+      </div>
+      <div class="acc-body" id="accBody-pi-${c.id}">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+          <button class="btn btn-outline btn-sm" id="suggestBtn-${c.id}" onclick="suggestInterests(${c.id})" style="font-size:11px">✨ AI Suggest</button>
+        </div>
+        <div class="int-list" id="interestList-${c.id}">${renderIntList(c.interests||[], c.id)}</div>
+        <div class="int-actions">
+          <div class="prod-picker-wrap" id="pickerWrap-${c.id}" style="position:relative">
+            <button class="prod-picker-btn" onclick="togglePicker(${c.id})">
+              <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              Add Product
+            </button>
+            <div class="prod-picker-drop" id="prodPickerDrop-${c.id}" style="display:none">
+              <div class="ppd-search"><input id="pickerSearch-${c.id}" placeholder="Search SKU or name…" oninput="renderPicker(${c.id})" /></div>
+              <div class="ppd-list" id="pickerList-${c.id}"></div>
+            </div>
+          </div>
+        </div>
+        <div id="suggestResult-${c.id}" style="display:none;margin-top:8px;padding:10px;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:8px;font-size:13px"></div>
+      </div>
+    </div>
+    <div class="acc-sec sec-ai" id="accSec-ai-${c.id}">
+      <div class="acc-head" onclick="toggleAcc('ai-${c.id}')">
+        <div class="acc-head-title">🤖 AI Summary</div>
+        <div class="acc-arrow" id="accArrow-ai-${c.id}">▶</div>
+      </div>
+      <div class="acc-body" id="accBody-ai-${c.id}">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+          <button class="sec-btn" id="sumBtn-${c.id}" onclick="generateSummary(${c.id})">Generate ↻</button>
+        </div>
+        <div id="aiSumText-${c.id}" class="ai-sum-ph">Click "Generate" for an AI summary of this customer.</div>
+      </div>
+    </div>
     <div class="acc-sec sec-wa" id="accSec-wa-${c.id}">
       <div class="acc-head" onclick="toggleAcc('wa-${c.id}')">
         <div class="acc-head-title">💬 WhatsApp ${c.phone?('— '+esc(c.phone)):''}</div>
@@ -1018,6 +1087,161 @@ function renderDetail() {
         <div id="d-tl">${tlHtml}</div>
       </div>
     </div>`;
+}
+
+// ── Product Interests + AI Summary — ported from customers.html so every  ──
+// ── team member's profile view matches the admin's view exactly           ──
+async function logActivity(msg) {
+  if (!selCust || !msg) return;
+  const last = selCust?.discussions?.[0];
+  if (last && last.type === 'activity' && last.note === msg) return;
+  const r = await fetch(`/api/crm/customers/${selCust.id}/discussions`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ note: msg, author: 'System', type: 'activity' })
+  });
+  const d = await r.json();
+  if (selCust) {
+    if (!selCust.discussions) selCust.discussions = [];
+    selCust.discussions.unshift({ id:d.id, note:msg, author:'System', type:'activity', created_at:new Date().toISOString() });
+  }
+}
+function renderIntList(interests, cid) {
+  if (!interests.length) return '<div style="color:var(--muted);font-size:13px;padding:4px 0">No products added yet</div>';
+  return interests.map(t => {
+    const parts = t.interest.match(/^\[([^\]]+)\]\s(.+)$/);
+    const sku = parts ? parts[1] : '';
+    const name = parts ? parts[2] : t.interest;
+    return `<div class="int-row" id="ir-${t.id}">
+      ${sku?`<span class="int-sku">SKU ${esc(sku)}</span>`:''}
+      <span class="int-name" title="${esc(name)}">${esc(name)}</span>
+      <input class="int-qty" type="text" placeholder="Qty / Units" value="${esc(t.quantity||'')}"
+        onchange="updateIntQty(${t.id},this.value)" title="Expected quantity e.g. 100 pcs, 5 kg" />
+      <button class="int-del" onclick="removeInt(${cid},${t.id})" title="Remove">×</button>
+    </div>`;
+  }).join('');
+}
+async function updateIntQty(id, qty) {
+  await fetch(`/api/crm/interests/${id}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({quantity:qty}) });
+  if (selCust?.interests) { const t = selCust.interests.find(x => x.id === id); if (t) t.quantity = qty; }
+}
+async function removeInt(cid, iid) {
+  const row = selCust?.interests?.find(t => t.id === iid);
+  await fetch(`/api/crm/interests/${iid}`, {method:'DELETE'});
+  document.getElementById(`ir-${iid}`)?.remove();
+  if (selCust) selCust.interests = (selCust.interests||[]).filter(t => t.id !== iid);
+  if (!selCust?.interests?.length) {
+    const el = document.getElementById('interestList-'+cid);
+    if (el) el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:4px 0">No products added yet</div>';
+  }
+  if (row) {
+    const parts = row.interest.match(/^\[([^\]]+)\]\s(.+)$/);
+    const name = parts ? parts[2] : row.interest;
+    await logActivity(`Product removed: ${name}`);
+  }
+  toast('Removed', 'success');
+}
+function togglePicker(cid) {
+  const drop = document.getElementById('prodPickerDrop-'+cid);
+  if (!drop) return;
+  if (drop.style.display === 'none') {
+    drop.style.display = 'flex'; drop.style.flexDirection = 'column';
+    pickerOpen = true; pickerOpenCid = cid; renderPicker(cid);
+    setTimeout(() => document.getElementById('pickerSearch-'+cid)?.focus(), 50);
+  } else { closePicker(); }
+}
+function closePicker() {
+  if (pickerOpenCid != null) {
+    const drop = document.getElementById('prodPickerDrop-'+pickerOpenCid);
+    if (drop) drop.style.display = 'none';
+  }
+  pickerOpen = false; pickerOpenCid = null;
+}
+function pickerOutside(e) {
+  if (!pickerOpen || pickerOpenCid == null) return;
+  const wrap = document.getElementById('pickerWrap-'+pickerOpenCid);
+  if (wrap && !wrap.contains(e.target)) closePicker();
+}
+function renderPicker(cid) {
+  const q = (document.getElementById('pickerSearch-'+cid)?.value || '').toLowerCase();
+  let list = allProducts;
+  if (q) list = list.filter(p => ((p.sku||'')+(p.name||'')+(p.category||'')).toLowerCase().includes(q));
+  const el = document.getElementById('pickerList-'+cid);
+  if (!el) return;
+  if (!list.length) { el.innerHTML = '<div class="ppd-empty">No products found</div>'; return; }
+  const cats = [...new Set(list.map(p => p.category))];
+  el.innerHTML = cats.map(cat => {
+    const items = list.filter(p => p.category === cat);
+    return `<div class="ppd-cat-head">${esc(cat)}</div>` +
+      items.map(p => `<div class="ppd-item" onclick="addIntFromPicker(${cid},${p.id},'${esc(p.sku||'')}','${esc(p.name||'')}')">
+        ${p.sku?`<span class="ppd-sku">${esc(p.sku)}</span>`:''}
+        <span class="ppd-name">${esc(p.name)}</span>
+      </div>`).join('');
+  }).join('');
+}
+async function addIntFromPicker(cid, pid, sku, name) {
+  closePicker();
+  const r = await fetch(`/api/crm/customers/${cid}/interests`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ interest: name, sku, quantity: '' })
+  });
+  const d = await r.json();
+  if (!selCust.interests) selCust.interests = [];
+  selCust.interests.push({ id: d.id, interest: `[${sku}] ${name}`, quantity: '' });
+  const el = document.getElementById('interestList-'+cid);
+  if (el) el.innerHTML = renderIntList(selCust.interests, cid);
+  await logActivity(`Product added: ${sku ? '['+sku+'] ' : ''}${name}`);
+  toast('Product added', 'success');
+}
+async function suggestInterests(cid) {
+  const btn = document.getElementById('suggestBtn-'+cid);
+  const resultEl = document.getElementById('suggestResult-'+cid);
+  if (!btn || !resultEl) return;
+  btn.disabled = true; btn.textContent = '⏳ Analysing…';
+  resultEl.style.display = 'none';
+  try {
+    const res = await fetch('/api/ai/suggest-interests', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({customerId:cid}) });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    if (!data.suggestions?.length) {
+      resultEl.style.display = 'block';
+      resultEl.innerHTML = '<em style="color:var(--muted)">No product interests detected from notes.</em>';
+    } else {
+      resultEl.style.display = 'block';
+      resultEl.innerHTML = '<strong style="font-size:12px;color:#6d28d9">AI Suggestions — click to add:</strong><div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">' +
+        data.suggestions.map(s => `<span style="background:#ede9fe;color:#5b21b6;padding:5px 12px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid #c4b5fd" title="${esc(s.reason||'')}" onclick="addSuggestedInt(${cid},'${esc(s.sku||'')}','${esc(s.name||'')}',this)">${esc(s.name)}${s.sku?` <span style="opacity:.6">(${esc(s.sku)})</span>`:''}</span>`).join('') + '</div>';
+    }
+  } catch(e) {
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = `<span style="color:var(--danger)">${e.message}</span>`;
+  }
+  btn.disabled = false; btn.textContent = '✨ AI Suggest';
+}
+async function addSuggestedInt(cid, sku, name, el) {
+  el.style.opacity = '0.4'; el.style.pointerEvents = 'none';
+  const r = await fetch(`/api/crm/customers/${cid}/interests`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({interest:name,sku,quantity:''})});
+  const d = await r.json();
+  if (!selCust.interests) selCust.interests = [];
+  selCust.interests.push({id: d.id, interest: sku ? `[${sku}] ${name}` : name, quantity: ''});
+  const intEl = document.getElementById('interestList-'+cid);
+  if (intEl) intEl.innerHTML = renderIntList(selCust.interests, cid);
+  el.textContent = '✓ Added';
+  await logActivity(`Product added (AI suggest): ${sku?'['+sku+'] ':''}${name}`);
+}
+async function generateSummary(cid) {
+  const el = document.getElementById('aiSumText-'+cid);
+  const btn = document.getElementById('sumBtn-'+cid);
+  if (!el || !selCust) return;
+  el.className = 'ai-sum-ph'; el.textContent = '⏳ Generating summary…';
+  if (btn) btn.disabled = true;
+  try {
+    const r = await fetch('/api/ai/customer-summary', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({customerId:selCust.id})});
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    el.className = 'ai-sum-text'; el.textContent = d.summary;
+  } catch(e) {
+    el.className = 'ai-sum-ph'; el.textContent = 'Could not generate summary: ' + e.message;
+  }
+  if (btn) btn.disabled = false;
 }
 
 // ── Accordion toggle (Details / WhatsApp / Timeline) ─────────────
