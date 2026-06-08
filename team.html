@@ -743,14 +743,15 @@ function renderFiltOptionsRow() {
   if (!openFiltGroup) { row.style.display='none'; row.innerHTML=''; return; }
   const key = openFiltGroup;
   const [title, getItems] = FILT_DEFS[key];
-  const items = getItems();
   const base = scopedList();
+  const cntOf = it => base.filter(c=>{
+    if(key==='status') return c.status===it.name;
+    if(key==='type') return (c.customer_type||'')===it.name;
+    if(key==='tag') return (c.tags||[]).some(tg=>tg.id===it.id);
+  }).length;
+  const items = [...getItems()].sort((a,b)=>cntOf(a)-cntOf(b));
   const chips = items.map(it=>{
-    const cnt = base.filter(c=>{
-      if(key==='status') return c.status===it.name;
-      if(key==='type') return (c.customer_type||'')===it.name;
-      if(key==='tag') return (c.tags||[]).some(tg=>tg.id===it.id);
-    }).length;
+    const cnt = cntOf(it);
     const on = sideFilter[key]===it.name || (key==='tag' && sideFilter[key]===it.id);
     const val = key==='tag' ? it.id : it.name;
     return `<div class="tm-filt-opt${on?' on':''}" onclick="toggleSideFilter('${key}',${typeof val==='number'?val:`'`+esc(val).replace(/'/g,"\\'")+`'`})">
