@@ -97,6 +97,38 @@ db.exec(`
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
   );
+  CREATE TABLE IF NOT EXISTS customer_phones (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id INTEGER NOT NULL,
+    phone TEXT NOT NULL,
+    label TEXT DEFAULT '',
+    is_primary INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+  CREATE TABLE IF NOT EXISTS notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id INTEGER,
+    type TEXT DEFAULT 'wa_message',
+    body TEXT DEFAULT '',
+    is_read INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+  CREATE TABLE IF NOT EXISTS wa_message_templates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    category TEXT DEFAULT 'MARKETING',
+    language TEXT DEFAULT 'en_US',
+    body TEXT DEFAULT '',
+    status TEXT DEFAULT 'PENDING',
+    meta_id TEXT DEFAULT '',
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+  CREATE TABLE IF NOT EXISTS backups (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    filename TEXT NOT NULL,
+    size_bytes INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
   CREATE TABLE IF NOT EXISTS wa_messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     customer_id INTEGER DEFAULT NULL,
@@ -123,6 +155,18 @@ try { db.exec("ALTER TABLE products ADD COLUMN flag_for_internal INTEGER DEFAULT
 try { db.exec("ALTER TABLE team_members ADD COLUMN password TEXT DEFAULT ''"); } catch(e) {}
 try { db.exec("CREATE INDEX IF NOT EXISTS idx_wa_phone ON wa_messages(phone)"); } catch(e) {}
 try { db.exec("CREATE INDEX IF NOT EXISTS idx_wa_customer ON wa_messages(customer_id)"); } catch(e) {}
+try { db.exec("CREATE INDEX IF NOT EXISTS idx_phones_customer ON customer_phones(customer_id)"); } catch(e) {}
+try { db.exec("CREATE INDEX IF NOT EXISTS idx_notif_read ON notifications(is_read)"); } catch(e) {}
+
+// Backfill: copy existing customers_v2.phone into customer_phones as primary, if not already present
+try {
+  const rows = db.prepare("SELECT id, phone FROM customers_v2 WHERE phone IS NOT NULL AND phone!=''").all();
+  const exists = db.prepare("SELECT 1 FROM customer_phones WHERE customer_id=? AND phone=?");
+  const ins = db.prepare("INSERT INTO customer_phones (customer_id, phone, label, is_primary) VALUES (?,?,?,1)");
+  for (const r of rows) {
+    if (!exists.get(r.id, r.phone)) ins.run(r.id, r.phone, 'Primary');
+  }
+} catch(e) { console.log('Phone backfill note:', e.message); }
 
 // ── Idempotent data migrations ────────────────────────────────
 try {
@@ -198,6 +242,30 @@ app.put('/api/orders/:id', (req, res) => {
   db.prepare(`UPDATE orders SET customerName=?,product=?,qty=?,amount=?,status=?,payment=?,notes=? WHERE id=?`)
     .run(o.customerName, o.product, o.qty, o.amount, o.status, o.payment, o.notes, req.params.id);
   res.json({ success: true });
+});
+
+// Mark Paid → updates order status AND auto-sends a Utility WhatsApp template confirming payment
+app.post('/api/orders/:id/mark-paid', async (req, res) => {
+  try {
+    const { customerId, phone, template, language, params, author } = req.body;
+    db.prepare("UPDATE orders SET status='Paid' WHERE id=?").run(req.params.id);
+    let waResult = null;
+    if (phone && template) {
+      const to = waToE164(phone);
+      const components = (params && params.length) ? [{ type: 'body', parameters: params.map(p => ({ type: 'text', text: String(p) })) }] : [];
+      const result = await waApiCall({
+        messaging_product: 'whatsapp', to, type: 'template',
+        template: { name: template, language: { code: language || 'en_US' }, components }
+      });
+      const waId = result.messages?.[0]?.id || '';
+      db.prepare(`INSERT INTO wa_messages (customer_id, phone, direction, body, msg_type, wa_msg_id, status, author) VALUES (?,?,?,?,?,?,?,?)`)
+        .run(customerId || null, phone, 'out', `[template: ${template}]`, 'template', waId, 'sent', author || '');
+      waResult = { wa_msg_id: waId };
+    }
+    res.json({ success: true, whatsapp: waResult });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
 });
 app.delete('/api/orders/:id', (req, res) => {
   db.prepare('DELETE FROM orders WHERE id=?').run(req.params.id);
@@ -389,6 +457,195 @@ app.post('/api/crm/customers/:id/photo', upload.single('photo'), (req, res) => {
   }
   db.prepare("UPDATE customers_v2 SET photo=?,updated_at=datetime('now') WHERE id=?").run(req.file.filename, req.params.id);
   res.json({ success: true, photo: req.file.filename });
+});
+
+// ── Multi-phone numbers ───────────────────────────────────────
+app.get('/api/crm/customers/:id/phones', (req, res) => {
+  const rows = db.prepare('SELECT * FROM customer_phones WHERE customer_id=? ORDER BY is_primary DESC, id ASC').all(req.params.id);
+  res.json(rows);
+});
+app.post('/api/crm/customers/:id/phones', (req, res) => {
+  const { phone, label } = req.body;
+  if (!phone || !phone.trim()) return res.status(400).json({ error: 'Phone required' });
+  const cid = req.params.id;
+  const isFirst = db.prepare('SELECT COUNT(*) c FROM customer_phones WHERE customer_id=?').get(cid).c === 0;
+  const r = db.prepare('INSERT INTO customer_phones (customer_id, phone, label, is_primary) VALUES (?,?,?,?)')
+    .run(cid, phone.trim(), label || '', isFirst ? 1 : 0);
+  if (isFirst) db.prepare("UPDATE customers_v2 SET phone=?,updated_at=datetime('now') WHERE id=?").run(phone.trim(), cid);
+  res.json({ success: true, id: r.lastInsertRowid });
+});
+app.put('/api/crm/customers/:id/phones/:phoneId/select', (req, res) => {
+  const cid = req.params.id;
+  const row = db.prepare('SELECT * FROM customer_phones WHERE id=? AND customer_id=?').get(req.params.phoneId, cid);
+  if (!row) return res.status(404).json({ error: 'Not found' });
+  db.prepare('UPDATE customer_phones SET is_primary=0 WHERE customer_id=?').run(cid);
+  db.prepare('UPDATE customer_phones SET is_primary=1 WHERE id=?').run(row.id);
+  db.prepare("UPDATE customers_v2 SET phone=?,updated_at=datetime('now') WHERE id=?").run(row.phone, cid);
+  res.json({ success: true });
+});
+app.delete('/api/crm/customers/:id/phones/:phoneId', (req, res) => {
+  const cid = req.params.id;
+  const row = db.prepare('SELECT * FROM customer_phones WHERE id=? AND customer_id=?').get(req.params.phoneId, cid);
+  if (!row) return res.status(404).json({ error: 'Not found' });
+  db.prepare('DELETE FROM customer_phones WHERE id=?').run(row.id);
+  if (row.is_primary) {
+    const next = db.prepare('SELECT * FROM customer_phones WHERE customer_id=? ORDER BY id ASC LIMIT 1').get(cid);
+    if (next) {
+      db.prepare('UPDATE customer_phones SET is_primary=1 WHERE id=?').run(next.id);
+      db.prepare("UPDATE customers_v2 SET phone=?,updated_at=datetime('now') WHERE id=?").run(next.phone, cid);
+    } else {
+      db.prepare("UPDATE customers_v2 SET phone='',updated_at=datetime('now') WHERE id=?").run(cid);
+    }
+  }
+  res.json({ success: true });
+});
+
+// ── Notifications ─────────────────────────────────────────────
+app.get('/api/notifications', (req, res) => {
+  const rows = db.prepare(`
+    SELECT n.*, c.name AS customer_name, c.phone AS customer_phone
+    FROM notifications n LEFT JOIN customers_v2 c ON c.id=n.customer_id
+    ORDER BY n.id DESC LIMIT 50
+  `).all();
+  const unread = db.prepare('SELECT COUNT(*) c FROM notifications WHERE is_read=0').get().c;
+  res.json({ unread, notifications: rows });
+});
+app.put('/api/notifications/:id/read', (req, res) => {
+  db.prepare('UPDATE notifications SET is_read=1 WHERE id=?').run(req.params.id);
+  res.json({ success: true });
+});
+app.put('/api/notifications/read-all', (req, res) => {
+  db.prepare('UPDATE notifications SET is_read=1 WHERE is_read=0').run();
+  res.json({ success: true });
+});
+
+// ── WhatsApp Template Manager (admin) ─────────────────────────
+app.get('/api/whatsapp/templates', async (req, res) => {
+  try {
+    const wabaId = process.env.WHATSAPP_WABA_ID;
+    const token = process.env.WHATSAPP_TOKEN;
+    if (wabaId && token) {
+      const r = await fetch(`https://graph.facebook.com/v21.0/${wabaId}/message_templates?limit=100`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await r.json();
+      if (data.data) {
+        const upsert = db.prepare(`INSERT INTO wa_message_templates (name,category,language,body,status,meta_id)
+          VALUES (@name,@category,@language,@body,@status,@meta_id)
+          ON CONFLICT(name) DO UPDATE SET category=excluded.category, language=excluded.language, body=excluded.body, status=excluded.status, meta_id=excluded.meta_id`);
+        for (const t of data.data) {
+          const bodyComp = (t.components || []).find(c => c.type === 'BODY');
+          upsert.run({
+            name: t.name, category: t.category || 'MARKETING', language: t.language || 'en_US',
+            body: bodyComp ? bodyComp.text : '', status: t.status || 'PENDING', meta_id: t.id || ''
+          });
+        }
+      }
+    }
+  } catch (e) { console.log('Template sync error:', e.message); }
+  const rows = db.prepare('SELECT * FROM wa_message_templates ORDER BY name ASC').all();
+  res.json(rows);
+});
+
+app.post('/api/whatsapp/templates', async (req, res) => {
+  const { name, category, language, body, buttonText, buttonUrl } = req.body;
+  if (!name || !body) return res.status(400).json({ error: 'Name and body are required' });
+  try {
+    const wabaId = process.env.WHATSAPP_WABA_ID;
+    const token = process.env.WHATSAPP_TOKEN;
+    const components = [{ type: 'BODY', text: body }];
+    if (buttonText && buttonUrl) {
+      components.push({ type: 'BUTTONS', buttons: [{ type: 'URL', text: buttonText, url: buttonUrl }] });
+    }
+    let metaId = '', status = 'PENDING';
+    if (wabaId && token) {
+      const r = await fetch(`https://graph.facebook.com/v21.0/${wabaId}/message_templates`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.toLowerCase().replace(/[^a-z0-9_]/g, '_'), category: category || 'MARKETING', language: language || 'en_US', components })
+      });
+      const data = await r.json();
+      if (data.id) { metaId = data.id; status = data.status || 'PENDING'; }
+      else if (data.error) return res.status(400).json({ error: data.error.message || 'Meta API rejected the template' });
+    }
+    db.prepare(`INSERT INTO wa_message_templates (name,category,language,body,status,meta_id) VALUES (?,?,?,?,?,?)
+      ON CONFLICT(name) DO UPDATE SET category=excluded.category, language=excluded.language, body=excluded.body, status=excluded.status, meta_id=excluded.meta_id`)
+      .run(name.toLowerCase().replace(/[^a-z0-9_]/g, '_'), category || 'MARKETING', language || 'en_US', body, status, metaId);
+    res.json({ success: true, status, meta_id: metaId });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Data Export / Backup Center ────────────────────────────────
+app.get('/api/admin/backups', (req, res) => {
+  res.json(db.prepare('SELECT * FROM backups ORDER BY id DESC LIMIT 30').all());
+});
+
+app.post('/api/admin/backups/generate', async (req, res) => {
+  try {
+    const archiver = require('archiver');
+    const backupsDir = path.join(__dirname, 'backups');
+    if (!fs.existsSync(backupsDir)) fs.mkdirSync(backupsDir);
+    const ts = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `backup-${ts}.zip`;
+    const outPath = path.join(backupsDir, filename);
+    const output = fs.createWriteStream(outPath);
+    const archive = archiver('zip', { zlib: { level: 9 } });
+
+    output.on('close', () => {
+      db.prepare('INSERT INTO backups (filename, size_bytes) VALUES (?,?)').run(filename, archive.pointer());
+    });
+    archive.pipe(output);
+
+    // Customers CSV
+    const customers = db.prepare('SELECT * FROM customers_v2').all();
+    if (customers.length) {
+      const cols = Object.keys(customers[0]);
+      const csv = [cols.join(','), ...customers.map(r => cols.map(c => `"${String(r[c] ?? '').replace(/"/g,'""')}"`).join(','))].join('\n');
+      archive.append(csv, { name: 'customers.csv' });
+    }
+    // Orders CSV
+    const orders = db.prepare('SELECT * FROM orders').all();
+    if (orders.length) {
+      const cols = Object.keys(orders[0]);
+      const csv = [cols.join(','), ...orders.map(r => cols.map(c => `"${String(r[c] ?? '').replace(/"/g,'""')}"`).join(','))].join('\n');
+      archive.append(csv, { name: 'orders.csv' });
+    }
+    // WhatsApp messages CSV
+    const waMsgs = db.prepare('SELECT * FROM wa_messages ORDER BY id ASC').all();
+    if (waMsgs.length) {
+      const cols = Object.keys(waMsgs[0]);
+      const csv = [cols.join(','), ...waMsgs.map(r => cols.map(c => `"${String(r[c] ?? '').replace(/"/g,'""')}"`).join(','))].join('\n');
+      archive.append(csv, { name: 'whatsapp_messages.csv' });
+    }
+    // Team members & discussions
+    const team = db.prepare('SELECT * FROM team_members').all();
+    if (team.length) {
+      const cols = Object.keys(team[0]);
+      const csv = [cols.join(','), ...team.map(r => cols.map(c => `"${String(r[c] ?? '').replace(/"/g,'""')}"`).join(','))].join('\n');
+      archive.append(csv, { name: 'team_members.csv' });
+    }
+    const discussions = db.prepare('SELECT * FROM discussions').all();
+    if (discussions.length) {
+      const cols = Object.keys(discussions[0]);
+      const csv = [cols.join(','), ...discussions.map(r => cols.map(c => `"${String(r[c] ?? '').replace(/"/g,'""')}"`).join(','))].join('\n');
+      archive.append(csv, { name: 'activity_logs.csv' });
+    }
+    // Images & attachments
+    if (fs.existsSync(uploadsDir)) archive.directory(uploadsDir, 'attachments_and_images');
+
+    await archive.finalize();
+    res.json({ success: true, filename });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/admin/backups/:filename/download', (req, res) => {
+  const fp = path.join(__dirname, 'backups', req.params.filename);
+  if (!fs.existsSync(fp)) return res.status(404).json({ error: 'Not found' });
+  res.download(fp);
 });
 
 // Interests
@@ -973,6 +1230,12 @@ app.post('/api/whatsapp/webhook', (req, res) => {
         const cust = findCustomerByPhone(fromPhone);
         db.prepare(`INSERT INTO wa_messages (customer_id, phone, direction, body, msg_type, wa_msg_id, status, author) VALUES (?,?,?,?,?,?,?,?)`)
           .run(cust ? cust.id : null, fromPhone, 'in', body, m.type || 'text', m.id || '', 'received', '');
+        // Create an in-app notification for incoming customer messages
+        try {
+          const notifBody = cust ? `${cust.name}: ${body}`.slice(0, 200) : `${fromPhone}: ${body}`.slice(0, 200);
+          db.prepare('INSERT INTO notifications (customer_id, type, body) VALUES (?,?,?)')
+            .run(cust ? cust.id : null, 'wa_message', notifBody);
+        } catch(e) {}
       }
     }
     if (value?.statuses) {

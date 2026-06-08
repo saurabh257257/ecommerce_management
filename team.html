@@ -277,6 +277,18 @@
   <div class="topbar" style="flex-shrink:0">
     <h2 id="pageTitle">Dashboard</h2>
     <div class="topbar-actions">
+      <div style="position:relative;display:inline-block">
+        <button class="btn btn-outline btn-sm" onclick="toggleNotifPanel()" title="Notifications" style="position:relative">
+          🔔<span id="notifBadge" style="display:none;position:absolute;top:-6px;right:-6px;background:#dc2626;color:#fff;font-size:10px;font-weight:700;border-radius:10px;min-width:17px;height:17px;line-height:17px;text-align:center;padding:0 3px"></span>
+        </button>
+        <div id="notifPanel" style="display:none;position:absolute;right:0;top:calc(100% + 6px);width:320px;max-height:420px;overflow:auto;background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.15);z-index:200">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border)">
+            <strong style="font-size:13px">Notifications</strong>
+            <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px" onclick="markAllNotifsRead()">Mark all read</button>
+          </div>
+          <div id="notifList"></div>
+        </div>
+      </div>
       <button class="btn btn-primary btn-sm" onclick="openACP()">➕ Add Customer</button>
       <button class="btn btn-outline btn-sm" onclick="openBroadcast()">📢 Broadcast</button>
       <button class="btn btn-outline btn-sm" onclick="openBrief()">🤖 Brief</button>
@@ -528,6 +540,62 @@ async function init() {
   allTags = (await tgR.json()).data || [];
   renderTiles(); renderFilterSidebar(); buildFilterTabs(); renderList();
   loadStoredBrief();
+  loadNotifications();
+  setInterval(loadNotifications, 20000);
+  document.addEventListener('click', (e) => {
+    const panel = document.getElementById('notifPanel');
+    const wrap = panel && panel.closest('div');
+    if (panel && panel.style.display === 'block' && wrap && !wrap.contains(e.target)) panel.style.display = 'none';
+  });
+}
+
+// ── Notifications ──────────────────────────────────────────────
+async function loadNotifications() {
+  try {
+    const data = await fetch('/api/notifications').then(r => r.json());
+    const badge = document.getElementById('notifBadge');
+    if (data.unread > 0) { badge.style.display = 'block'; badge.textContent = data.unread > 99 ? '99+' : data.unread; }
+    else badge.style.display = 'none';
+    const list = document.getElementById('notifList');
+    if (!data.notifications.length) {
+      list.innerHTML = '<div style="padding:18px;text-align:center;color:var(--muted);font-size:12px">No notifications yet</div>';
+      return;
+    }
+    list.innerHTML = data.notifications.map(n => `
+      <div onclick="openNotif(${n.id}, ${n.customer_id || 'null'})" style="padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;${n.is_read?'opacity:.55':''}background:${n.is_read?'transparent':'rgba(79,70,229,.06)'}">
+        <div style="font-size:12.5px;font-weight:${n.is_read?'500':'700'}">${esc(n.customer_name || n.customer_phone || 'Unknown')}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(n.body)}</div>
+        <div style="font-size:10.5px;color:var(--muted);margin-top:3px">${esc(n.created_at)}</div>
+      </div>
+    `).join('');
+  } catch (e) {}
+}
+
+function toggleNotifPanel() {
+  const panel = document.getElementById('notifPanel');
+  const open = panel.style.display === 'block';
+  panel.style.display = open ? 'none' : 'block';
+  if (!open) loadNotifications();
+}
+
+async function markAllNotifsRead() {
+  await fetch('/api/notifications/read-all', { method: 'PUT' });
+  loadNotifications();
+}
+
+async function openNotif(notifId, customerId) {
+  await fetch('/api/notifications/' + notifId + '/read', { method: 'PUT' });
+  document.getElementById('notifPanel').style.display = 'none';
+  loadNotifications();
+  if (customerId) {
+    await selectC(customerId);
+    setTimeout(() => {
+      const body = document.getElementById('accBody-wa-' + customerId);
+      if (body && !body.classList.contains('open')) toggleAcc('wa-' + customerId);
+      const card = document.getElementById('li-' + customerId);
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+  }
 }
 
 // ── Tiles row ─────────────────────────────────────────────────────
@@ -680,6 +748,53 @@ async function selectC(id) {
   const r=await fetch(`/api/crm/customers/${id}`);
   selCust=await r.json();
   renderDetail();
+  loadCustomerPhones(id);
+}
+
+// ── Multi-phone numbers ────────────────────────────────────────
+async function loadCustomerPhones(cid) {
+  try {
+    const phones = await fetch(`/api/crm/customers/${cid}/phones`).then(r=>r.json());
+    const el = document.getElementById('phoneList-'+cid);
+    if (!el) return;
+    if (!phones.length) { el.innerHTML = '<span style="color:var(--muted)">No numbers added</span>'; return; }
+    el.innerHTML = phones.map(p => `
+      <div style="display:flex;align-items:center;gap:7px;padding:3px 0">
+        <button title="${p.is_primary?'Used for WhatsApp':'Use this number for WhatsApp'}" onclick="selectCustomerPhone(${cid},${p.id})"
+          style="border:none;background:none;cursor:pointer;font-size:15px;color:${p.is_primary?'#16a34a':'var(--muted)'}">${p.is_primary?'✅':'⬜'}</button>
+        <a href="tel:${esc(p.phone)}" style="font-size:12.5px">${esc(p.phone)}</a>
+        ${p.label?`<span style="font-size:10.5px;color:var(--muted)">(${esc(p.label)})</span>`:''}
+        <button title="Remove" onclick="removeCustomerPhone(${cid},${p.id})" style="border:none;background:none;cursor:pointer;color:var(--muted);font-size:12px;margin-left:auto">✕</button>
+      </div>
+    `).join('');
+  } catch(e) {}
+}
+
+async function addCustomerPhone(cid) {
+  const inp = document.getElementById('newPhoneInput-'+cid);
+  const phone = (inp.value||'').trim();
+  if (!phone) return;
+  const r = await fetch(`/api/crm/customers/${cid}/phones`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ phone }) });
+  if (!r.ok) { const d = await r.json(); toast(d.error||'Failed to add number','error'); return; }
+  inp.value = '';
+  await loadCustomerPhones(cid);
+  toast('Phone number added','success');
+}
+
+async function selectCustomerPhone(cid, phoneId) {
+  await fetch(`/api/crm/customers/${cid}/phones/${phoneId}/select`, { method:'PUT' });
+  await loadCustomerPhones(cid);
+  const r = await fetch(`/api/crm/customers/${cid}`); selCust = await r.json();
+  const c = allCust.find(x=>x.id===cid); if (c) c.phone = selCust.phone;
+  const waTitle = document.querySelector(`#accSec-wa-${cid} .acc-head-title`);
+  if (waTitle) waTitle.textContent = '💬 WhatsApp' + (selCust.phone ? (' — '+selCust.phone) : '');
+  toast('WhatsApp number updated','success');
+}
+
+async function removeCustomerPhone(cid, phoneId) {
+  if (!confirm('Remove this phone number?')) return;
+  await fetch(`/api/crm/customers/${cid}/phones/${phoneId}`, { method:'DELETE' });
+  await loadCustomerPhones(cid);
 }
 
 function showBrief() {
@@ -736,7 +851,14 @@ function renderDetail() {
         <div class="d-grid">
           <div class="d-field"><div class="d-field-label">Status</div><div class="d-field-val"><span class="s-badge ${S_MAP[c.status]||''}">${esc(c.status||'—')}</span></div></div>
           <div class="d-field"><div class="d-field-label">Follow-up</div><div class="d-field-val" style="color:${ov?'var(--danger)':td?'#f59e0b':'inherit'};font-weight:${ov||td?600:400}">${c.next_followup?(ov?'⚠ Overdue — ':td?'📅 Today — ':'')+fmtD(c.next_followup):'<span style="color:var(--muted)">Not set</span>'}</div></div>
-          <div class="d-field"><div class="d-field-label">Phone</div><div class="d-field-val">${c.phone?`<a href="tel:${esc(c.phone)}">${esc(c.phone)}</a>`:'<span style="color:var(--muted)">—</span>'}</div></div>
+          <div class="d-field" style="grid-column:1/-1">
+            <div class="d-field-label">Phone numbers <span style="font-weight:400;color:var(--muted)">(✓ = used for WhatsApp)</span></div>
+            <div class="d-field-val" id="phoneList-${c.id}">Loading…</div>
+            <div style="display:flex;gap:6px;margin-top:6px">
+              <input type="text" id="newPhoneInput-${c.id}" placeholder="Add another number…" style="flex:1;font-size:12px;padding:5px 9px;border:1px solid var(--border);border-radius:7px">
+              <button class="btn btn-outline btn-sm" style="font-size:11px" onclick="addCustomerPhone(${c.id})">+ Add</button>
+            </div>
+          </div>
           <div class="d-field"><div class="d-field-label">Email</div><div class="d-field-val">${c.email?`<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>`:'<span style="color:var(--muted)">—</span>'}</div></div>
           <div class="d-field"><div class="d-field-label">Source</div><div class="d-field-val">${esc(c.source||'—')}</div></div>
           <div class="d-field"><div class="d-field-label">Customer Type</div><div class="d-field-val">${esc(c.customer_type||'—')}</div></div>

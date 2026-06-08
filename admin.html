@@ -223,6 +223,50 @@
 
     </div><!-- /admin-grid -->
 
+    <div class="admin-grid" style="margin-top:18px">
+      <!-- ── WhatsApp Template Manager ── -->
+      <div class="admin-card">
+        <div class="ac-head">
+          <h3>💬 WhatsApp Templates</h3>
+          <span class="ac-count" id="waTplCount"></span>
+        </div>
+        <div id="waTplList" style="max-height:340px;overflow:auto"></div>
+        <div class="add-form">
+          <div class="add-row" style="flex-wrap:wrap">
+            <input type="text" id="waTplName" placeholder="Template name (e.g. order_update)" style="flex:1 1 220px" />
+            <select id="waTplCategory" style="width:140px">
+              <option value="MARKETING">Marketing</option>
+              <option value="UTILITY">Utility</option>
+            </select>
+            <select id="waTplLanguage" style="width:110px">
+              <option value="en_US">English (US)</option>
+              <option value="en">English</option>
+            </select>
+          </div>
+          <textarea id="waTplBody" placeholder="Message body — use {{1}}, {{2}} for variables" rows="3" style="width:100%;margin-top:8px;font-family:inherit;font-size:13px;padding:8px;border:1px solid var(--border);border-radius:7px"></textarea>
+          <div class="add-row" style="margin-top:8px">
+            <input type="text" id="waTplBtnText" placeholder="Button text (optional)" style="flex:1" />
+            <input type="text" id="waTplBtnUrl" placeholder="Button URL (optional)" style="flex:2" />
+          </div>
+          <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="addWaTemplate()">Submit for Approval</button>
+          <p style="font-size:11.5px;color:var(--muted);margin-top:6px">Submitted directly to Meta WhatsApp Manager. Status updates automatically when you reopen this page.</p>
+        </div>
+      </div>
+
+      <!-- ── Data Export / Backup Center ── -->
+      <div class="admin-card">
+        <div class="ac-head">
+          <h3>⬇️ Data Export / Backup Center</h3>
+          <span class="ac-count" id="backupCount"></span>
+        </div>
+        <p style="font-size:12.5px;color:var(--muted);margin:0 0 10px">
+          Download a complete .zip of customer data, orders, WhatsApp conversations, team activity logs, and all images/attachments — for periodic backup.
+        </p>
+        <button class="btn btn-primary btn-sm" id="genBackupBtn" onclick="generateBackup()">⬇ Generate & Download Backup</button>
+        <div id="backupList" style="margin-top:12px"></div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -257,6 +301,89 @@ async function init() {
   document.getElementById('productAdminCount').textContent = products.length + ' product' + (products.length !== 1 ? 's' : '');
 
   renderMembers(); renderTags(); renderStatuses(); renderCtypes();
+  loadWaTemplates(); loadBackups();
+}
+
+// ── WhatsApp Template Manager ──────────────────────────────────
+async function loadWaTemplates() {
+  try {
+    const list = document.getElementById('waTplList');
+    list.innerHTML = '<p style="color:var(--muted);font-size:12.5px">Loading templates from WhatsApp Manager…</p>';
+    const tpls = await fetch('/api/whatsapp/templates').then(r => r.json());
+    document.getElementById('waTplCount').textContent = tpls.length + ' template' + (tpls.length !== 1 ? 's' : '');
+    if (!tpls.length) { list.innerHTML = '<p style="color:var(--muted);font-size:12.5px">No templates yet — add one below.</p>'; return; }
+    const statusColor = s => s === 'APPROVED' ? '#16a34a' : (s === 'REJECTED' ? '#dc2626' : '#d97706');
+    list.innerHTML = tpls.map(t => `
+      <div class="tag-row" style="align-items:flex-start;flex-direction:column;gap:4px;padding:10px 0">
+        <div style="display:flex;align-items:center;gap:8px;width:100%">
+          <strong style="font-size:13px">${esc(t.name)}</strong>
+          <span class="tag-chip" style="background:${t.category==='UTILITY'?'#0ea5e9':'#8b5cf6'};font-size:10.5px">${esc(t.category)}</span>
+          <span class="tag-chip" style="background:${statusColor(t.status)};font-size:10.5px">${esc(t.status)}</span>
+          <span style="font-size:11px;color:var(--muted);margin-left:auto">${esc(t.language)}</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted)">${esc(t.body)}</div>
+      </div>
+    `).join('');
+  } catch (e) {
+    document.getElementById('waTplList').innerHTML = '<p style="color:#dc2626;font-size:12.5px">Could not load templates: ' + esc(e.message) + '</p>';
+  }
+}
+
+async function addWaTemplate() {
+  const name = document.getElementById('waTplName').value.trim();
+  const category = document.getElementById('waTplCategory').value;
+  const language = document.getElementById('waTplLanguage').value;
+  const body = document.getElementById('waTplBody').value.trim();
+  const buttonText = document.getElementById('waTplBtnText').value.trim();
+  const buttonUrl = document.getElementById('waTplBtnUrl').value.trim();
+  if (!name || !body) { toast('Template name and body are required', 'error'); return; }
+  try {
+    const r = await fetch('/api/whatsapp/templates', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ name, category, language, body, buttonText, buttonUrl })
+    });
+    const data = await r.json();
+    if (!r.ok) { toast(data.error || 'Failed to submit template', 'error'); return; }
+    toast('Template submitted — status: ' + (data.status || 'PENDING'), 'success');
+    document.getElementById('waTplName').value = '';
+    document.getElementById('waTplBody').value = '';
+    document.getElementById('waTplBtnText').value = '';
+    document.getElementById('waTplBtnUrl').value = '';
+    loadWaTemplates();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// ── Data Export / Backup Center ────────────────────────────────
+async function loadBackups() {
+  try {
+    const backups = await fetch('/api/admin/backups').then(r => r.json());
+    document.getElementById('backupCount').textContent = backups.length + ' backup' + (backups.length !== 1 ? 's' : '');
+    const list = document.getElementById('backupList');
+    if (!backups.length) { list.innerHTML = '<p style="color:var(--muted);font-size:12.5px">No backups generated yet.</p>'; return; }
+    list.innerHTML = backups.map(b => `
+      <div class="tag-row">
+        <div>
+          <div style="font-size:12.5px;font-weight:600">${esc(b.filename)}</div>
+          <div style="font-size:11px;color:var(--muted)">${esc(b.created_at)} · ${(b.size_bytes/1024/1024).toFixed(2)} MB</div>
+        </div>
+        <a class="btn btn-outline btn-sm" href="/api/admin/backups/${encodeURIComponent(b.filename)}/download">Download</a>
+      </div>
+    `).join('');
+  } catch (e) {}
+}
+
+async function generateBackup() {
+  const btn = document.getElementById('genBackupBtn');
+  btn.disabled = true; btn.textContent = '⏳ Generating backup… this may take a minute';
+  try {
+    const r = await fetch('/api/admin/backups/generate', { method: 'POST' });
+    const data = await r.json();
+    if (!r.ok) { toast(data.error || 'Backup failed', 'error'); return; }
+    toast('Backup ready: ' + data.filename, 'success');
+    await loadBackups();
+    window.location.href = '/api/admin/backups/' + encodeURIComponent(data.filename) + '/download';
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+  finally { btn.disabled = false; btn.textContent = '⬇ Generate & Download Backup'; }
 }
 
 function renderPresets(elId, inputId, cb) {
