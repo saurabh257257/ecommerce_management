@@ -185,7 +185,6 @@
     .int-del { background: none; border: none; cursor: pointer; color: #a78bfa; font-size: 16px; line-height: 1; padding: 0 2px; flex-shrink: 0; }
     .int-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; position:relative; }
     .prod-picker-btn { display: flex; align-items: center; gap: 5px; padding: 5px 12px; border: 1px dashed #a5b4fc; border-radius: 8px; font-size: 12px; color: var(--primary); cursor: pointer; background: none; font-family: inherit; font-weight: 600; }
-    .prod-picker-drop { position: absolute; top: calc(100% + 4px); left: 0; width: 320px; max-width:90vw; max-height: 300px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.14); z-index: 300; overflow: hidden; display: flex; flex-direction: column; }
     .ppd-search { padding: 8px 10px; border-bottom: 1px solid var(--border); }
     .ppd-search input { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; font-size: 13px; font-family: inherit; outline: none; }
     .ppd-search input:focus { border-color: var(--primary); }
@@ -537,6 +536,17 @@
   </div>
 </div>
 
+<!-- Add Product popup — full catalog, click a product to set qty/price and add to interests -->
+<div class="qn-overlay" id="addProdModal">
+  <div class="qn-box" style="width:420px;max-height:82vh;display:flex;flex-direction:column">
+    <h4>➕ Add product to interests</h4>
+    <div id="addProdList" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:10px"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:10px">
+      <button class="btn btn-outline" onclick="closePicker()">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- Product detail panel — image + full details, with optional "add to interests" (qty/price) -->
 <div class="qn-overlay" id="prodDetailModal">
   <div class="qn-box" style="width:380px;max-height:85vh;overflow-y:auto">
@@ -676,7 +686,6 @@ async function init() {
     const wrap = panel && panel.parentElement;
     if (panel && panel.style.display === 'block' && wrap && !wrap.contains(e.target)) panel.style.display = 'none';
   });
-  document.addEventListener('click', pickerOutside);
 }
 
 // ── Notifications ──────────────────────────────────────────────
@@ -1044,15 +1053,10 @@ function renderDetail() {
       <div class="acc-body" id="accBody-pi-${c.id}">
         <div class="int-list" id="interestList-${c.id}">${renderIntList(c.interests||[], c.id)}</div>
         <div class="int-actions">
-          <div class="prod-picker-wrap" id="pickerWrap-${c.id}" style="position:relative">
-            <button class="prod-picker-btn" onclick="togglePicker(${c.id})">
-              <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-              Add Product
-            </button>
-            <div class="prod-picker-drop" id="prodPickerDrop-${c.id}" style="display:none">
-              <div class="ppd-list" id="pickerList-${c.id}"></div>
-            </div>
-          </div>
+          <button class="prod-picker-btn" onclick="openPicker(${c.id})">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Add Product
+          </button>
         </div>
       </div>
     </div>
@@ -1152,29 +1156,18 @@ async function removeInt(cid, iid) {
   }
   toast('Removed', 'success');
 }
-function togglePicker(cid) {
-  const drop = document.getElementById('prodPickerDrop-'+cid);
-  if (!drop) return;
-  if (drop.style.display === 'none') {
-    drop.style.display = 'flex'; drop.style.flexDirection = 'column';
-    pickerOpen = true; pickerOpenCid = cid; renderPicker(cid);
-  } else { closePicker(); }
+function openPicker(cid) {
+  pickerOpen = true; pickerOpenCid = cid;
+  renderPicker(cid);
+  document.getElementById('addProdModal').classList.add('open');
 }
 function closePicker() {
-  if (pickerOpenCid != null) {
-    const drop = document.getElementById('prodPickerDrop-'+pickerOpenCid);
-    if (drop) drop.style.display = 'none';
-  }
+  document.getElementById('addProdModal').classList.remove('open');
   pickerOpen = false; pickerOpenCid = null;
-}
-function pickerOutside(e) {
-  if (!pickerOpen || pickerOpenCid == null) return;
-  const wrap = document.getElementById('pickerWrap-'+pickerOpenCid);
-  if (wrap && !wrap.contains(e.target)) closePicker();
 }
 function renderPicker(cid) {
   const list = allProducts;
-  const el = document.getElementById('pickerList-'+cid);
+  const el = document.getElementById('addProdList');
   if (!el) return;
   if (!list.length) { el.innerHTML = '<div class="ppd-empty">No products found</div>'; return; }
   const cats = [...new Set(list.map(p => p.category))];
