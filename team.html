@@ -58,7 +58,6 @@
     .acc-sec.sec-details { border-left-color:#6366f1; }
     .acc-sec.sec-fu      { border-left-color:#0ea5e9; }
     .acc-sec.sec-pi      { border-left-color:#7c3aed; }
-    .acc-sec.sec-ai      { border-left-color:#db2777; }
     .acc-sec.sec-wa      { border-left-color:#16a34a; }
     .acc-sec.sec-tl      { border-left-color:#f59e0b; }
     /* Inline editable fields — any team member can edit */
@@ -79,7 +78,6 @@
     .sec-details > .acc-head { background:#eef2ff; }
     .sec-fu > .acc-head      { background:#f0f9ff; }
     .sec-pi > .acc-head      { background:#f5f3ff; }
-    .sec-ai > .acc-head      { background:#fdf2f8; }
     .sec-wa > .acc-head      { background:#ecfdf3; }
     .sec-tl > .acc-head      { background:#fffbeb; }
     .acc-head-title { font-size:13px; font-weight:700; display:flex; align-items:center; gap:7px; }
@@ -199,8 +197,6 @@
     .ppd-name { font-size: 13px; flex: 1; }
     .ppd-empty { padding: 20px; text-align: center; font-size: 13px; color: var(--muted); }
     .ppd-cat-head { padding: 5px 12px; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; background: #f8fafc; border-bottom: 1px solid var(--border); }
-    .ai-sum-text { font-size: 13px; line-height: 1.75; color: var(--text); white-space: pre-wrap; }
-    .ai-sum-ph { color: var(--muted); font-size: 13px; font-style: italic; }
 
     /* Timeline */
     .tl-compose { display:flex; gap:6px; margin-bottom:10px; align-items:flex-start; }
@@ -391,6 +387,7 @@
         </div>
       </div>
       <button class="btn btn-primary btn-sm" onclick="openACP()">➕ Add Customer</button>
+      <button class="btn btn-outline btn-sm" onclick="openProdRef()">📦 Products</button>
       <button class="btn btn-outline btn-sm" onclick="openBroadcast()">📢 Broadcast</button>
       <button class="btn btn-outline btn-sm" onclick="openBrief()">🤖 Brief</button>
       <button class="btn btn-outline btn-sm" onclick="location.reload()">↻ Refresh</button>
@@ -525,6 +522,19 @@
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button class="btn btn-outline" onclick="closeBroadcast()">Close</button>
       <button class="btn btn-primary" id="bcSendBtn" onclick="sendBroadcast()">Send to all</button>
+    </div>
+  </div>
+</div>
+
+<!-- Product reference panel — full catalog with name, SKU, price for quick lookup while chatting -->
+<div class="qn-overlay" id="prodRefModal">
+  <div class="qn-box" style="width:420px;max-height:82vh;display:flex;flex-direction:column">
+    <h4>📦 Product reference</h4>
+    <input type="text" id="prodRefSearch" placeholder="Search by name, SKU or category…" oninput="renderProdRef()"
+      style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;margin-bottom:9px;outline:none;background:var(--card);color:var(--text)">
+    <div id="prodRefList" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:6px"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:10px">
+      <button class="btn btn-outline" onclick="closeProdRef()">Close</button>
     </div>
   </div>
 </div>
@@ -1042,18 +1052,6 @@ function renderDetail() {
         <div id="suggestResult-${c.id}" style="display:none;margin-top:8px;padding:10px;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:8px;font-size:13px"></div>
       </div>
     </div>
-    <div class="acc-sec sec-ai" id="accSec-ai-${c.id}">
-      <div class="acc-head" onclick="toggleAcc('ai-${c.id}')">
-        <div class="acc-head-title">🤖 AI Summary</div>
-        <div class="acc-arrow" id="accArrow-ai-${c.id}">▶</div>
-      </div>
-      <div class="acc-body" id="accBody-ai-${c.id}">
-        <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
-          <button class="sec-btn" id="sumBtn-${c.id}" onclick="generateSummary(${c.id})">Generate ↻</button>
-        </div>
-        <div id="aiSumText-${c.id}" class="ai-sum-ph">Click "Generate" for an AI summary of this customer.</div>
-      </div>
-    </div>
     <div class="acc-sec sec-wa" id="accSec-wa-${c.id}">
       <div class="acc-head" onclick="toggleAcc('wa-${c.id}')">
         <div class="acc-head-title">💬 WhatsApp ${c.phone?('— '+esc(c.phone)):''}</div>
@@ -1081,8 +1079,18 @@ function renderDetail() {
       <div class="acc-body" id="accBody-tl-${c.id}">
         <div class="tl-compose">
           <select id="d-nt"><option value="call">📞</option><option value="note">📝</option><option value="meeting">🤝</option><option value="message">💬</option></select>
-          <textarea id="d-ntxt" placeholder="Add a note…"></textarea>
-          <button class="btn btn-primary btn-sm" onclick="saveInlineNote(${c.id})" style="align-self:flex-end">Save</button>
+          <textarea id="d-ntxt" placeholder="Add a note… or tap 🎤 to record (Hindi/English/any language)"></textarea>
+          <div style="display:flex;gap:6px;align-self:flex-end;align-items:center">
+            <select id="tlMicLang-${c.id}" title="Speech language" style="font-size:11px;padding:4px 6px;width:auto">
+              <option value="en-IN">EN/HI (auto)</option>
+              <option value="hi-IN">हिंदी</option>
+              <option value="en-US">English</option>
+            </select>
+            <button class="btn btn-outline btn-sm" id="tlMicBtn-${c.id}" onclick="toggleTlMic(${c.id})" title="Record voice note — speak in Hindi, English or any language">
+              <span id="tlMicIcon-${c.id}">🎤</span> <span id="tlMicText-${c.id}">Speak</span>
+            </button>
+            <button class="btn btn-primary btn-sm" onclick="saveInlineNote(${c.id})">Save</button>
+          </div>
         </div>
         <div id="d-tl">${tlHtml}</div>
       </div>
@@ -1175,6 +1183,36 @@ function renderPicker(cid) {
       items.map(p => `<div class="ppd-item" onclick="addIntFromPicker(${cid},${p.id},'${esc(p.sku||'')}','${esc(p.name||'')}')">
         ${p.sku?`<span class="ppd-sku">${esc(p.sku)}</span>`:''}
         <span class="ppd-name">${esc(p.name)}</span>
+        ${p.price?`<span style="font-size:11px;color:#15803d;font-weight:700;white-space:nowrap">₹${esc(String(p.price))}${p.unit?` /${esc(p.unit)}`:''}</span>`:''}
+      </div>`).join('');
+  }).join('');
+}
+
+// ── Product reference panel — full catalog (name, SKU, category, price) ──
+function openProdRef() {
+  document.getElementById('prodRefModal').classList.add('open');
+  document.getElementById('prodRefSearch').value = '';
+  renderProdRef();
+  setTimeout(() => document.getElementById('prodRefSearch')?.focus(), 50);
+}
+function closeProdRef() {
+  document.getElementById('prodRefModal').classList.remove('open');
+}
+function renderProdRef() {
+  const q = (document.getElementById('prodRefSearch')?.value || '').toLowerCase();
+  let list = allProducts;
+  if (q) list = list.filter(p => ((p.sku||'')+(p.name||'')+(p.category||'')).toLowerCase().includes(q));
+  const el = document.getElementById('prodRefList');
+  if (!el) return;
+  if (!list.length) { el.innerHTML = '<div class="ppd-empty">No products found</div>'; return; }
+  const cats = [...new Set(list.map(p => p.category))];
+  el.innerHTML = cats.map(cat => {
+    const items = list.filter(p => p.category === cat);
+    return `<div class="ppd-cat-head" style="border-radius:6px">${esc(cat)} <span style="font-weight:400;text-transform:none">(${items.length})</span></div>` +
+      items.map(p => `<div class="int-row" style="background:#f8fafc;border-color:var(--border);cursor:default">
+        ${p.sku?`<span class="int-sku" style="background:#eef2ff;color:var(--primary)">${esc(p.sku)}</span>`:''}
+        <span class="int-name" title="${esc(p.name)}">${esc(p.name)}</span>
+        <span style="font-size:12px;color:#15803d;font-weight:700;white-space:nowrap">${p.price?'₹'+esc(String(p.price)):''}${p.unit?` /${esc(p.unit)}`:''}</span>
       </div>`).join('');
   }).join('');
 }
@@ -1227,22 +1265,6 @@ async function addSuggestedInt(cid, sku, name, el) {
   el.textContent = '✓ Added';
   await logActivity(`Product added (AI suggest): ${sku?'['+sku+'] ':''}${name}`);
 }
-async function generateSummary(cid) {
-  const el = document.getElementById('aiSumText-'+cid);
-  const btn = document.getElementById('sumBtn-'+cid);
-  if (!el || !selCust) return;
-  el.className = 'ai-sum-ph'; el.textContent = '⏳ Generating summary…';
-  if (btn) btn.disabled = true;
-  try {
-    const r = await fetch('/api/ai/customer-summary', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({customerId:selCust.id})});
-    const d = await r.json();
-    if (d.error) throw new Error(d.error);
-    el.className = 'ai-sum-text'; el.textContent = d.summary;
-  } catch(e) {
-    el.className = 'ai-sum-ph'; el.textContent = 'Could not generate summary: ' + e.message;
-  }
-  if (btn) btn.disabled = false;
-}
 
 // ── Accordion toggle (Details / WhatsApp / Timeline) ─────────────
 function toggleAcc(key) {
@@ -1272,12 +1294,57 @@ function _waStopPoll(){
   if(_waPollTimer){ clearInterval(_waPollTimer); _waPollTimer=null; }
 }
 
+// ── Voice-to-text mic for Timeline notes — speak in Hindi/English/any language ──
+let _tlRec=false, _tlRecog=null, _tlAudio='', _tlMicCid=null;
+function toggleTlMic(cid) {
+  if (_tlRec) { stopTlMic(); return; }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { toast('Use Chrome for voice notes', 'error'); return; }
+  _tlMicCid = cid;
+  _tlAudio = (document.getElementById('d-ntxt')?.value || '').trim();
+  if (_tlAudio) _tlAudio += ' ';
+  const lang = document.getElementById('tlMicLang-'+cid)?.value || 'en-IN';
+  _tlRecog = new SR(); _tlRecog.continuous = true; _tlRecog.interimResults = true; _tlRecog.lang = lang;
+  _tlRecog.onresult = e => {
+    let fin='', interim='';
+    for (let i=e.resultIndex; i<e.results.length; i++) {
+      if (e.results[i].isFinal) fin += e.results[i][0].transcript + ' ';
+      else interim += e.results[i][0].transcript;
+    }
+    if (fin) _tlAudio += fin;
+    const ta = document.getElementById('d-ntxt');
+    if (ta) ta.value = _tlAudio + interim;
+  };
+  _tlRecog.onerror = () => stopTlMic();
+  _tlRecog.onend = () => { if (_tlRec) _tlRecog.start(); };
+  _tlRecog.start(); _tlRec = true;
+  const btn = document.getElementById('tlMicBtn-'+cid);
+  if (btn) btn.classList.add('btn-danger');
+  const icon = document.getElementById('tlMicIcon-'+cid); if (icon) icon.textContent = '🔴';
+  const txt = document.getElementById('tlMicText-'+cid); if (txt) txt.textContent = 'Stop';
+}
+function stopTlMic() {
+  if (_tlRecog) { try { _tlRecog.stop(); } catch(e){} _tlRecog = null; }
+  _tlRec = false;
+  const cid = _tlMicCid;
+  if (cid != null) {
+    const btn = document.getElementById('tlMicBtn-'+cid);
+    if (btn) btn.classList.remove('btn-danger');
+    const icon = document.getElementById('tlMicIcon-'+cid); if (icon) icon.textContent = '🎤';
+    const txt = document.getElementById('tlMicText-'+cid); if (txt) txt.textContent = 'Speak';
+  }
+  const ta = document.getElementById('d-ntxt');
+  if (ta && _tlAudio.trim()) ta.value = _tlAudio.trim();
+  _tlMicCid = null;
+}
 async function saveInlineNote(cid) {
   const text=document.getElementById('d-ntxt').value.trim();
   if(!text)return toast('Write something first','error');
   const type=document.getElementById('d-nt').value;
   const r=await fetch(`/api/crm/customers/${cid}/discussions`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({note:text,author:PERSON,type})});
   const d=await r.json();
+  if(_tlRec) stopTlMic();
+  _tlAudio='';
   document.getElementById('d-ntxt').value='';
   if(!selCust.discussions)selCust.discussions=[];
   selCust.discussions.unshift({id:d.id,note:text,author:PERSON,type,created_at:new Date().toISOString()});
