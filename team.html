@@ -38,8 +38,28 @@
     .tm-filt-clear { font-size:11px; color:var(--primary); cursor:pointer; text-decoration:none; }
 
     /* Accordion sections in detail */
-    .acc-sec { border:1px solid var(--border); border-radius:10px; margin-bottom:12px; overflow:hidden; }
+    .acc-sec { border:1px solid var(--border); border-radius:12px; margin-bottom:16px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.04); border-left-width:4px; }
+    .acc-sec.sec-details { border-left-color:#6366f1; }
+    .acc-sec.sec-wa      { border-left-color:#16a34a; }
+    .acc-sec.sec-tl      { border-left-color:#f59e0b; }
+    /* Inline editable fields — any team member can edit */
+    .ef { display:inline-flex; align-items:center; border-radius:6px; padding:2px 6px; cursor:pointer; transition:background .12s; max-width:100%; }
+    .ef:hover:not(.editing) { background:#f0f0ff; }
+    .ef.editing { background:#eef2ff; cursor:text; box-shadow:0 0 0 2px #a5b4fc; }
+    .ef-val { line-height:1.4; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; pointer-events:none; }
+    .ef-ph { color:var(--muted); font-style:italic; }
+    .ef-inp { display:none; border:none; outline:none; background:transparent; font-family:inherit; font-size:inherit; font-weight:inherit; color:var(--text); padding:0; min-width:60px; width:100%; }
+    .ef.editing .ef-val { display:none; }
+    .ef.editing .ef-inp { display:block; }
+    .ef-area { width:100%; }
+    .ef-area .ef-inp { display:block !important; resize:vertical; min-height:60px; font-size:13px; line-height:1.5; }
+    .ef-edit-hint { font-size:10px; color:var(--muted); margin-left:6px; opacity:0; transition:opacity .12s; }
+    .d-field:hover .ef-edit-hint, .d-sec-title:hover .ef-edit-hint { opacity:1; }
+
     .acc-head { padding:11px 16px; background:var(--bg); display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; }
+    .sec-details > .acc-head { background:#eef2ff; }
+    .sec-wa > .acc-head      { background:#ecfdf3; }
+    .sec-tl > .acc-head      { background:#fffbeb; }
     .acc-head-title { font-size:13px; font-weight:700; display:flex; align-items:center; gap:7px; }
     .acc-arrow { font-size:11px; color:var(--muted); transition:transform .15s; }
     .acc-arrow.open { transform:rotate(90deg); }
@@ -120,6 +140,9 @@
     /* Detail */
     .d-head { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px; gap:12px; flex-wrap:wrap; }
     .d-name { font-size:20px; font-weight:700; }
+    .d-name .ef-val, .d-name .ef-inp { font-size:20px; font-weight:700; }
+    .d-req .ef { display:block; padding:10px 12px; }
+    .d-req .ef-val { white-space:normal; line-height:1.5; }
     .d-co   { font-size:13px; color:var(--muted); margin-top:2px; }
     .d-actions { display:flex; gap:6px; flex-wrap:wrap; }
     .d-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px; }
@@ -554,6 +577,9 @@ async function init() {
     if (main) main.style.marginLeft = '0';
     const fullCrm = document.querySelector('.topbar-actions a[href="customers.html"]');
     if (fullCrm) fullCrm.remove();
+    // Broadcast is an admin-only marketing tool — hide it for individual team members
+    const bcBtn = document.querySelector('.topbar-actions button[onclick="openBroadcast()"]');
+    if (bcBtn) bcBtn.remove();
     // Trim the mobile bottom nav too — members only get their dashboard, brief & logout
     const nav = document.getElementById('tmBottomNav');
     if (nav) nav.querySelectorAll('a[href="customers.html"], a[href="products.html"], a[href="orders.html"]').forEach(a=>a.remove());
@@ -573,7 +599,7 @@ async function init() {
   setInterval(loadNotifications, 20000);
   document.addEventListener('click', (e) => {
     const panel = document.getElementById('notifPanel');
-    const wrap = panel && panel.closest('div');
+    const wrap = panel && panel.parentElement;
     if (panel && panel.style.display === 'block' && wrap && !wrap.contains(e.target)) panel.style.display = 'none';
   });
 }
@@ -859,8 +885,8 @@ function renderDetail() {
   document.getElementById('tmDetail').innerHTML=`
     <button class="detail-back" onclick="showBrief()">← Back to list</button>
     <div class="d-head">
-      <div>
-        <div class="d-name">${esc(c.name)}</div>
+      <div style="min-width:0;flex:1">
+        <div class="d-name">${efHtml(c,'name','Customer name')}</div>
         <div class="d-co">${[c.company,c.city,c.state].filter(Boolean).map(esc).join(' · ')||'—'}</div>
       </div>
       <div class="d-actions">
@@ -871,7 +897,7 @@ function renderDetail() {
         <button class="btn btn-outline btn-sm" onclick="openFU(${c.id})">📅 Follow-up</button>
       </div>
     </div>
-    <div class="acc-sec" id="accSec-details-${c.id}">
+    <div class="acc-sec sec-details" id="accSec-details-${c.id}">
       <div class="acc-head" onclick="toggleAcc('details-${c.id}')">
         <div class="acc-head-title">📋 Details</div>
         <div class="acc-arrow open" id="accArrow-details-${c.id}">▶</div>
@@ -888,15 +914,19 @@ function renderDetail() {
               <button class="btn btn-outline btn-sm" style="font-size:11px" onclick="addCustomerPhone(${c.id})">+ Add</button>
             </div>
           </div>
-          <div class="d-field"><div class="d-field-label">Email</div><div class="d-field-val">${c.email?`<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>`:'<span style="color:var(--muted)">—</span>'}</div></div>
-          <div class="d-field"><div class="d-field-label">Source</div><div class="d-field-val">${esc(c.source||'—')}</div></div>
-          <div class="d-field"><div class="d-field-label">Customer Type</div><div class="d-field-val">${esc(c.customer_type||'—')}</div></div>
+          <div class="d-field"><div class="d-field-label">Company <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'company','Add company name')}</div></div>
+          <div class="d-field"><div class="d-field-label">Email <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'email','Add email')}</div></div>
+          <div class="d-field"><div class="d-field-label">City <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'city','Add city')}</div></div>
+          <div class="d-field"><div class="d-field-label">State <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'state','Add state')}</div></div>
+          <div class="d-field"><div class="d-field-label">GST Number <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'gst_number','Add GST number')}</div></div>
+          <div class="d-field"><div class="d-field-label">Source <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'source','Add source')}</div></div>
+          <div class="d-field"><div class="d-field-label">Customer Type <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'customer_type','Add type')}</div></div>
         </div>
-        <div class="d-sec-title">Requirement / Details</div>
-        <div class="d-req${c.requirement?'':' empty'}">${c.requirement?esc(c.requirement).replace(/\n/g,'<br>'):'No details added yet'}</div>
+        <div class="d-sec-title">Requirement / Details <span class="ef-edit-hint">✏️ tap to edit</span></div>
+        <div class="d-req${c.requirement?'':' empty'}">${efHtml(c,'requirement','No details added yet — tap to add', {area:true})}</div>
       </div>
     </div>
-    <div class="acc-sec" id="accSec-wa-${c.id}">
+    <div class="acc-sec sec-wa" id="accSec-wa-${c.id}">
       <div class="acc-head" onclick="toggleAcc('wa-${c.id}')">
         <div class="acc-head-title">💬 WhatsApp ${c.phone?('— '+esc(c.phone)):''}</div>
         <div class="acc-arrow" id="accArrow-wa-${c.id}">▶</div>
@@ -915,7 +945,7 @@ function renderDetail() {
         </div>
       </div>
     </div>
-    <div class="acc-sec" id="accSec-tl-${c.id}">
+    <div class="acc-sec sec-tl" id="accSec-tl-${c.id}">
       <div class="acc-head" onclick="toggleAcc('tl-${c.id}')">
         <div class="acc-head-title">🕘 Timeline — Activity &amp; Notes</div>
         <div class="acc-arrow" id="accArrow-tl-${c.id}">▶</div>
@@ -1064,6 +1094,61 @@ async function markNoAnswer(cid) {
   toast('No answer recorded','success'); openFU(cid);
 }
 function updateMine(cid,fields){const i=mine.findIndex(c=>c.id===cid);if(i>-1)Object.assign(mine[i],fields);}
+// ── Inline editable fields (any team member can edit any customer) ──
+function efHtml(c, field, placeholder, opts) {
+  opts = opts || {};
+  const val = c[field] || '';
+  const prefix = opts.prefix || '';
+  const isArea = !!opts.area;
+  const display = val ? (prefix + esc(val)) : esc(placeholder);
+  const cls = 'ef' + (isArea ? ' ef-area' : '') + (val ? '' : ' ph');
+  const inputTag = isArea
+    ? `<textarea class="ef-inp" data-ph="${esc(placeholder)}">${esc(val)}</textarea>`
+    : `<input class="ef-inp" data-ph="${esc(placeholder)}" value="${esc(val)}">`;
+  return `<span class="${cls}" data-cid="${c.id}" data-field="${field}" data-prefix="${esc(prefix)}" onclick="startEditTm(this)">
+    <span class="ef-val${val?'':' ef-ph'}">${display}</span>
+    ${inputTag}
+  </span>`;
+}
+function startEditTm(el) {
+  if (el.classList.contains('editing')) return;
+  document.querySelectorAll('.ef.editing').forEach(e => { if (e !== el) commitEditTm(e); });
+  el.classList.add('editing');
+  const inp = el.querySelector('.ef-inp');
+  inp.focus();
+  if (inp.select) inp.select();
+  inp.onblur = () => setTimeout(() => commitEditTm(el), 120);
+  inp.onkeydown = ev => {
+    if (ev.key === 'Enter' && el.querySelector('textarea') == null) { ev.preventDefault(); inp.blur(); }
+    if (ev.key === 'Escape') { inp.value = el.querySelector('.ef-val').dataset.raw || ''; el.classList.remove('editing'); }
+  };
+}
+async function commitEditTm(el) {
+  if (!el.classList.contains('editing')) return;
+  el.classList.remove('editing');
+  const cid = +el.dataset.cid, field = el.dataset.field, prefix = el.dataset.prefix || '';
+  const inp = el.querySelector('.ef-inp');
+  const val = inp.value.trim();
+  const disp = el.querySelector('.ef-val');
+  const oldVal = String((selCust && selCust[field]) || '');
+  if (val === oldVal) return;
+  disp.textContent = val ? (prefix + val) : inp.dataset.ph;
+  disp.className = 'ef-val' + (val ? '' : ' ef-ph');
+  await patchC(cid, { [field]: val });
+  if (selCust) selCust[field] = val;
+  const c = allCust.find(x=>x.id===cid); if (c) c[field] = val;
+  toast('Updated', 'success');
+  if (field === 'company' || field === 'city' || field === 'state') {
+    // refresh header summary line without a full re-render (keeps scroll position)
+    const sub = document.querySelector('.d-co');
+    if (sub && selCust) sub.textContent = [selCust.company, selCust.city, selCust.state].filter(Boolean).join(' · ') || '—';
+  }
+  if (field === 'name') {
+    const li = document.querySelector(`#li-${cid} .tm-item-name`);
+    if (li) li.firstChild.textContent = val || '—';
+  }
+}
+
 async function patchC(cid,fields){
   const r=await fetch(`/api/crm/customers/${cid}`);const c=await r.json();
   const body={...c,...fields};delete body.discussions;delete body.interests;
