@@ -56,6 +56,7 @@
     /* Accordion sections in detail */
     .acc-sec { border:1px solid var(--border); border-radius:12px; margin-bottom:16px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.04); border-left-width:4px; }
     .acc-sec.sec-details { border-left-color:#6366f1; }
+    .acc-sec.sec-fu      { border-left-color:#0ea5e9; }
     .acc-sec.sec-wa      { border-left-color:#16a34a; }
     .acc-sec.sec-tl      { border-left-color:#f59e0b; }
     /* Inline editable fields — any team member can edit */
@@ -74,6 +75,7 @@
 
     .acc-head { padding:11px 16px; background:var(--bg); display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; }
     .sec-details > .acc-head { background:#eef2ff; }
+    .sec-fu > .acc-head      { background:#f0f9ff; }
     .sec-wa > .acc-head      { background:#ecfdf3; }
     .sec-tl > .acc-head      { background:#fffbeb; }
     .acc-head-title { font-size:13px; font-weight:700; display:flex; align-items:center; gap:7px; }
@@ -938,23 +940,15 @@ function renderDetail() {
         <div class="d-name">${efHtml(c,'name','Customer name')}</div>
         <div class="d-co">${[c.company,c.city,c.state].filter(Boolean).map(esc).join(' · ')||'—'}</div>
       </div>
-      <div class="d-actions">
-        <button class="btn btn-green btn-sm" onclick="toggleAcc('wa-${c.id}')">💬 WhatsApp</button>
-        <button class="btn btn-green btn-sm" onclick="markCalled(${c.id})">✓ Called</button>
-        <button class="btn btn-amber btn-sm" onclick="markNoAnswer(${c.id})">📵 No Answer</button>
-        <button class="btn btn-outline btn-sm" onclick="openQN(${c.id},'${esc(c.name).replace(/'/g,"\\'")}')">📝 Note</button>
-        <button class="btn btn-outline btn-sm" onclick="openFU(${c.id})">📅 Follow-up</button>
-      </div>
     </div>
     <div class="acc-sec sec-details" id="accSec-details-${c.id}">
       <div class="acc-head" onclick="toggleAcc('details-${c.id}')">
         <div class="acc-head-title">📋 Details</div>
-        <div class="acc-arrow open" id="accArrow-details-${c.id}">▶</div>
+        <div class="acc-arrow" id="accArrow-details-${c.id}">▶</div>
       </div>
-      <div class="acc-body open" id="accBody-details-${c.id}">
+      <div class="acc-body" id="accBody-details-${c.id}">
         <div class="d-grid">
           <div class="d-field"><div class="d-field-label">Status</div><div class="d-field-val"><span class="s-badge ${S_MAP[c.status]||''}">${esc(c.status||'—')}</span></div></div>
-          <div class="d-field"><div class="d-field-label">Follow-up</div><div class="d-field-val" style="color:${ov?'var(--danger)':td?'#f59e0b':'inherit'};font-weight:${ov||td?600:400}">${c.next_followup?(ov?'⚠ Overdue — ':td?'📅 Today — ':'')+fmtD(c.next_followup):'<span style="color:var(--muted)">Not set</span>'}</div></div>
           <div class="d-field" style="grid-column:1/-1">
             <div class="d-field-label">Phone numbers <span style="font-weight:400;color:var(--muted)">(✓ = used for WhatsApp)</span></div>
             <div class="d-field-val" id="phoneList-${c.id}">Loading…</div>
@@ -973,6 +967,21 @@ function renderDetail() {
         </div>
         <div class="d-sec-title">Requirement / Details <span class="ef-edit-hint">✏️ tap to edit</span></div>
         <div class="d-req${c.requirement?'':' empty'}">${efHtml(c,'requirement','No details added yet — tap to add', {area:true})}</div>
+      </div>
+    </div>
+    <div class="acc-sec sec-fu" id="accSec-fu-${c.id}">
+      <div class="acc-head" onclick="toggleAcc('fu-${c.id}')">
+        <div class="acc-head-title">📅 Follow-up</div>
+        <div class="acc-arrow" id="accArrow-fu-${c.id}">▶</div>
+      </div>
+      <div class="acc-body" id="accBody-fu-${c.id}">
+        <div class="d-field">
+          <div class="d-field-label">Next follow-up</div>
+          <div class="d-field-val" style="color:${ov?'var(--danger)':td?'#f59e0b':'inherit'};font-weight:${ov||td?600:400}">
+            ${c.next_followup?(ov?'⚠ Overdue — ':td?'📅 Today — ':'📅 ')+fmtD(c.next_followup):'<span style="color:var(--muted)">Not set</span>'}
+          </div>
+        </div>
+        <button class="btn btn-outline btn-sm" style="margin-top:10px" onclick="openFU(${c.id})">${c.next_followup?'Change date':'Set follow-up date'}</button>
       </div>
     </div>
     <div class="acc-sec sec-wa" id="accSec-wa-${c.id}">
