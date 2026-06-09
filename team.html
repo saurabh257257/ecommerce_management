@@ -353,9 +353,13 @@
       .tl-compose > div { order:3; width:100%; justify-content:flex-end; }
       .tl-compose > div select { flex:1; }
 
-      /* ── WhatsApp: push compose above bottom nav ── */
-      .wa-compose { bottom:60px; padding-bottom:6px; }
-      .wa-thread { max-height:calc(100vh - 280px); }
+      /* ── WhatsApp: full-width compose, send button always visible ── */
+      .sec-wa .acc-body { padding-left:0; padding-right:0; padding-bottom:0; }
+      .wa-template-row { padding:10px 14px; }
+      .wa-thread { padding:10px 14px; max-height:calc(100vh - 280px); }
+      .wa-compose { padding:8px 10px; bottom:60px; padding-bottom:8px; }
+      .wa-compose input { min-width:0; font-size:14px; }
+      .wa-compose input::placeholder { font-size:13px; }
       .modal { width:100%; max-width:100%; border-radius:16px 16px 0 0; align-self:flex-end; max-height:90vh; overflow-y:auto; margin:0; }
       .modal-overlay { align-items:flex-end; }
     }
@@ -1073,7 +1077,7 @@ function renderDetail() {
         <div class="wa-compose">
           <input type="file" id="waFile-${c.id}" style="display:none" onchange="sendWaFile(${c.id},'${esc(c.phone||'')}')">
           <button title="Attach image, document, video…" onclick="document.getElementById('waFile-${c.id}').click()">📎</button>
-          <input type="text" id="waInput-${c.id}" placeholder="Type a message (works within 24h of their last reply)…" onkeydown="if(event.key==='Enter')sendWaText(${c.id},'${esc(c.phone||'')}')">
+          <input type="text" id="waInput-${c.id}" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendWaText(${c.id},'${esc(c.phone||'')}')">
           <button onclick="sendWaText(${c.id},'${esc(c.phone||'')}')">➤</button>
         </div>
       </div>
