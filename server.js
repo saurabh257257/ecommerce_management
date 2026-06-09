@@ -577,6 +577,19 @@ app.post('/api/whatsapp/templates', async (req, res) => {
   }
 });
 
+// Import an already-approved template into local DB only (no Meta API call)
+app.post('/api/whatsapp/templates/import', (req, res) => {
+  const { name, category, language, body, status } = req.body;
+  if (!name || !body) return res.status(400).json({ error: 'Name and body are required' });
+  const safeName = name.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+  db.prepare(`INSERT INTO wa_message_templates (name,category,language,body,status,meta_id)
+    VALUES (?,?,?,?,?,?) ON CONFLICT(name) DO UPDATE SET
+    category=excluded.category, language=excluded.language,
+    body=excluded.body, status=excluded.status`)
+    .run(safeName, category || 'MARKETING', language || 'en_US', body, status || 'APPROVED', '');
+  res.json({ success: true });
+});
+
 // ── Data Export / Backup Center ────────────────────────────────
 app.get('/api/admin/backups', (req, res) => {
   res.json(db.prepare('SELECT * FROM backups ORDER BY id DESC LIMIT 30').all());
