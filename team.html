@@ -342,6 +342,20 @@
       .acp-form-row { grid-template-columns:1fr; gap:0; }
       .acp-field { padding:12px 14px; font-size:15px; margin-bottom:10px; }
       .acp-area { height:90px; }
+
+      /* ── Topbar: hide low-priority buttons on mobile ── */
+      .tm-hide-mobile { display:none !important; }
+
+      /* ── Timeline compose: stack textarea on top, controls below ── */
+      .tl-compose { flex-wrap:wrap; }
+      .tl-compose textarea { width:100%; min-width:0; order:2; }
+      .tl-compose > select { order:1; }
+      .tl-compose > div { order:3; width:100%; justify-content:flex-end; }
+      .tl-compose > div select { flex:1; }
+
+      /* ── WhatsApp: push compose above bottom nav ── */
+      .wa-compose { bottom:60px; padding-bottom:6px; }
+      .wa-thread { max-height:calc(100vh - 280px); }
       .modal { width:100%; max-width:100%; border-radius:16px 16px 0 0; align-self:flex-end; max-height:90vh; overflow-y:auto; margin:0; }
       .modal-overlay { align-items:flex-end; }
     }
@@ -385,8 +399,8 @@
       <button class="btn btn-outline btn-sm" onclick="openProdRef()">📦 Products</button>
       <button class="btn btn-outline btn-sm" onclick="openBroadcast()">📢 Broadcast</button>
       <button class="btn btn-outline btn-sm" onclick="openBrief()">🤖 Brief</button>
-      <button class="btn btn-outline btn-sm" onclick="location.reload()">↻ Refresh</button>
-      <a href="customers.html" class="btn btn-outline btn-sm">Full CRM</a>
+      <button class="btn btn-outline btn-sm tm-hide-mobile" onclick="location.reload()">↻ Refresh</button>
+      <a href="customers.html" class="btn btn-outline btn-sm tm-hide-mobile">Full CRM</a>
     </div>
   </div>
 
@@ -1320,10 +1334,12 @@ function toggleTlMic(cid) {
   const icon = document.getElementById('tlMicIcon-'+cid); if (icon) icon.textContent = '🔴';
   const txt = document.getElementById('tlMicText-'+cid); if (txt) txt.textContent = 'Stop';
 }
-function stopTlMic() {
+async function stopTlMic() {
   if (_tlRecog) { try { _tlRecog.stop(); } catch(e){} _tlRecog = null; }
   _tlRec = false;
   const cid = _tlMicCid;
+  const raw = _tlAudio.trim();
+  _tlMicCid = null;
   if (cid != null) {
     const btn = document.getElementById('tlMicBtn-'+cid);
     if (btn) btn.classList.remove('btn-danger');
@@ -1331,8 +1347,22 @@ function stopTlMic() {
     const txt = document.getElementById('tlMicText-'+cid); if (txt) txt.textContent = 'Speak';
   }
   const ta = document.getElementById('d-ntxt');
-  if (ta && _tlAudio.trim()) ta.value = _tlAudio.trim();
-  _tlMicCid = null;
+  if (!ta || !raw) return;
+  // AI rephrase: send raw transcript → get clean CRM note
+  ta.value = '⏳ Rephrasing…';
+  ta.disabled = true;
+  try {
+    const r = await fetch('/api/ai/extract-note', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ transcript: raw, customerName: selCust?.name || '' })
+    });
+    const d = await r.json();
+    ta.value = d.note || raw;
+  } catch(e) {
+    ta.value = raw; // fallback to raw if AI fails
+  }
+  ta.disabled = false;
+  ta.focus();
 }
 async function saveInlineNote(cid) {
   const text=document.getElementById('d-ntxt').value.trim();
