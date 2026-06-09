@@ -654,6 +654,7 @@ let scope = IS_ADMIN ? 'all' : 'mine';     // 'all' | 'mine' | 'unassigned' | <m
 let sideFilter = { type:null, status:null, tag:null };
 let selCust = null, selId = null, tabFilter = 'All', qnActiveCid = null, fuActiveCid = null;
 let allProducts = [], pickerOpen = false, pickerOpenCid = null;
+let allWaTemplates = [];
 
 function todayISO() { return new Date().toISOString().split('T')[0]; }
 function isUnassignedRow(c){ const a=(c.assigned_to||'').trim(); return a===''||a==='Unassigned'; }
@@ -695,6 +696,15 @@ async function init() {
   loadStoredBrief();
   loadNotifications();
   setInterval(loadNotifications, 20000);
+  // Load WhatsApp templates in background (triggers Meta sync)
+  fetch('/api/whatsapp/templates').then(r=>r.json()).then(data=>{
+    allWaTemplates = (data||[]).filter(t=>t.status==='APPROVED'||t.status==='ACTIVE'||t.status==='approved');
+    // If a detail panel is already open, refresh the template dropdown
+    if (selCust) {
+      const sel = document.getElementById('waTplSel-'+selCust.id);
+      if (sel) _fillWaTplSelect(sel);
+    }
+  }).catch(()=>{});
   document.addEventListener('click', (e) => {
     const panel = document.getElementById('notifPanel');
     const wrap = panel && panel.parentElement;
@@ -1069,9 +1079,14 @@ function renderDetail() {
         <div class="acc-arrow" id="accArrow-wa-${c.id}">▶</div>
       </div>
       <div class="acc-body" id="accBody-wa-${c.id}">
-        <div class="wa-template-row">
+        <div class="wa-template-row" id="waTplRow-${c.id}">
           ⚡ First message or &gt;24h since reply? Use a template:
-          <button class="btn btn-outline btn-sm" style="padding:3px 8px;font-size:11px" onclick="sendWaTemplate(${c.id},'${esc(c.phone||'')}','${esc(c.name).replace(/'/g,"\\'")}')">Send "Order Confirmation" template</button>
+          <div style="display:flex;gap:6px;align-items:center;margin-top:5px;width:100%">
+            <select id="waTplSel-${c.id}" style="flex:1;min-width:0;font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:8px;font-family:inherit;background:var(--card);color:var(--text)">
+              <option value="">— pick a template —</option>
+            </select>
+            <button class="btn btn-outline btn-sm" style="flex-shrink:0" onclick="sendSelectedTemplate(${c.id},'${esc(c.phone||'')}','${esc(c.name).replace(/'/g,"\\'")}')">Send ➤</button>
+          </div>
         </div>
         <div class="wa-thread" id="waThread-${c.id}"><div class="wa-empty">Loading conversation…</div></div>
         <div class="wa-compose">
@@ -1106,6 +1121,7 @@ function renderDetail() {
         <div id="d-tl">${tlHtml}</div>
       </div>
     </div>`;
+  initWaTplRow(c.id);
 }
 
 // ── Product Interests + AI Summary — ported from customers.html so every  ──
@@ -1442,20 +1458,49 @@ async function sendWaFile(cid,phone) {
   } catch(e){ toast(e.message.includes('window')||e.message.includes('24')?'Outside 24h window — use a template instead':e.message,'error'); }
   inp.value='';
 }
-async function sendWaTemplate(cid,phone,name) {
-  phone=_waPhone(cid,phone);
-  if(!phone){ toast('No phone number on file','error'); return; }
-  if(!confirm(`Send "Order Confirmation" template to ${name} (${phone})?`))return;
+function _fillWaTplSelect(sel) {
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">— pick a template —</option>' +
+    allWaTemplates.map(t=>`<option value="${esc(t.name)}" data-lang="${esc(t.language||'en_US')}">${esc(t.name.replace(/_/g,' '))}</option>`).join('');
+  if (prev) sel.value = prev;
+}
+// Called after renderDetail so the newly-created select gets populated
+function initWaTplRow(cid) {
+  const sel = document.getElementById('waTplSel-'+cid);
+  if (sel && allWaTemplates.length) _fillWaTplSelect(sel);
+}
+async function sendSelectedTemplate(cid, phone, name) {
+  phone = _waPhone(cid, phone);
+  if (!phone) { toast('No phone number on file', 'error'); return; }
+  const sel = document.getElementById('waTplSel-'+cid);
+  if (!sel || !sel.value) { toast('Pick a template first', 'error'); return; }
+  const tplName = sel.value;
+  const lang = sel.selectedOptions[0]?.dataset.lang || 'en_US';
+  const tpl = allWaTemplates.find(t => t.name === tplName);
+  const body = tpl?.body || '';
+  // Extract unique variable slots {{1}}, {{2}} … sorted
+  const slots = [...new Set((body.match(/\{\{\d+\}\}/g)||[]).map(x=>parseInt(x.replace(/\D/g,''))))].sort((a,b)=>a-b);
+  const params = [];
+  for (const idx of slots) {
+    if (idx === 1) { params[idx-1] = name; }
+    else {
+      const val = prompt(`Value for {{${idx}}} in "${tplName.replace(/_/g,' ')}":\n\n${body}`);
+      if (val === null) return;
+      params[idx-1] = val.trim() || `{{${idx}}}`;
+    }
+  }
+  const preview = body.replace(/\{\{(\d+)\}\}/g, (_,i)=>params[parseInt(i)-1]||`{{${i}}}`);
+  if (!confirm(`Send to ${name} (${phone})?\n\n${preview}`)) return;
   try {
-    const r=await fetch('/api/whatsapp/send-template',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-      customerId:cid, phone, template:'jaspers_market_order_confirmation_v1', language:'en_US',
-      params:[name,'—',new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})], author:PERSON
-    })});
-    const j=await r.json();
-    if(!j.success) throw new Error(j.error||'Send failed');
-    toast('Template sent','success');
+    const r = await fetch('/api/whatsapp/send-template', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ customerId:cid, phone, template:tplName, language:lang, params, author:PERSON })
+    });
+    const j = await r.json();
+    if (!j.success) throw new Error(j.error||'Send failed');
+    toast('Template sent ✓','success');
     loadWaThread(cid);
-  } catch(e){ toast(e.message,'error'); }
+  } catch(e) { toast(e.message,'error'); }
 }
 
 async function markCalled(cid) {
