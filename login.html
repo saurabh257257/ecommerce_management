@@ -35,8 +35,7 @@
 (function(){
   try {
     const a = JSON.parse(sessionStorage.getItem('arambhika_auth')||'null');
-    if (a && a.role === 'admin') location.replace('index.html');
-    else if (a && a.role === 'member') location.replace('team.html?name='+encodeURIComponent(a.name));
+    if (a && a.role) location.replace('crm.html');
   } catch(e) {}
 })();
 
@@ -53,8 +52,7 @@ async function doLogin(ev) {
     const d = await r.json();
     if (!d.success) throw new Error(d.error || 'Incorrect password');
     sessionStorage.setItem('arambhika_auth', JSON.stringify({ role: d.role, name: d.name }));
-    if (d.role === 'admin') location.href = 'index.html';
-    else location.href = 'team.html?name=' + encodeURIComponent(d.name);
+    location.href = 'crm.html';
   } catch(e) {
     err.textContent = e.message;
     btn.disabled = false; btn.textContent = 'Sign in';
