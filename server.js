@@ -150,6 +150,8 @@ try { db.exec("ALTER TABLE customers_v2 ADD COLUMN state TEXT DEFAULT ''"); } ca
 try { db.exec("ALTER TABLE customers_v2 ADD COLUMN gst_number TEXT DEFAULT ''"); } catch(e) {}
 try { db.exec("ALTER TABLE products ADD COLUMN flag_available INTEGER DEFAULT 0"); } catch(e) {}
 try { db.exec("ALTER TABLE customers_v2 ADD COLUMN customer_type TEXT DEFAULT ''"); } catch(e) {}
+try { db.exec("ALTER TABLE customers_v2 ADD COLUMN phone2 TEXT DEFAULT ''"); } catch(e) {}
+try { db.exec("ALTER TABLE customers_v2 ADD COLUMN country TEXT DEFAULT ''"); } catch(e) {}
 try { db.exec("ALTER TABLE products ADD COLUMN flag_out_of_stock INTEGER DEFAULT 0"); } catch(e) {}
 try { db.exec("ALTER TABLE products ADD COLUMN flag_for_internal INTEGER DEFAULT 0"); } catch(e) {}
 try { db.exec("ALTER TABLE team_members ADD COLUMN password TEXT DEFAULT ''"); } catch(e) {}
@@ -385,7 +387,7 @@ app.get('/api/crm/customers', (req, res) => {
   const params = [], conds = [];
   if (assigned_to) { conds.push('assigned_to = ?'); params.push(assigned_to); }
   if (status) { conds.push('status = ?'); params.push(status); }
-  if (search) { conds.push('(name LIKE ? OR company LIKE ? OR phone LIKE ?)'); params.push(...Array(3).fill(`%${search}%`)); }
+  if (search) { conds.push('(name LIKE ? OR company LIKE ? OR phone LIKE ? OR phone2 LIKE ? OR email LIKE ? OR city LIKE ? OR state LIKE ? OR country LIKE ? OR requirement LIKE ? OR remark LIKE ? OR source LIKE ? OR customer_type LIKE ? OR status LIKE ?)'); params.push(...Array(13).fill(`%${search}%`)); }
   if (conds.length) sql += ' WHERE ' + conds.join(' AND ');
   sql += ' ORDER BY updated_at DESC';
   const customers = db.prepare(sql).all(...params);
@@ -410,15 +412,15 @@ app.get('/api/crm/customers/:id', (req, res) => {
 
 app.post('/api/crm/customers', (req, res) => {
   const c = req.body;
-  const r = db.prepare(`INSERT INTO customers_v2 (name,company,phone,email,city,state,gst_number,assigned_to,status,source,requirement,followup_action,next_followup,remark,customer_type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-    .run(c.name, c.company||'', c.phone||'', c.email||'', c.city||'', c.state||'', c.gst_number||'', c.assigned_to||'', c.status||'Lead', c.source||'', c.requirement||'', c.followup_action||'', c.next_followup||'', c.remark||'', c.customer_type||'');
+  const r = db.prepare(`INSERT INTO customers_v2 (name,company,phone,phone2,email,city,state,country,gst_number,assigned_to,status,source,requirement,followup_action,next_followup,remark,customer_type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+    .run(c.name, c.company||'', c.phone||'', c.phone2||'', c.email||'', c.city||'', c.state||'', c.country||'', c.gst_number||'', c.assigned_to||'', c.status||'Lead', c.source||'', c.requirement||'', c.followup_action||'', c.next_followup||'', c.remark||'', c.customer_type||'');
   res.json({ success: true, id: r.lastInsertRowid });
 });
 
 app.put('/api/crm/customers/:id', (req, res) => {
   const c = req.body;
-  db.prepare(`UPDATE customers_v2 SET name=?,company=?,phone=?,email=?,city=?,state=?,gst_number=?,assigned_to=?,status=?,source=?,requirement=?,followup_action=?,next_followup=?,remark=?,customer_type=?,updated_at=datetime('now') WHERE id=?`)
-    .run(c.name, c.company||'', c.phone||'', c.email||'', c.city||'', c.state||'', c.gst_number||'', c.assigned_to||'', c.status||'Lead', c.source||'', c.requirement||'', c.followup_action||'', c.next_followup||'', c.remark||'', c.customer_type||'', req.params.id);
+  db.prepare(`UPDATE customers_v2 SET name=?,company=?,phone=?,phone2=?,email=?,city=?,state=?,country=?,gst_number=?,assigned_to=?,status=?,source=?,requirement=?,followup_action=?,next_followup=?,remark=?,customer_type=?,updated_at=datetime('now') WHERE id=?`)
+    .run(c.name, c.company||'', c.phone||'', c.phone2||'', c.email||'', c.city||'', c.state||'', c.country||'', c.gst_number||'', c.assigned_to||'', c.status||'Lead', c.source||'', c.requirement||'', c.followup_action||'', c.next_followup||'', c.remark||'', c.customer_type||'', req.params.id);
   res.json({ success: true });
 });
 
@@ -427,6 +429,42 @@ app.delete('/api/crm/customers/:id', (req, res) => {
   db.prepare('DELETE FROM customer_interests WHERE customer_id=?').run(req.params.id);
   db.prepare('DELETE FROM customers_v2 WHERE id=?').run(req.params.id);
   res.json({ success: true });
+});
+
+// Bulk import contacts
+app.post('/api/crm/import', (req, res) => {
+  const contacts = req.body;
+  if (!Array.isArray(contacts)) return res.status(400).json({ error: 'Expected array' });
+  const statusMap = {
+    'New Lead': 'Lead',
+    'Onboarded': 'Customer',
+    'Conversation Started But No Response': 'Contacted but No Response'
+  };
+  const insert = db.prepare(`INSERT INTO customers_v2 (name,company,phone,phone2,email,city,state,country,assigned_to,status,source,requirement,remark,customer_type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+  const update = db.prepare(`UPDATE customers_v2 SET name=CASE WHEN name='' OR name IS NULL THEN ? ELSE name END, company=CASE WHEN company='' OR company IS NULL THEN ? ELSE company END, phone2=CASE WHEN phone2='' OR phone2 IS NULL THEN ? ELSE phone2 END, email=CASE WHEN email='' OR email IS NULL THEN ? ELSE email END, city=CASE WHEN city='' OR city IS NULL THEN ? ELSE city END, state=CASE WHEN state='' OR state IS NULL THEN ? ELSE state END, country=CASE WHEN country='' OR country IS NULL THEN ? ELSE country END, source=CASE WHEN source='' OR source IS NULL THEN ? ELSE source END, requirement=CASE WHEN requirement='' OR requirement IS NULL THEN ? ELSE requirement END, remark=CASE WHEN remark='' OR remark IS NULL THEN ? ELSE remark END, customer_type=CASE WHEN customer_type='' OR customer_type IS NULL THEN ? ELSE customer_type END, updated_at=datetime('now') WHERE phone=? AND (phone!='' AND phone IS NOT NULL)`);
+  const checkPhone = db.prepare('SELECT id FROM customers_v2 WHERE phone=? AND phone!=\'\'');
+  let inserted = 0, updated = 0, skipped = 0;
+  const importTx = db.transaction(() => {
+    for (const c of contacts) {
+      const phone = (c.phone || '').trim();
+      const st = statusMap[c.status] || c.status || 'Lead';
+      if (phone) {
+        const existing = checkPhone.get(phone);
+        if (existing) {
+          update.run(c.name||'', c.company||'', c.phone2||'', c.email||'', c.city||'', c.state||'', c.country||'India', c.source||'', c.requirement||'', c.remark||'', c.customer_type||'', phone);
+          updated++;
+        } else {
+          insert.run(c.name||'', c.company||'', phone, c.phone2||'', c.email||'', c.city||'', c.state||'', c.country||'India', '', st, c.source||'', c.requirement||'', c.remark||'', c.customer_type||'');
+          inserted++;
+        }
+      } else {
+        insert.run(c.name||'', c.company||'', '', c.phone2||'', c.email||'', c.city||'', c.state||'', c.country||'India', '', st, c.source||'', c.requirement||'', c.remark||'', c.customer_type||'');
+        skipped++;
+      }
+    }
+  });
+  importTx();
+  res.json({ success: true, inserted, updated, noPhone: skipped });
 });
 
 // Discussions

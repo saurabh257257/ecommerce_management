@@ -1,0 +1,1875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>(function(){try{var a=JSON.parse(sessionStorage.getItem("arambhika_auth")||"null");if(!a||!a.role){location.replace("login.html");return;}window.__AUTH=a;}catch(e){location.replace("login.html");}})();</script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CRM — Arambhika Enablers</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    html,body { height:100%; overflow:hidden; }
+    .tm-page { display:flex; flex-direction:column; height:calc(100vh - 54px); overflow:hidden; }
+
+    /* Tiles row */
+    .tm-tiles { display:flex; gap:12px; padding:14px 18px; overflow-x:auto; flex-shrink:0; background:var(--surface); border-bottom:1px solid var(--border); }
+    .tm-tile { flex:0 0 auto; min-width:148px; background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:14px 16px; cursor:pointer; transition:border-color .15s, box-shadow .15s; }
+    .tm-tile:hover { border-color:var(--primary); box-shadow:0 2px 10px rgba(99,102,241,.10); }
+    .tm-tile.active { border-color:var(--primary); background:#eef2ff; }
+    .tm-tile-label { font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; }
+    .tm-tile-val { font-size:24px; font-weight:800; margin-top:4px; line-height:1; color:var(--text); }
+    .tm-tile-sub { font-size:11px; color:var(--muted); margin-top:5px; display:flex; gap:10px; }
+    .tm-tile-sub b { font-weight:700; }
+    .tm-tile-sub .ov { color:var(--danger); }
+    .tm-tile-sub .ok { color:#16a34a; }
+
+    .tm-wrap { display:flex; flex:1; overflow:hidden; }
+
+    /* Filters bar — compact toggle buttons; selected group's options expand as a horizontal strip below */
+    .tm-filters { display:flex; flex-direction:column; width:auto; flex-shrink:0;
+                  border-right:none; border-bottom:1px solid var(--border); background:var(--bg);
+                  padding:10px 18px; gap:8px; }
+    .tm-filters-row { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+    #tmFilterGroups { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+    .tm-filt-dd { position:relative; }
+    .tm-filt-dd-btn { display:flex; align-items:center; gap:6px; border:1px solid var(--border); background:var(--card,#fff);
+                      color:var(--text); border-radius:8px; padding:6px 11px; font-size:12px; font-family:inherit;
+                      cursor:pointer; white-space:nowrap; }
+    .tm-filt-dd-btn:hover { border-color:var(--primary); }
+    .tm-filt-dd.active .tm-filt-dd-btn, .tm-filt-dd.open .tm-filt-dd-btn { border-color:var(--primary); background:#eef2ff; color:var(--primary); font-weight:600; }
+    .tm-filt-dd-arr { font-size:9px; color:var(--muted); transition:transform .15s; }
+    .tm-filt-dd.open .tm-filt-dd-arr { transform:rotate(180deg); }
+    /* Horizontal options strip — sits between the buttons row and the search bar */
+    .tm-filt-opts-row { display:flex; flex-wrap:nowrap; align-items:center; gap:8px; overflow-x:auto;
+                        padding:8px 4px; border-top:1px dashed var(--border); }
+    .tm-filt-opts-row .tm-filt-title { flex-shrink:0; margin:0 4px 0 0; }
+    .tm-filt-title { font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+    .tm-filt-opt { display:flex; align-items:center; gap:6px; padding:6px 12px; border-radius:20px; font-size:12.5px;
+                   cursor:pointer; color:var(--text); white-space:nowrap; flex-shrink:0; border:1px solid var(--border); background:var(--card,#fff); }
+    .tm-filt-opt:hover { border-color:var(--primary); }
+    .tm-filt-opt.on { background:var(--primary); color:#fff; font-weight:600; border-color:var(--primary); }
+    .tm-filt-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .tm-filt-count { font-size:10px; opacity:.75; }
+    .tm-filt-clear { font-size:11px; color:var(--primary); cursor:pointer; text-decoration:none; white-space:nowrap; padding:6px 4px; }
+
+    /* Accordion sections in detail */
+    .acc-sec { border:1px solid var(--border); border-radius:12px; margin-bottom:16px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.04); border-left-width:4px; }
+    .acc-sec.sec-details { border-left-color:#6366f1; }
+    .acc-sec.sec-fu      { border-left-color:#0ea5e9; }
+    .acc-sec.sec-pi      { border-left-color:#7c3aed; }
+    .acc-sec.sec-wa      { border-left-color:#16a34a; }
+    .acc-sec.sec-tl      { border-left-color:#f59e0b; }
+    /* Inline editable fields — any team member can edit */
+    .ef { display:inline-flex; align-items:center; border-radius:6px; padding:2px 6px; cursor:pointer; transition:background .12s; max-width:100%; }
+    .ef:hover:not(.editing) { background:#f0f0ff; }
+    .ef.editing { background:#eef2ff; cursor:text; box-shadow:0 0 0 2px #a5b4fc; }
+    .ef-val { line-height:1.4; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; pointer-events:none; }
+    .ef-ph { color:var(--muted); font-style:italic; }
+    .ef-inp { display:none; border:none; outline:none; background:transparent; font-family:inherit; font-size:inherit; font-weight:inherit; color:var(--text); padding:0; min-width:60px; width:100%; }
+    .ef.editing .ef-val { display:none; }
+    .ef.editing .ef-inp { display:block; }
+    .ef-area { width:100%; }
+    .ef-area .ef-inp { display:block !important; resize:vertical; min-height:60px; font-size:13px; line-height:1.5; }
+    .ef-edit-hint { font-size:10px; color:var(--muted); margin-left:6px; opacity:0; transition:opacity .12s; }
+    .d-field:hover .ef-edit-hint, .d-sec-title:hover .ef-edit-hint { opacity:1; }
+
+    .acc-head { padding:11px 16px; background:var(--bg); display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; }
+    .sec-details > .acc-head { background:#eef2ff; }
+    .sec-fu > .acc-head      { background:#f0f9ff; }
+    .sec-pi > .acc-head      { background:#f5f3ff; }
+    .sec-wa > .acc-head      { background:#ecfdf3; }
+    .sec-tl > .acc-head      { background:#fffbeb; }
+    .acc-head-title { font-size:13px; font-weight:700; display:flex; align-items:center; gap:7px; }
+    .acc-arrow { font-size:11px; color:var(--muted); transition:transform .15s; }
+    .acc-arrow.open { transform:rotate(90deg); }
+    .acc-body { display:none; padding:14px 16px; }
+    .acc-body.open { display:block; }
+
+    /* Left panel */
+    .tm-left { width:340px; flex-shrink:0; display:flex; flex-direction:column; border-right:1px solid var(--border); background:var(--bg); }
+    .tm-left-head { padding:12px 14px 10px; border-bottom:1px solid var(--border); flex-shrink:0; }
+    .tm-person { font-size:17px; font-weight:700; }
+    .tm-date   { font-size:11px; color:var(--muted); margin-top:1px; }
+    .tm-stats  { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:6px; margin-top:10px; }
+    .tm-stat   { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:6px 8px; text-align:center; }
+    .tm-stat-v { font-size:17px; font-weight:700; line-height:1; }
+    .tm-stat-l { font-size:9px; color:var(--muted); margin-top:2px; text-transform:uppercase; letter-spacing:.3px; }
+    .tm-stat.danger .tm-stat-v { color:var(--danger); }
+    .tm-stat.warn   .tm-stat-v { color:#f59e0b; }
+    .tm-stat.ok     .tm-stat-v { color:#16a34a; }
+
+    /* AI brief — slide-over panel (opens on click, closes on click) */
+    .brief-overlay { position:fixed; inset:0; background:rgba(15,23,42,.4); z-index:200; display:none; align-items:stretch; justify-content:flex-end; }
+    .brief-overlay.open { display:flex; }
+    .tm-brief-view { width:420px; max-width:92vw; display:flex; flex-direction:column; overflow:hidden; background:var(--surface); box-shadow:-8px 0 30px rgba(0,0,0,.15); transform:translateX(100%); transition:transform .22s ease; }
+    .brief-overlay.open .tm-brief-view { transform:translateX(0); }
+    .brief-rh { padding:14px 20px 12px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; gap:10px; }
+    .brief-rh-title { font-size:15px; font-weight:700; }
+    .brief-rh-ts    { font-size:11px; color:var(--muted); margin-top:2px; }
+    .brief-rh-actions { display:flex; align-items:center; gap:7px; }
+    .brief-body { flex:1; overflow-y:auto; padding:20px 22px; }
+    .brief-loading { color:var(--muted); font-size:13px; display:flex; align-items:center; gap:8px; }
+    .brief-content { font-size:13px; line-height:1.8; color:var(--text); white-space:pre-wrap; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px 18px; }
+    .brief-empty { color:var(--muted); font-size:13px; text-align:center; padding:40px 20px; }
+    .detail-back { font-size:11px; color:var(--primary); cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:3px; margin-bottom:12px; background:none; border:none; font-family:inherit; padding:0; }
+    .detail-back:hover { text-decoration:underline; }
+
+    /* Search + filter */
+    .tm-search-bar { padding:8px 10px; border-bottom:1px solid var(--border); flex-shrink:0; }
+    .tm-search-bar input { width:100%; border:1px solid var(--border); border-radius:8px; padding:7px 10px; font-size:12px; font-family:inherit; outline:none; background:var(--card); color:var(--text); box-sizing:border-box; }
+    .tm-search-bar input:focus { border-color:var(--primary); }
+
+    /* Customer list */
+    .tm-list { flex:1; overflow-y:auto; }
+    .tm-item { padding:9px 13px; border-bottom:1px solid var(--border); cursor:pointer; transition:background .1s; }
+    .tm-item:hover { background:var(--surface); }
+    .tm-item.active { background:#ede9fe; border-left:3px solid var(--primary); }
+    .tm-item-name { font-size:13px; font-weight:600; }
+    .tm-item-sub  { font-size:11px; color:var(--muted); margin-top:2px; }
+    .tm-item-fu   { font-size:11px; font-weight:600; margin-top:3px; }
+    .tm-item-fu.ov   { color:var(--danger); }
+    .tm-item-fu.td   { color:#f59e0b; }
+    .tm-item-fu.ok   { color:#16a34a; }
+    .tm-item-fu.none { color:var(--muted); }
+
+    /* Right panel */
+    .tm-right  { flex:1; display:flex; flex-direction:column; overflow:hidden; background:var(--bg); }
+    .tm-detail { flex:1; overflow-y:auto; padding:18px 22px; }
+
+    /* WhatsApp panel */
+    .wa-panel { border:1px solid var(--border); border-radius:10px; margin-bottom:16px; overflow:hidden; }
+    .wa-head { background:#075e54; color:#fff; padding:10px 14px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; }
+    .wa-head-title { font-weight:600; font-size:13px; display:flex; align-items:center; gap:6px; }
+    .wa-body { display:none; background:#e5ddd5; }
+    .wa-body.open { display:block; }
+    .wa-thread { max-height:340px; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:6px; }
+    .wa-bubble { max-width:75%; padding:7px 10px; border-radius:8px; font-size:13px; line-height:1.4; position:relative; word-wrap:break-word; }
+    .wa-bubble.in  { background:#fff; align-self:flex-start; border-top-left-radius:2px; }
+    .wa-bubble.out { background:#dcf8c6; align-self:flex-end; border-top-right-radius:2px; }
+    .wa-bubble .wa-time { display:block; font-size:10px; color:var(--muted); margin-top:3px; text-align:right; }
+    .wa-compose { display:flex; gap:8px; padding:10px; background:#f0f0f0; border-top:1px solid var(--border); }
+    .wa-compose input { flex:1; border:1px solid var(--border); border-radius:20px; padding:8px 14px; font-size:13px; }
+    .wa-compose button { border:none; background:#25d366; color:#fff; border-radius:50%; width:36px; height:36px; cursor:pointer; font-size:15px; }
+    .wa-empty { text-align:center; color:var(--muted); font-size:12px; padding:24px; }
+    .wa-template-row { display:flex; gap:6px; padding:8px 12px; background:#fff8e1; border-bottom:1px solid var(--border); font-size:12px; align-items:center; flex-wrap:wrap; }
+
+    /* Detail */
+    .d-head { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px; gap:12px; flex-wrap:wrap; }
+    .d-name { font-size:20px; font-weight:700; }
+    .d-name .ef-val, .d-name .ef-inp { font-size:20px; font-weight:700; }
+    .d-req .ef { display:block; padding:10px 12px; }
+    .d-req .ef-val { white-space:normal; line-height:1.5; }
+    .d-co   { font-size:13px; color:var(--muted); margin-top:2px; }
+    .d-actions { display:flex; gap:6px; flex-wrap:wrap; }
+    .d-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px; }
+    .d-field { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:8px 12px; }
+    .d-field-label { font-size:10px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.4px; margin-bottom:3px; }
+    .d-field-val   { font-size:13px; }
+    .d-field-val a { color:var(--text); text-decoration:none; }
+    .d-field-val a:hover { color:var(--primary); }
+    .d-sec-title { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
+    .d-req { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-size:13px; line-height:1.5; min-height:36px; margin-bottom:14px; }
+    .d-req.empty { color:var(--muted); font-style:italic; }
+
+    /* Product Interests + AI Summary — ported from customers.html for parity with admin view */
+    .sec-btn { font-size: 12px; color: var(--primary); cursor: pointer; font-weight: 500; background: none; border: none; font-family: inherit; padding: 0; }
+    .int-list { display: flex; flex-direction: column; gap: 7px; margin-bottom: 10px; }
+    .int-row { display: flex; align-items: center; gap: 8px; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 8px; padding: 7px 10px; }
+    .int-sku { font-size: 10px; color: #7c3aed; font-weight: 700; background: #ede9fe; padding: 2px 6px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; }
+    .int-name { flex: 1; font-size: 13px; font-weight: 500; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .int-qty { width: 90px; border: 1px solid #ddd6fe; border-radius: 6px; padding: 4px 7px; font-size: 12px; font-family: inherit; outline: none; background: #fff; flex-shrink: 0; }
+    .int-del { background: none; border: none; cursor: pointer; color: #a78bfa; font-size: 16px; line-height: 1; padding: 0 2px; flex-shrink: 0; }
+    .int-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; position:relative; }
+    .prod-picker-btn { display: flex; align-items: center; gap: 5px; padding: 5px 12px; border: 1px dashed #a5b4fc; border-radius: 8px; font-size: 12px; color: var(--primary); cursor: pointer; background: none; font-family: inherit; font-weight: 600; }
+    .ppd-search { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+    .ppd-search input { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; font-size: 13px; font-family: inherit; outline: none; }
+    .ppd-search input:focus { border-color: var(--primary); }
+    .ppd-list { overflow-y: auto; flex: 1; }
+    .ppd-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; display: flex; gap: 8px; align-items: center; }
+    .ppd-item:last-child { border: none; }
+    .ppd-item:hover { background: #f5f3ff; }
+    .ppd-sku { font-size: 10px; color: var(--primary); font-weight: 700; background: #eef2ff; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
+    .ppd-name { font-size: 13px; flex: 1; }
+    .ppd-empty { padding: 20px; text-align: center; font-size: 13px; color: var(--muted); }
+    .ppd-cat-head { padding: 5px 12px; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; background: #f8fafc; border-bottom: 1px solid var(--border); }
+
+    /* Timeline */
+    .tl-compose { display:flex; gap:6px; margin-bottom:10px; align-items:flex-start; }
+    .tl-compose select { border:1px solid var(--border); border-radius:8px; padding:6px 7px; font-size:12px; font-family:inherit; outline:none; background:var(--card); color:var(--text); }
+    .tl-compose textarea { flex:1; border:1px solid var(--border); border-radius:8px; padding:7px 10px; font-size:12px; font-family:inherit; resize:none; height:52px; outline:none; background:var(--card); color:var(--text); }
+    .tl-compose textarea:focus { border-color:var(--primary); }
+    .tl-item { display:flex; gap:7px; margin-bottom:7px; }
+    .tl-av { width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:#fff; flex-shrink:0; background:#6366f1; margin-top:1px; }
+    .tl-av.sys { background:#e2e8f0; color:#64748b; }
+    .tl-meta { font-size:10px; color:var(--muted); margin-bottom:2px; }
+    .tl-note { font-size:12px; line-height:1.4; background:var(--card); border:1px solid var(--border); border-radius:6px; padding:5px 9px; }
+    .tl-note.sys { background:transparent; border:none; padding:0; color:var(--muted); font-size:11px; }
+
+    /* Badges */
+    .s-badge { display:inline-flex; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; }
+    .s-lead      { background:#fef9c3; color:#854d0e; }
+    .s-contacted { background:#dbeafe; color:#1d4ed8; }
+    .s-noresp    { background:#ffedd5; color:#c2410c; }
+    .s-onboarded { background:#dcfce7; color:#15803d; }
+
+    /* Modals */
+    .qn-overlay,.fu-overlay { position:fixed; inset:0; background:rgba(0,0,0,.4); display:flex; align-items:center; justify-content:center; z-index:200; opacity:0; pointer-events:none; transition:opacity .15s; }
+    .qn-overlay.open,.fu-overlay.open { opacity:1; pointer-events:all; }
+    .qn-box,.fu-box { background:var(--surface); border-radius:14px; padding:22px; max-width:96vw; }
+    .qn-box { width:420px; }
+    .fu-box { width:320px; }
+    .qn-box h4,.fu-box h4 { font-size:15px; font-weight:600; margin-bottom:12px; }
+    .qn-box select,.qn-box textarea { width:100%; border:1px solid var(--border); border-radius:8px; padding:8px 10px; font-size:13px; font-family:inherit; margin-bottom:9px; outline:none; background:var(--card); color:var(--text); }
+    .qn-box textarea { resize:none; min-height:80px; }
+    .qd-row { display:flex; gap:6px; margin:8px 0; flex-wrap:wrap; }
+    .qd { padding:4px 10px; border:1px solid var(--border); border-radius:7px; font-size:12px; cursor:pointer; background:var(--bg); font-family:inherit; color:var(--text); }
+    .qd:hover { background:var(--primary); color:#fff; border-color:var(--primary); }
+
+    .btn-green { background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; }
+    .btn-green:hover { background:#bbf7d0; }
+    .btn-amber { background:#fef9c3; color:#854d0e; border:1px solid #fef08a; }
+    .btn-amber:hover { background:#fef08a; }
+    .nav-sec { padding:10px 12px 4px; font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.7px; }
+
+    /* ── Add Customer Panel ────────────────────────────────── */
+    .acp-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:500; opacity:0; pointer-events:none; transition:opacity .2s; }
+    .acp-overlay.open { opacity:1; pointer-events:all; }
+    .acp-panel { position:fixed; top:0; right:0; width:440px; max-width:100vw; height:100%; background:var(--surface); display:flex; flex-direction:column; transform:translateX(110%); transition:transform .25s cubic-bezier(.4,0,.2,1); box-shadow:-6px 0 24px rgba(0,0,0,.18); z-index:501; }
+    .acp-overlay.open .acp-panel { transform:none; }
+    .acp-head { padding:15px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+    .acp-close { background:none; border:none; cursor:pointer; font-size:18px; color:var(--muted); padding:2px 6px; line-height:1; }
+    .acp-close:hover { color:var(--text); }
+    .acp-body { flex:1; overflow-y:auto; padding:16px 18px 24px; }
+    .acp-sec { margin-bottom:18px; }
+    .acp-lbl { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin-bottom:7px; }
+    .acp-tag-inp { width:100%; border:2px solid var(--primary); border-radius:9px; padding:9px 13px; font-size:13px; font-family:inherit; outline:none; background:var(--card); color:var(--text); box-sizing:border-box; font-weight:600; }
+    .acp-cam-lbl { display:flex; align-items:center; justify-content:center; gap:9px; width:100%; padding:20px; border:2px dashed var(--border); border-radius:12px; cursor:pointer; font-size:13px; font-weight:500; background:var(--card); color:var(--text); transition:all .15s; box-sizing:border-box; }
+    .acp-cam-lbl:hover { border-color:var(--primary); color:var(--primary); background:#f0f4ff; }
+    .acp-preview { width:100%; border-radius:10px; overflow:hidden; margin-top:10px; display:none; position:relative; border:1px solid var(--border); }
+    .acp-preview img { width:100%; display:block; }
+    .acp-preview-rm { position:absolute; top:6px; right:6px; background:rgba(0,0,0,.65); color:#fff; border:none; border-radius:50%; width:26px; height:26px; cursor:pointer; font-size:12px; line-height:26px; text-align:center; }
+    .acp-mic-btn { display:flex; align-items:center; gap:9px; padding:10px 14px; border:1px solid var(--border); border-radius:9px; cursor:pointer; font-size:13px; background:var(--card); font-family:inherit; color:var(--text); transition:all .15s; width:100%; box-sizing:border-box; }
+    .acp-mic-btn:hover { border-color:#ef4444; }
+    .acp-mic-btn.rec { background:#fef2f2; border-color:#ef4444; color:#ef4444; animation:pulse 1.2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.7} }
+    .acp-transcript { margin-top:8px; font-size:12px; line-height:1.55; color:var(--text); background:var(--card); border:1px solid var(--border); border-radius:8px; padding:8px 10px; min-height:60px; display:none; white-space:pre-wrap; width:100%; box-sizing:border-box; font-family:inherit; resize:vertical; }
+    .acp-extract-btn { width:100%; padding:12px; border-radius:10px; border:none; background:var(--primary); color:#fff; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; transition:opacity .15s; }
+    .acp-extract-btn:disabled { opacity:.4; cursor:default; }
+    .acp-extract-btn:not(:disabled):hover { opacity:.88; }
+    .acp-status { font-size:12px; padding:5px 0 2px; min-height:20px; }
+    .acp-status.loading { color:var(--primary); }
+    .acp-status.ok  { color:#16a34a; }
+    .acp-status.err { color:var(--danger); }
+    .acp-field { border:1px solid var(--border); border-radius:8px; padding:8px 11px; font-size:13px; font-family:inherit; outline:none; background:var(--card); color:var(--text); width:100%; box-sizing:border-box; margin-bottom:8px; }
+    .acp-field:focus { border-color:var(--primary); }
+    .acp-form-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px; }
+    .acp-form-row .acp-field { margin-bottom:0; }
+    .acp-area { height:72px; resize:none; }
+    .acp-divider { border:none; border-top:1px solid var(--border); margin:18px 0; }
+
+    /* ── Mobile-friendly layout ──────────────────────────────────── */
+    .tm-filters-toggle, .tm-bottom-nav { display:none; }
+    @media (max-width: 860px) {
+      html,body { overflow:auto; }
+      .sidebar { display:none !important; }
+      .main { margin-left:0 !important; }
+      .tm-page { height:auto; min-height:calc(100vh - 54px); padding-bottom:62px; }
+      .topbar h2 { font-size:16px; }
+      .topbar-actions a[href="customers.html"] { display:none; } /* "Full CRM" link redundant on mobile */
+
+      /* Tiles: smaller, horizontally scrollable, snap */
+      .tm-tiles { padding:10px 12px; gap:8px; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; }
+      .tm-tile { min-width:118px; padding:10px 12px; scroll-snap-align:start; }
+      .tm-tile-val { font-size:19px; }
+
+      /* Stack: filters become a collapsible drawer, list/detail are single full-width panes that slide */
+      .tm-wrap { position:relative; flex-direction:column; overflow:visible; }
+      .tm-filters-toggle { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 14px; background:var(--surface); border-bottom:1px solid var(--border); font-size:12px; font-weight:600; color:var(--text); cursor:pointer; }
+      .tm-filters-toggle .arr { transition:transform .15s; color:var(--muted); }
+      .tm-filters-toggle.open .arr { transform:rotate(180deg); }
+      .tm-filters { display:none; flex-direction:column; width:auto; border-right:none; border-bottom:1px solid var(--border); max-height:46vh; overflow-y:auto; }
+      .tm-filters.open { display:flex; }
+      #tmFilterGroups { flex-wrap:wrap; }
+      .tm-filt-opts-row { flex-wrap:wrap; overflow-x:visible; }
+
+      .tm-left { width:auto; border-right:none; }
+      .tm-list { -webkit-overflow-scrolling:touch; }
+      .tm-item { padding:13px 16px; }
+
+      /* Slide list <-> detail like a native app */
+      .tm-detail { position:absolute; inset:0; background:var(--bg); z-index:5; transform:translateX(100%); transition:transform .2s ease; padding:14px 14px 90px; }
+      .tm-wrap.show-detail .tm-detail { transform:translateX(0); display:block !important; }
+      .tm-wrap.show-detail .tm-left { display:none; }
+
+      .d-grid { grid-template-columns:1fr 1fr !important; }
+      .d-actions { flex-wrap:wrap; gap:6px; }
+      .d-actions .btn { font-size:11px; padding:6px 9px; }
+
+      /* Brief slide-over takes full width on mobile */
+      .tm-brief-view { width:100vw; max-width:100vw; }
+
+      /* Bottom app-style nav bar */
+      .tm-bottom-nav { display:flex; position:fixed; left:0; right:0; bottom:0; z-index:120; background:var(--surface); border-top:1px solid var(--border); box-shadow:0 -2px 14px rgba(0,0,0,.06); }
+      .tm-bottom-nav a, .tm-bottom-nav button { flex:1; border:none; background:none; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:8px 4px 9px; font-size:10px; font-weight:600; color:var(--muted); text-decoration:none; cursor:pointer; font-family:inherit; }
+      .tm-bottom-nav .ic { font-size:17px; line-height:1; }
+      .tm-bottom-nav a.active { color:var(--primary); }
+      .tm-bottom-nav a:active, .tm-bottom-nav button:active { color:var(--primary); }
+
+      /* ── Mobile-first: WhatsApp panel feels like a real chat app ── */
+      .wa-panel { margin-left:-14px; margin-right:-14px; border-radius:0; border-left:none; border-right:none; }
+      .wa-thread { max-height:calc(100vh - 320px); }
+      .wa-bubble { max-width:85%; font-size:14px; padding:9px 12px; }
+      .wa-compose { padding:10px 12px calc(10px + env(safe-area-inset-bottom)); position:sticky; bottom:0; z-index:6; }
+      .wa-compose input { padding:11px 16px; font-size:15px; }
+      .wa-compose button { width:42px; height:42px; font-size:17px; flex-shrink:0; }
+      .wa-template-row { font-size:13px; padding:10px 12px; }
+      .wa-template-row select, .wa-template-row button { font-size:13px; padding:7px 10px; min-height:38px; }
+
+      /* ── Larger thumb-friendly tap targets everywhere ── */
+      .acc-head { padding:14px 16px; min-height:48px; }
+      .acc-head-title { font-size:14px; }
+      .d-actions .btn { min-height:38px; padding:8px 12px; font-size:12.5px; }
+      .tm-item { padding:14px 16px; }
+      .tm-item-name { font-size:14px; }
+      button, .btn, a.btn { min-height:36px; }
+      .btn-sm { min-height:32px; }
+
+      /* ── Notification panel: full-width drawer on mobile ── */
+      #notifPanel { position:fixed !important; top:54px !important; left:8px !important; right:8px !important; width:auto !important; max-height:75vh; }
+
+      /* ── Forms: single column, larger fields for thumb typing ── */
+      .acp-form-row { grid-template-columns:1fr; gap:0; }
+      .acp-field { padding:12px 14px; font-size:15px; margin-bottom:10px; }
+      .acp-area { height:90px; }
+
+      /* ── Topbar: hide low-priority buttons on mobile ── */
+      .tm-hide-mobile { display:none !important; }
+
+      /* ── Timeline compose: stack textarea on top, controls below ── */
+      .tl-compose { flex-wrap:wrap; }
+      .tl-compose textarea { width:100%; min-width:0; order:2; }
+      .tl-compose > select { order:1; }
+      .tl-compose > div { order:3; width:100%; justify-content:flex-end; }
+      .tl-compose > div select { flex:1; }
+
+      /* ── WhatsApp: full-width compose, send button always visible ── */
+      .sec-wa .acc-body { padding-left:0; padding-right:0; padding-bottom:0; }
+      .wa-template-row { padding:10px 14px; }
+      .wa-thread { padding:10px 14px; max-height:calc(100vh - 280px); }
+      .wa-compose { padding:8px 10px; bottom:60px; padding-bottom:8px; }
+      .wa-compose input { min-width:0; font-size:14px; }
+      .wa-compose input::placeholder { font-size:13px; }
+      .modal { width:100%; max-width:100%; border-radius:16px 16px 0 0; align-self:flex-end; max-height:90vh; overflow-y:auto; margin:0; }
+      .modal-overlay { align-items:flex-end; }
+    }
+    @media (min-width: 861px) {
+      .tm-filters-toggle { display:none !important; }
+    }
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo"><h1>Arambhika</h1><p>Enablers CRM</p></div>
+  <nav class="sidebar-nav">
+    <a href="crm.html" class="nav-link active"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>CRM</a>
+    <a href="index.html" class="nav-link"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>Admin</a>
+  </nav>
+</aside>
+
+<div class="main" style="padding:0;overflow:hidden">
+  <div class="topbar" style="flex-shrink:0">
+    <h2 id="pageTitle">Dashboard</h2>
+    <div class="topbar-actions">
+      <div style="position:relative;display:inline-block">
+        <button class="btn btn-outline btn-sm" onclick="toggleNotifPanel()" title="Notifications" style="position:relative">
+          🔔<span id="notifBadge" style="display:none;position:absolute;top:-6px;right:-6px;background:#dc2626;color:#fff;font-size:10px;font-weight:700;border-radius:10px;min-width:17px;height:17px;line-height:17px;text-align:center;padding:0 3px"></span>
+        </button>
+        <div id="notifPanel" style="display:none;position:absolute;right:0;top:calc(100% + 6px);width:320px;max-height:420px;overflow:auto;background:var(--card,#fff);border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.15);z-index:9999">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border)">
+            <strong style="font-size:13px">Notifications</strong>
+            <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px" onclick="markAllNotifsRead()">Mark all read</button>
+          </div>
+          <div id="notifList"></div>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openACP()">➕ Add Customer</button>
+      <button class="btn btn-outline btn-sm" onclick="openImport()">📥 Import</button>
+      <button class="btn btn-outline btn-sm" onclick="openProdRef()">📦 Products</button>
+      <button class="btn btn-outline btn-sm" onclick="openBroadcast()">📢 Broadcast</button>
+      <button class="btn btn-outline btn-sm tm-hide-mobile" onclick="location.reload()">↻ Refresh</button>
+    </div>
+  </div>
+
+  <div class="tm-page">
+  <!-- TILES ROW -->
+  <div class="tm-tiles" id="tmTiles"></div>
+
+  <!-- Mobile-only: collapsible filters drawer toggle -->
+  <div class="tm-filters-toggle" id="tmFiltToggle" onclick="toggleFiltersDrawer()">
+    <span>🔎 Filters &amp; views</span>
+    <span class="arr">▾</span>
+  </div>
+  <!-- FILTERS BAR — horizontal, placed right after the tiles row -->
+  <div class="tm-filters" id="tmFilters">
+    <div class="tm-filters-row">
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <div class="tm-person" id="tmPerson" style="font-size:14px">—</div>
+        <button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="logout()" title="Sign out">⏻</button>
+      </div>
+      <div id="tmFilterGroups"></div>
+    </div>
+    <!-- Horizontal options strip — appears here (above the search bar) when a filter group is opened -->
+    <div id="filtOptionsRow" class="tm-filt-opts-row" style="display:none"></div>
+  </div>
+
+  <div class="tm-wrap">
+    <!-- LEFT: customer list -->
+    <div class="tm-left">
+      <div class="tm-search-bar">
+        <input type="text" id="tmSearch" placeholder="Search name, phone, email, company, city…" oninput="renderList()" />
+      </div>
+      <div class="tm-list" id="tmList">
+        <div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Loading…</div>
+      </div>
+    </div>
+
+    <!-- Customer detail (shown in place of list on mobile when a customer is selected) -->
+    <div class="tm-detail" id="tmDetail" style="display:none"></div>
+  </div>
+  </div>
+</div>
+
+<!-- Mobile bottom app-style navigation -->
+<nav class="tm-bottom-nav" id="tmBottomNav">
+  <a href="index.html" class="nav-link"><span class="ic">🏠</span>Dashboard</a>
+  <a href="customers.html" class="nav-link"><span class="ic">👥</span>CRM</a>
+  <a href="products.html" class="nav-link"><span class="ic">📦</span>Products</a>
+  <button onclick="openBrief()"><span class="ic">🤖</span>Brief</button>
+  <button onclick="logout()"><span class="ic">⏻</span>Logout</button>
+</nav>
+
+<!-- AI Brief — slide-over panel, opens/closes on click -->
+<div class="brief-overlay" id="briefOverlay" onclick="if(event.target===this)closeBrief()">
+  <div class="tm-brief-view" id="tmBriefView">
+    <div class="brief-rh">
+      <div>
+        <div class="brief-rh-title">🤖 AI Daily Brief</div>
+        <div class="brief-rh-ts" id="briefTimestamp">—</div>
+      </div>
+      <div class="brief-rh-actions">
+        <button class="btn btn-outline btn-sm" id="briefRefreshBtn" onclick="loadBrief()">🔄 Refresh</button>
+        <button class="btn btn-outline btn-sm" onclick="closeBrief()" title="Close">✕</button>
+      </div>
+    </div>
+    <div class="brief-body" id="briefBody">
+      <div class="brief-empty">Click <strong>🔄 Refresh</strong> to generate your daily brief.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick note modal -->
+<div class="qn-overlay" id="qnModal">
+  <div class="qn-box">
+    <h4 id="qnTitle">Add Note</h4>
+    <select id="qnType"><option value="call">📞 Call</option><option value="note">📝 Note</option><option value="meeting">🤝 Meeting</option><option value="message">💬 Message</option></select>
+    <textarea id="qnText" placeholder="What happened? Next steps?…"></textarea>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeQN()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveQN()">Save Note</button>
+    </div>
+  </div>
+</div>
+
+<!-- Follow-up modal -->
+<div class="fu-overlay" id="fuModal">
+  <div class="fu-box">
+    <h4>Set Next Follow-up</h4>
+    <input type="date" id="fuDate" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;margin-bottom:6px;outline:none;background:var(--card);color:var(--text)" />
+    <div class="qd-row">
+      <button class="qd" onclick="setFUDays(1)">+1 day</button>
+      <button class="qd" onclick="setFUDays(3)">+3 days</button>
+      <button class="qd" onclick="setFUDays(7)">+1 week</button>
+      <button class="qd" onclick="setFUDays(14)">+2 weeks</button>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+      <button class="btn btn-outline" onclick="closeFU()">Skip</button>
+      <button class="btn btn-primary" onclick="saveFU()">Set Date</button>
+    </div>
+  </div>
+</div>
+
+<!-- Broadcast modal -->
+<div class="qn-overlay" id="bcModal">
+  <div class="qn-box" style="width:460px">
+    <h4>📢 Broadcast a template message</h4>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">
+      Templates are the only way to message customers who haven't replied to you in the last 24h. Create &amp; get your template approved in Meta's WhatsApp Manager first, then send it here to many customers at once.
+    </div>
+    <label style="font-size:12px;font-weight:600;color:var(--muted)">Approved template name (exact, e.g. order_update_v1)</label>
+    <input type="text" id="bcTemplate" placeholder="e.g. order_update_v1" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;margin-bottom:9px;outline:none;background:var(--card);color:var(--text)">
+    <label style="font-size:12px;font-weight:600;color:var(--muted)">Language code</label>
+    <input type="text" id="bcLang" value="en_US" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;margin-bottom:9px;outline:none;background:var(--card);color:var(--text)">
+    <label style="display:flex;align-items:center;gap:6px;font-size:13px;margin-bottom:9px"><input type="checkbox" id="bcUseName" checked> Personalize — pass customer's name as the template's first variable ({{1}})</label>
+
+    <label style="font-size:12px;font-weight:600;color:var(--muted)">Filter by status (optional)</label>
+    <select id="bcStatus" onchange="bcUpdateCount()" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;margin-bottom:9px;outline:none;background:var(--card);color:var(--text)">
+      <option value="">Any status</option>
+    </select>
+    <div id="bcCount" style="font-size:13px;font-weight:600;margin-bottom:9px"></div>
+    <div id="bcProgress" style="font-size:12px;color:var(--muted);margin-bottom:9px;display:none;max-height:140px;overflow:auto"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeBroadcast()">Close</button>
+      <button class="btn btn-primary" id="bcSendBtn" onclick="sendBroadcast()">Send to all</button>
+    </div>
+  </div>
+</div>
+
+<!-- Product reference panel — full catalog with name, SKU, price for quick lookup while chatting -->
+<div class="qn-overlay" id="prodRefModal">
+  <div class="qn-box" style="width:420px;max-height:82vh;display:flex;flex-direction:column">
+    <h4>📦 Product reference</h4>
+    <input type="text" id="prodRefSearch" placeholder="Search by name, SKU or category…" oninput="renderProdRef()"
+      style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;margin-bottom:9px;outline:none;background:var(--card);color:var(--text)">
+    <div id="prodRefList" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:6px"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:10px">
+      <button class="btn btn-outline" onclick="closeProdRef()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Product popup — full catalog, click a product to set qty/price and add to interests -->
+<div class="qn-overlay" id="addProdModal">
+  <div class="qn-box" style="width:420px;max-height:82vh;display:flex;flex-direction:column">
+    <h4>➕ Add product to interests</h4>
+    <div id="addProdList" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:10px"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:10px">
+      <button class="btn btn-outline" onclick="closePicker()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Product detail panel — image + full details, with optional "add to interests" (qty/price) -->
+<div class="qn-overlay" id="prodDetailModal">
+  <div class="qn-box" style="width:380px;max-height:85vh;overflow-y:auto">
+    <div id="prodDetailBody"></div>
+    <div id="prodDetailFooter" style="display:none;gap:8px;margin-top:6px"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:10px">
+      <button class="btn btn-outline" onclick="closeProdDetail()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import modal -->
+<div class="qn-overlay" id="importModal">
+  <div class="qn-box" style="width:460px">
+    <h4>📥 Import Contacts from JSON</h4>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Paste a JSON array of contacts. Fields: name, phone, phone2, company, email, city, state, country, source, requirement, remark, customer_type, status.</div>
+    <textarea id="importJson" style="width:100%;height:160px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px;font-family:monospace;resize:vertical;outline:none;background:var(--card);color:var(--text)" placeholder='[{"name":"Test","phone":"9876543210","city":"Delhi"}]'></textarea>
+    <div id="importResult" style="font-size:12px;margin:8px 0;min-height:18px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="document.getElementById('importModal').classList.remove('open')">Close</button>
+      <button class="btn btn-primary" onclick="runImport()">Import</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- ── Add Customer Panel ──────────────────────────────────────── -->
+<div class="acp-overlay" id="acpOverlay">
+  <div class="acp-panel" id="acpPanel">
+    <div class="acp-head">
+      <span style="font-size:15px;font-weight:700">➕ Add Customer</span>
+      <button class="acp-close" onclick="closeACP()">✕</button>
+    </div>
+    <div class="acp-body">
+
+      <!-- Event Tag -->
+      <div class="acp-sec">
+        <div class="acp-lbl">Event / Source Tag</div>
+        <input type="text" class="acp-tag-inp" id="acpTag" placeholder="e.g. 4 Jun Exhibition" />
+      </div>
+
+      <!-- Visiting Card -->
+      <div class="acp-sec">
+        <div class="acp-lbl">Visiting Card Photo</div>
+        <label class="acp-cam-lbl" for="acpFileInput">
+          <span id="acpCamIcon">📷</span>
+          <span id="acpCamText">Tap to take photo or upload card</span>
+        </label>
+        <input type="file" id="acpFileInput" accept="image/*" capture="environment" style="display:none" onchange="onAcpCardFile(this)" />
+        <div class="acp-preview" id="acpPreview">
+          <img id="acpPreviewImg" src="" alt="Card preview" />
+          <button class="acp-preview-rm" onclick="removeAcpCard()" title="Remove">✕</button>
+        </div>
+      </div>
+
+      <!-- Voice Notes -->
+      <div class="acp-sec">
+        <div class="acp-lbl">Voice Notes <span style="font-weight:400;color:var(--muted);text-transform:none;font-size:11px">(optional — speak extra details)</span></div>
+        <button class="acp-mic-btn" id="acpMicBtn" onclick="toggleAcpMic()">
+          <span id="acpMicIcon">🎤</span>
+          <span id="acpMicText">Tap to record voice notes</span>
+        </button>
+        <textarea class="acp-transcript" id="acpTranscript" placeholder="Voice transcript — you can edit it…"></textarea>
+      </div>
+
+      <!-- Extract -->
+      <div class="acp-sec">
+        <button class="acp-extract-btn" id="acpExtractBtn" onclick="extractAcp()" disabled>✨ Extract Customer Info</button>
+        <div class="acp-status" id="acpStatus"></div>
+      </div>
+
+      <!-- Review Form -->
+      <div id="acpForm" style="display:none">
+        <hr class="acp-divider" />
+        <div class="acp-lbl" style="margin-bottom:12px">Review &amp; Edit</div>
+        <input  type="text" class="acp-field" id="acpName"    placeholder="Name *" />
+        <input  type="text" class="acp-field" id="acpCompany" placeholder="Company" />
+        <input  type="text" class="acp-field" id="acpPhone"   placeholder="Phone" />
+        <input  type="text" class="acp-field" id="acpEmail"   placeholder="Email" />
+        <div class="acp-form-row">
+          <input type="text" class="acp-field" id="acpCity"  placeholder="City" />
+          <input type="text" class="acp-field" id="acpState" placeholder="State" />
+        </div>
+        <input  type="text" class="acp-field" id="acpGst"     placeholder="GST Number" />
+        <textarea class="acp-field acp-area"  id="acpReq"     placeholder="Requirement / Notes…"></textarea>
+        <button class="btn btn-primary" style="width:100%;padding:12px;font-size:14px;margin-top:2px" onclick="saveACP()">
+          💾 Save Customer
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const PERSON = 'CRM';
+function logout(){ sessionStorage.removeItem('arambhika_auth'); location.replace('login.html'); }
+const S_MAP  = { Lead:'s-lead', Contacted:'s-contacted', 'Contacted but No Response':'s-noresp', Onboarded:'s-onboarded' };
+let allCust = [], teamMembers = [], allStatuses = [], allTypes = [], allTags = [];
+let scope = 'all';
+let sideFilter = { type:null, status:null, tag:null };
+let selCust = null, selId = null, tabFilter = 'All', qnActiveCid = null, fuActiveCid = null;
+let allProducts = [], pickerOpen = false, pickerOpenCid = null;
+let allWaTemplates = [];
+
+function todayISO() { return new Date().toISOString().split('T')[0]; }
+function isUnassignedRow(c){ const a=(c.assigned_to||'').trim(); return a===''||a==='Unassigned'; }
+
+async function init() {
+  document.title = 'CRM — Arambhika Enablers';
+  document.getElementById('pageTitle').textContent = 'CRM';
+  const [custR, tmR, stR, ctR, tgR, prR] = await Promise.all([
+    fetch('/api/crm/customers'), fetch('/api/team-members'),
+    fetch('/api/statuses'), fetch('/api/customer-types'), fetch('/api/tags'), fetch('/api/products')
+  ]);
+  allCust = (await custR.json()).data || [];
+  teamMembers = (await tmR.json()).data || [];
+  allStatuses = (await stR.json()).data || [];
+  allTypes = (await ctR.json()).data || [];
+  allTags = (await tgR.json()).data || [];
+  allProducts = (await prR.json()).data || [];
+  renderTiles(); renderFilterSidebar(); renderList();
+  loadStoredBrief();
+  loadNotifications();
+  setInterval(loadNotifications, 20000);
+  // Load WhatsApp templates in background (triggers Meta sync)
+  fetch('/api/whatsapp/templates').then(r=>r.json()).then(data=>{
+    allWaTemplates = (data||[]).filter(t=>t.status==='APPROVED'||t.status==='ACTIVE'||t.status==='approved');
+    // If a detail panel is already open, refresh the template dropdown
+    if (selCust) {
+      const sel = document.getElementById('waTplSel-'+selCust.id);
+      if (sel) _fillWaTplSelect(sel);
+    }
+  }).catch(()=>{});
+  document.addEventListener('click', (e) => {
+    const panel = document.getElementById('notifPanel');
+    const wrap = panel && panel.parentElement;
+    if (panel && panel.style.display === 'block' && wrap && !wrap.contains(e.target)) panel.style.display = 'none';
+  });
+}
+
+// ── Notifications ──────────────────────────────────────────────
+async function loadNotifications() {
+  try {
+    const data = await fetch('/api/notifications').then(r => r.json());
+    const badge = document.getElementById('notifBadge');
+    if (data.unread > 0) { badge.style.display = 'block'; badge.textContent = data.unread > 99 ? '99+' : data.unread; }
+    else badge.style.display = 'none';
+    const list = document.getElementById('notifList');
+    if (!data.notifications.length) {
+      list.innerHTML = '<div style="padding:18px;text-align:center;color:var(--muted);font-size:12px">No notifications yet</div>';
+      return;
+    }
+    list.innerHTML = data.notifications.map(n => `
+      <div onclick="openNotif(${n.id}, ${n.customer_id || 'null'})" style="padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;${n.is_read?'opacity:.55':''}background:${n.is_read?'transparent':'rgba(79,70,229,.06)'}">
+        <div style="font-size:12.5px;font-weight:${n.is_read?'500':'700'}">${esc(n.customer_name || n.customer_phone || 'Unknown')}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(n.body)}</div>
+        <div style="font-size:10.5px;color:var(--muted);margin-top:3px">${esc(n.created_at)}</div>
+      </div>
+    `).join('');
+  } catch (e) {}
+}
+
+function toggleNotifPanel() {
+  const panel = document.getElementById('notifPanel');
+  const open = panel.style.display === 'block';
+  panel.style.display = open ? 'none' : 'block';
+  if (!open) loadNotifications();
+}
+
+async function markAllNotifsRead() {
+  await fetch('/api/notifications/read-all', { method: 'PUT' });
+  loadNotifications();
+}
+
+async function openNotif(notifId, customerId) {
+  await fetch('/api/notifications/' + notifId + '/read', { method: 'PUT' });
+  document.getElementById('notifPanel').style.display = 'none';
+  loadNotifications();
+  if (customerId) {
+    await selectC(customerId);
+    setTimeout(() => {
+      const body = document.getElementById('accBody-wa-' + customerId);
+      if (body && !body.classList.contains('open')) toggleAcc('wa-' + customerId);
+      const card = document.getElementById('li-' + customerId);
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+  }
+}
+
+// ── Tiles row ─────────────────────────────────────────────────────
+function renderTiles() {
+  const t = todayISO();
+  const el = document.getElementById('tmTiles');
+  const mk = (key,label,val,sub,extraCls='') =>
+    `<div class="tm-tile${sideFilter.status===key?' active':''} ${extraCls}" onclick="filterByStatus('${key}')">
+       <div class="tm-tile-label">${esc(label)}</div>
+       <div class="tm-tile-val">${val}</div>
+       <div class="tm-tile-sub">${sub||''}</div>
+     </div>`;
+  const overdue = allCust.filter(c=>c.next_followup&&c.next_followup<t).length;
+  el.innerHTML =
+    `<div class="tm-tile${!sideFilter.status?' active':''}" onclick="filterByStatus(null)" style="border-color:#6366f1;background:#eef2ff">
+       <div class="tm-tile-label">Total Contacts</div>
+       <div class="tm-tile-val">${allCust.length}</div>
+       <div class="tm-tile-sub"><span><b class="ov">${overdue}</b> overdue</span></div>
+     </div>` +
+    mk('Lead','🆕 New Leads', allCust.filter(c=>c.status==='Lead').length, '') +
+    mk('Contacted','📞 Contacted', allCust.filter(c=>c.status==='Contacted').length, '') +
+    mk('Contacted but No Response','🔇 No Response', allCust.filter(c=>c.status==='Contacted but No Response').length, '') +
+    mk('Onboarded','✅ Onboarded', allCust.filter(c=>c.status==='Onboarded').length, '');
+}
+function filterByStatus(val) {
+  sideFilter.status = val;
+  renderTiles(); renderFilterSidebar(); renderList();
+}
+function setScope(s){
+  scope=s; sideFilter={type:null,status:null,tag:null}; tabFilter='All';
+  renderTiles(); renderFilterSidebar(); renderList();
+  // On mobile, collapse the drawer after picking a scope so the list is immediately visible
+  const drawer=document.getElementById('tmFilters'), toggle=document.getElementById('tmFiltToggle');
+  if (drawer && drawer.classList.contains('open') && window.innerWidth<=860){ drawer.classList.remove('open'); toggle.classList.remove('open'); }
+}
+function toggleFiltersDrawer(){
+  const drawer=document.getElementById('tmFilters'), toggle=document.getElementById('tmFiltToggle');
+  if(!drawer)return;
+  drawer.classList.toggle('open'); toggle.classList.toggle('open');
+}
+
+// ── Filters bar — clicking a group's button expands its options as a   ──
+// ── horizontal strip directly above the search bar (not a dropdown)    ──
+let openFiltGroup = null; // 'type' | 'status' | 'tag' | null
+const FILT_DEFS = { type: ['Customer Type', () => allTypes], status: ['Status', () => allStatuses], tag: ['Tags', () => allTags] };
+
+function renderFilterSidebar() {
+  const el = document.getElementById('tmFilterGroups');
+  const groups = [['type',allTypes],['status',allStatuses],['tag',allTags]];
+  el.innerHTML = groups.map(([key,items])=>{
+    if (!items.length) return '';
+    const title = FILT_DEFS[key][0];
+    const activeItem = items.find(it => sideFilter[key]===it.name || (key==='tag' && sideFilter[key]===it.id));
+    const btnLabel = activeItem ? esc(activeItem.name) : title;
+    return `<div class="tm-filt-dd${activeItem?' active':''}${openFiltGroup===key?' open':''}" data-fkey="${key}">
+      <button type="button" class="tm-filt-dd-btn" onclick="toggleFiltGroup(event,'${key}')">
+        <span style="overflow:hidden;text-overflow:ellipsis;max-width:140px">${btnLabel}</span><span class="tm-filt-dd-arr">▾</span>
+      </button>
+    </div>`;
+  }).join('') + (sideFilter.type||sideFilter.status||sideFilter.tag ? `<span class="tm-filt-clear" onclick="clearSideFilters()">✕ Clear filters</span>` : '');
+  renderFiltOptionsRow();
+}
+
+function renderFiltOptionsRow() {
+  const row = document.getElementById('filtOptionsRow');
+  if (!openFiltGroup) { row.style.display='none'; row.innerHTML=''; return; }
+  const key = openFiltGroup;
+  const [title, getItems] = FILT_DEFS[key];
+  const base = scopedList();
+  const cntOf = it => base.filter(c=>{
+    if(key==='status') return c.status===it.name;
+    if(key==='type') return (c.customer_type||'')===it.name;
+    if(key==='tag') return (c.tags||[]).some(tg=>tg.id===it.id);
+  }).length;
+  const items = [...getItems()].sort((a,b)=>cntOf(a)-cntOf(b));
+  const chips = items.map(it=>{
+    const cnt = cntOf(it);
+    const on = sideFilter[key]===it.name || (key==='tag' && sideFilter[key]===it.id);
+    const val = key==='tag' ? it.id : it.name;
+    return `<div class="tm-filt-opt${on?' on':''}" onclick="toggleSideFilter('${key}',${typeof val==='number'?val:`'`+esc(val).replace(/'/g,"\\'")+`'`})">
+      <span class="tm-filt-dot" style="background:${it.color||'#94a3b8'}"></span>
+      <span>${esc(it.name)}</span>
+      <span class="tm-filt-count">${cnt}</span>
+    </div>`;
+  }).join('');
+  row.innerHTML = `<span class="tm-filt-title">${title}:</span>${chips}`;
+  row.style.display = 'flex';
+}
+
+function toggleFiltGroup(e, key){
+  e.stopPropagation();
+  openFiltGroup = (openFiltGroup === key) ? null : key;
+  renderFilterSidebar();
+}
+function toggleSideFilter(key, val){
+  sideFilter[key] = (sideFilter[key]===val) ? null : val;
+  renderFilterSidebar(); renderList();
+  const drawer=document.getElementById('tmFilters'), toggle=document.getElementById('tmFiltToggle');
+  if (drawer && drawer.classList.contains('open') && window.innerWidth<=860){ drawer.classList.remove('open'); toggle.classList.remove('open'); }
+}
+function clearSideFilters(){ sideFilter={type:null,status:null,tag:null}; openFiltGroup=null; renderFilterSidebar(); renderList(); }
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.tm-filters') && openFiltGroup){ openFiltGroup=null; renderFilterSidebar(); }
+});
+
+// Always return all contacts — no per-person scoping
+function scopedList(){ return allCust; }
+
+function renderList() {
+  const q = (document.getElementById('tmSearch').value||'').toLowerCase();
+  const t = todayISO();
+  const isUnassignedScope = scope==='unassigned';
+  let list = scopedList();
+  if      (tabFilter==='overdue') list=list.filter(c=>c.next_followup&&c.next_followup<t);
+  else if (tabFilter==='today')   list=list.filter(c=>c.next_followup===t);
+  else if (tabFilter==='nodate')  list=list.filter(c=>!c.next_followup&&c.status!=='Onboarded');
+  else if (tabFilter!=='All')     list=list.filter(c=>c.status===tabFilter);
+  if (sideFilter.type)   list=list.filter(c=>(c.customer_type||'')===sideFilter.type);
+  if (sideFilter.status) list=list.filter(c=>c.status===sideFilter.status);
+  if (sideFilter.tag)    list=list.filter(c=>(c.tags||[]).some(tg=>tg.id===sideFilter.tag));
+  if (q) list=list.filter(c=>[c.name,c.company,c.phone,c.phone2,c.email,c.city,c.state,c.country,c.gst_number,c.source,c.requirement,c.remark,c.customer_type].join(' ').toLowerCase().includes(q));
+  list.sort((a,b)=>{
+    const rank=x=>!x.next_followup?3:x.next_followup<t?0:x.next_followup===t?1:2;
+    return rank(a)-rank(b)||(a.next_followup||'9').localeCompare(b.next_followup||'9');
+  });
+  const el = document.getElementById('tmList');
+  if (!list.length){el.innerHTML=`<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">${isUnassignedScope?'No unassigned customers 🎉':'No customers match'}</div>`;return;}
+  el.innerHTML = list.map(c=>{
+    const ov=c.next_followup&&c.next_followup<t, td=c.next_followup===t;
+    const fuLabel=c.next_followup?(ov?`⚠ ${fmtD(c.next_followup)}`:(td?'📅 Today':fmtD(c.next_followup))):'No follow-up set';
+    const fuCls=!c.next_followup?'none':ov?'ov':td?'td':'ok';
+    const assignBtn=isUnassignedScope?`<button class="btn btn-primary btn-sm" style="margin-top:5px;font-size:11px;padding:3px 9px" onclick="event.stopPropagation();assignToMe(${c.id})">➕ Assign to me</button>`:'';
+    return `<div class="tm-item${selId===c.id?' active':''}" id="li-${c.id}" onclick="selectC(${c.id})">
+      <div class="tm-item-name">${esc(c.name)}<span class="s-badge ${S_MAP[c.status]||''}" style="margin-left:6px">${c.status||'—'}</span></div>
+      <div class="tm-item-sub">${[c.company,c.phone].filter(Boolean).map(esc).join(' · ')}</div>
+      <div class="tm-item-fu ${fuCls}">${fuLabel}</div>
+      ${assignBtn}
+    </div>`;
+  }).join('');
+}
+
+async function assignToMe(cid) {
+  await patchC(cid, { assigned_to: PERSON });
+  const c = allCust.find(x=>x.id===cid);
+  if (c) c.assigned_to = PERSON;
+  renderTiles(); renderFilterSidebar(); renderList();
+  toast('Customer assigned to you','success');
+}
+
+async function selectC(id) {
+  selId=id;
+  document.querySelectorAll('.tm-item').forEach(el=>el.classList.remove('active'));
+  const li=document.getElementById('li-'+id); if(li) li.classList.add('active');
+  const detail=document.getElementById('tmDetail');
+  detail.style.display='block';
+  detail.innerHTML='<div style="padding:40px;text-align:center;color:var(--muted)">Loading…</div>';
+  document.querySelector('.tm-wrap').classList.add('show-detail');
+  const r=await fetch(`/api/crm/customers/${id}`);
+  selCust=await r.json();
+  renderDetail();
+  loadCustomerPhones(id);
+}
+
+// ── Multi-phone numbers ────────────────────────────────────────
+async function loadCustomerPhones(cid) {
+  try {
+    const phones = await fetch(`/api/crm/customers/${cid}/phones`).then(r=>r.json());
+    const el = document.getElementById('phoneList-'+cid);
+    if (!el) return;
+    if (!phones.length) { el.innerHTML = '<span style="color:var(--muted)">No numbers added</span>'; return; }
+    el.innerHTML = phones.map(p => `
+      <div style="display:flex;align-items:center;gap:7px;padding:3px 0">
+        <button title="${p.is_primary?'Used for WhatsApp':'Use this number for WhatsApp'}" onclick="selectCustomerPhone(${cid},${p.id})"
+          style="border:none;background:none;cursor:pointer;font-size:15px;color:${p.is_primary?'#16a34a':'var(--muted)'}">${p.is_primary?'✅':'⬜'}</button>
+        <a href="tel:${esc(p.phone)}" style="font-size:12.5px">${esc(p.phone)}</a>
+        ${p.label?`<span style="font-size:10.5px;color:var(--muted)">(${esc(p.label)})</span>`:''}
+        <button title="Remove" onclick="removeCustomerPhone(${cid},${p.id})" style="border:none;background:none;cursor:pointer;color:var(--muted);font-size:12px;margin-left:auto">✕</button>
+      </div>
+    `).join('');
+  } catch(e) {}
+}
+
+async function addCustomerPhone(cid) {
+  const inp = document.getElementById('newPhoneInput-'+cid);
+  const phone = (inp.value||'').trim();
+  if (!phone) return;
+  const r = await fetch(`/api/crm/customers/${cid}/phones`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ phone }) });
+  if (!r.ok) { const d = await r.json(); toast(d.error||'Failed to add number','error'); return; }
+  inp.value = '';
+  await loadCustomerPhones(cid);
+  toast('Phone number added','success');
+}
+
+async function selectCustomerPhone(cid, phoneId) {
+  await fetch(`/api/crm/customers/${cid}/phones/${phoneId}/select`, { method:'PUT' });
+  await loadCustomerPhones(cid);
+  const r = await fetch(`/api/crm/customers/${cid}`); selCust = await r.json();
+  const c = allCust.find(x=>x.id===cid); if (c) c.phone = selCust.phone;
+  const waTitle = document.querySelector(`#accSec-wa-${cid} .acc-head-title`);
+  if (waTitle) waTitle.textContent = '💬 WhatsApp' + (selCust.phone ? (' — '+selCust.phone) : '');
+  toast('WhatsApp number updated','success');
+}
+
+async function removeCustomerPhone(cid, phoneId) {
+  if (!confirm('Remove this phone number?')) return;
+  await fetch(`/api/crm/customers/${cid}/phones/${phoneId}`, { method:'DELETE' });
+  await loadCustomerPhones(cid);
+}
+
+function showBrief() {
+  // Closes the customer detail and returns to the list (mobile: slides list back into view)
+  selId=null; selCust=null;
+  document.querySelectorAll('.tm-item').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tmDetail').style.display='none';
+  document.querySelector('.tm-wrap').classList.remove('show-detail');
+}
+
+function openBrief() {
+  document.getElementById('briefOverlay').classList.add('open');
+}
+function closeBrief() {
+  document.getElementById('briefOverlay').classList.remove('open');
+}
+
+function renderDetail() {
+  const c=selCust, t=todayISO();
+  const ov=c.next_followup&&c.next_followup<t, td=c.next_followup===t;
+  const discs=(c.discussions||[]).slice(0,20);
+  const tlHtml=discs.length?discs.map(d=>{
+    const sys=d.type==='activity';
+    return `<div class="tl-item">
+      <div class="tl-av${sys?' sys':''}">${sys?'⚡':(d.author||'?')[0].toUpperCase()}</div>
+      <div style="flex:1">
+        <div class="tl-meta">${sys?'':esc(d.author||'Team')+' · '}${ago(d.created_at)}</div>
+        <div class="tl-note${sys?' sys':''}">${esc(d.note)}</div>
+      </div>
+    </div>`;
+  }).join(''):'<div style="color:var(--muted);font-size:12px">No activity yet</div>';
+
+  document.getElementById('tmDetail').innerHTML=`
+    <button class="detail-back" onclick="showBrief()">← Back to list</button>
+    <div class="d-head">
+      <div style="min-width:0;flex:1">
+        <div class="d-name">${efHtml(c,'name','Customer name')}</div>
+        <div class="d-co">${[c.company,c.city,c.state].filter(Boolean).map(esc).join(' · ')||'—'}</div>
+      </div>
+    </div>
+    <div class="acc-sec sec-details" id="accSec-details-${c.id}">
+      <div class="acc-head" onclick="toggleAcc('details-${c.id}')">
+        <div class="acc-head-title">📋 Details</div>
+        <div class="acc-arrow" id="accArrow-details-${c.id}">▶</div>
+      </div>
+      <div class="acc-body" id="accBody-details-${c.id}">
+        <div class="d-grid">
+          <div class="d-field"><div class="d-field-label">Status</div><div class="d-field-val">
+            <select class="inline-sel" id="statusSel-${c.id}" onchange="changeCustStatus(${c.id},this.value)" style="font-size:12px;padding:4px 8px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-weight:600;background:var(--card,#fff);color:var(--text)">
+              ${allStatuses.map(s=>`<option value="${esc(s.name)}"${c.status===s.name?' selected':''}>${esc(s.name)}</option>`).join('')}
+            </select>
+          </div></div>
+          <div class="d-field" style="grid-column:1/-1">
+            <div class="d-field-label">Phone numbers <span style="font-weight:400;color:var(--muted)">(✓ = used for WhatsApp)</span></div>
+            <div class="d-field-val" id="phoneList-${c.id}">Loading…</div>
+            <div style="display:flex;gap:6px;margin-top:6px">
+              <input type="text" id="newPhoneInput-${c.id}" placeholder="Add another number…" style="flex:1;font-size:12px;padding:5px 9px;border:1px solid var(--border);border-radius:7px">
+              <button class="btn btn-outline btn-sm" style="font-size:11px" onclick="addCustomerPhone(${c.id})">+ Add</button>
+            </div>
+          </div>
+          <div class="d-field"><div class="d-field-label">Company <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'company','Add company name')}</div></div>
+          <div class="d-field"><div class="d-field-label">Email <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'email','Add email')}</div></div>
+          <div class="d-field"><div class="d-field-label">City <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'city','Add city')}</div></div>
+          <div class="d-field"><div class="d-field-label">State <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'state','Add state')}</div></div>
+          <div class="d-field"><div class="d-field-label">GST Number <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'gst_number','Add GST number')}</div></div>
+          <div class="d-field"><div class="d-field-label">Source <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'source','Add source')}</div></div>
+          <div class="d-field"><div class="d-field-label">Customer Type <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'customer_type','Add type')}</div></div>
+          <div class="d-field"><div class="d-field-label">Phone 2 <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'phone2','Add second number')}</div></div>
+          <div class="d-field"><div class="d-field-label">Country <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'country','Add country')}</div></div>
+          <div class="d-field" style="grid-column:1/-1"><div class="d-field-label">Remark <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'remark','Add remark')}</div></div>
+        </div>
+        <div class="d-sec-title">Requirement / Details <span class="ef-edit-hint">✏️ tap to edit</span></div>
+        <div class="d-req${c.requirement?'':' empty'}">${efHtml(c,'requirement','No details added yet — tap to add', {area:true})}</div>
+      </div>
+    </div>
+    <div class="acc-sec sec-fu" id="accSec-fu-${c.id}">
+      <div class="acc-head" onclick="toggleAcc('fu-${c.id}')">
+        <div class="acc-head-title">📅 Follow-up</div>
+        <div class="acc-arrow" id="accArrow-fu-${c.id}">▶</div>
+      </div>
+      <div class="acc-body" id="accBody-fu-${c.id}">
+        <div class="d-field">
+          <div class="d-field-label">Next follow-up</div>
+          <div class="d-field-val" style="color:${ov?'var(--danger)':td?'#f59e0b':'inherit'};font-weight:${ov||td?600:400}">
+            ${c.next_followup?(ov?'⚠ Overdue — ':td?'📅 Today — ':'📅 ')+fmtD(c.next_followup):'<span style="color:var(--muted)">Not set</span>'}
+          </div>
+        </div>
+        <button class="btn btn-outline btn-sm" style="margin-top:10px" onclick="openFU(${c.id})">${c.next_followup?'Change date':'Set follow-up date'}</button>
+      </div>
+    </div>
+    <div class="acc-sec sec-pi" id="accSec-pi-${c.id}">
+      <div class="acc-head" onclick="toggleAcc('pi-${c.id}')">
+        <div class="acc-head-title">📦 Product Interests</div>
+        <div class="acc-arrow" id="accArrow-pi-${c.id}">▶</div>
+      </div>
+      <div class="acc-body" id="accBody-pi-${c.id}">
+        <div class="int-list" id="interestList-${c.id}">${renderIntList(c.interests||[], c.id)}</div>
+        <div class="int-actions">
+          <button class="prod-picker-btn" onclick="openPicker(${c.id})">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Add Product
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="acc-sec sec-wa" id="accSec-wa-${c.id}">
+      <div class="acc-head" onclick="toggleAcc('wa-${c.id}')">
+        <div class="acc-head-title">💬 WhatsApp ${c.phone?('— '+esc(c.phone)):''}</div>
+        <div class="acc-arrow" id="accArrow-wa-${c.id}">▶</div>
+      </div>
+      <div class="acc-body" id="accBody-wa-${c.id}">
+        <div class="wa-template-row" id="waTplRow-${c.id}">
+          ⚡ First message or &gt;24h since reply? Use a template:
+          <div style="display:flex;gap:6px;align-items:center;margin-top:5px;width:100%">
+            <select id="waTplSel-${c.id}" style="flex:1;min-width:0;font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:8px;font-family:inherit;background:var(--card);color:var(--text)">
+              <option value="">— pick a template —</option>
+            </select>
+            <button class="btn btn-outline btn-sm" style="flex-shrink:0" onclick="sendSelectedTemplate(${c.id},'${esc(c.phone||'')}','${esc(c.name).replace(/'/g,"\\'")}')">Send ➤</button>
+          </div>
+        </div>
+        <div class="wa-thread" id="waThread-${c.id}"><div class="wa-empty">Loading conversation…</div></div>
+        <div class="wa-compose">
+          <input type="file" id="waFile-${c.id}" style="display:none" onchange="sendWaFile(${c.id},'${esc(c.phone||'')}')">
+          <button title="Attach image, document, video…" onclick="document.getElementById('waFile-${c.id}').click()">📎</button>
+          <input type="text" id="waInput-${c.id}" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendWaText(${c.id},'${esc(c.phone||'')}')">
+          <button onclick="sendWaText(${c.id},'${esc(c.phone||'')}')">➤</button>
+        </div>
+      </div>
+    </div>
+    <div class="acc-sec sec-tl" id="accSec-tl-${c.id}">
+      <div class="acc-head" onclick="toggleAcc('tl-${c.id}')">
+        <div class="acc-head-title">🕘 Timeline — Activity &amp; Notes</div>
+        <div class="acc-arrow" id="accArrow-tl-${c.id}">▶</div>
+      </div>
+      <div class="acc-body" id="accBody-tl-${c.id}">
+        <div class="tl-compose">
+          <select id="d-nt"><option value="call">📞</option><option value="note">📝</option><option value="meeting">🤝</option><option value="message">💬</option></select>
+          <textarea id="d-ntxt" placeholder="Add a note… or tap 🎤 to record (Hindi/English/any language)"></textarea>
+          <div style="display:flex;gap:6px;align-self:flex-end;align-items:center">
+            <select id="tlMicLang-${c.id}" title="Speech language" style="font-size:11px;padding:4px 6px;width:auto">
+              <option value="en-IN">EN/HI (auto)</option>
+              <option value="hi-IN">हिंदी</option>
+              <option value="en-US">English</option>
+            </select>
+            <button class="btn btn-outline btn-sm" id="tlMicBtn-${c.id}" onclick="toggleTlMic(${c.id})" title="Record voice note — speak in Hindi, English or any language">
+              <span id="tlMicIcon-${c.id}">🎤</span> <span id="tlMicText-${c.id}">Speak</span>
+            </button>
+            <button class="btn btn-primary btn-sm" onclick="saveInlineNote(${c.id})">Save</button>
+          </div>
+        </div>
+        <div id="d-tl">${tlHtml}</div>
+      </div>
+    </div>`;
+  initWaTplRow(c.id);
+}
+
+// ── Product Interests + AI Summary — ported from customers.html so every  ──
+// ── team member's profile view matches the admin's view exactly           ──
+async function logActivity(msg) {
+  if (!selCust || !msg) return;
+  const last = selCust?.discussions?.[0];
+  if (last && last.type === 'activity' && last.note === msg) return;
+  const r = await fetch(`/api/crm/customers/${selCust.id}/discussions`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ note: msg, author: 'System', type: 'activity' })
+  });
+  const d = await r.json();
+  if (selCust) {
+    if (!selCust.discussions) selCust.discussions = [];
+    selCust.discussions.unshift({ id:d.id, note:msg, author:'System', type:'activity', created_at:new Date().toISOString() });
+  }
+}
+function renderIntList(interests, cid) {
+  if (!interests.length) return '<div style="color:var(--muted);font-size:13px;padding:4px 0">No products added yet</div>';
+  return interests.map(t => {
+    const parts = t.interest.match(/^\[([^\]]+)\]\s(.+)$/);
+    const sku = parts ? parts[1] : '';
+    const name = parts ? parts[2] : t.interest;
+    return `<div class="int-row" id="ir-${t.id}">
+      ${sku?`<span class="int-sku">SKU ${esc(sku)}</span>`:''}
+      <span class="int-name" title="${esc(name)}">${esc(name)}</span>
+      <input class="int-qty" type="text" placeholder="Qty / Units" value="${esc(t.quantity||'')}"
+        onchange="updateIntQty(${t.id},this.value)" title="Expected quantity e.g. 100 pcs, 5 kg" />
+      <button class="int-del" onclick="removeInt(${cid},${t.id})" title="Remove">×</button>
+    </div>`;
+  }).join('');
+}
+async function updateIntQty(id, qty) {
+  await fetch(`/api/crm/interests/${id}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({quantity:qty}) });
+  if (selCust?.interests) { const t = selCust.interests.find(x => x.id === id); if (t) t.quantity = qty; }
+}
+async function removeInt(cid, iid) {
+  const row = selCust?.interests?.find(t => t.id === iid);
+  await fetch(`/api/crm/interests/${iid}`, {method:'DELETE'});
+  document.getElementById(`ir-${iid}`)?.remove();
+  if (selCust) selCust.interests = (selCust.interests||[]).filter(t => t.id !== iid);
+  if (!selCust?.interests?.length) {
+    const el = document.getElementById('interestList-'+cid);
+    if (el) el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:4px 0">No products added yet</div>';
+  }
+  if (row) {
+    const parts = row.interest.match(/^\[([^\]]+)\]\s(.+)$/);
+    const name = parts ? parts[2] : row.interest;
+    await logActivity(`Product removed: ${name}`);
+  }
+  toast('Removed', 'success');
+}
+function openPicker(cid) {
+  pickerOpen = true; pickerOpenCid = cid;
+  renderPicker(cid);
+  document.getElementById('addProdModal').classList.add('open');
+}
+function closePicker() {
+  document.getElementById('addProdModal').classList.remove('open');
+  pickerOpen = false; pickerOpenCid = null;
+}
+function renderPicker(cid) {
+  const list = allProducts;
+  const el = document.getElementById('addProdList');
+  if (!el) return;
+  if (!list.length) { el.innerHTML = '<div class="ppd-empty">No products found</div>'; return; }
+  const cats = [...new Set(list.map(p => p.category))];
+  el.innerHTML = cats.map(cat => {
+    const items = list.filter(p => p.category === cat);
+    return `<div class="ppd-cat-head">${esc(cat)}</div>` +
+      items.map(p => `<div class="ppd-item" onclick="openProdDetail(${p.id},${cid})">
+        ${p.sku?`<span class="ppd-sku">${esc(p.sku)}</span>`:''}
+        <span class="ppd-name">${esc(p.name)}</span>
+        ${p.price?`<span style="font-size:11px;color:#15803d;font-weight:700;white-space:nowrap">₹${esc(String(p.price))}${p.unit?` /${esc(p.unit)}`:''}</span>`:''}
+      </div>`).join('');
+  }).join('');
+}
+
+// ── Product reference panel — full catalog (name, SKU, category, price) ──
+function openProdRef() {
+  document.getElementById('prodRefModal').classList.add('open');
+  document.getElementById('prodRefSearch').value = '';
+  renderProdRef();
+  setTimeout(() => document.getElementById('prodRefSearch')?.focus(), 50);
+}
+function closeProdRef() {
+  document.getElementById('prodRefModal').classList.remove('open');
+}
+function renderProdRef() {
+  const q = (document.getElementById('prodRefSearch')?.value || '').toLowerCase();
+  let list = allProducts;
+  if (q) list = list.filter(p => ((p.sku||'')+(p.name||'')+(p.category||'')).toLowerCase().includes(q));
+  const el = document.getElementById('prodRefList');
+  if (!el) return;
+  if (!list.length) { el.innerHTML = '<div class="ppd-empty">No products found</div>'; return; }
+  const cats = [...new Set(list.map(p => p.category))];
+  el.innerHTML = cats.map(cat => {
+    const items = list.filter(p => p.category === cat);
+    return `<div class="ppd-cat-head" style="border-radius:6px">${esc(cat)} <span style="font-weight:400;text-transform:none">(${items.length})</span></div>` +
+      items.map(p => `<div class="int-row" style="background:#f8fafc;border-color:var(--border);cursor:pointer" onclick="openProdDetail(${p.id},null)">
+        ${p.sku?`<span class="int-sku" style="background:#eef2ff;color:var(--primary)">${esc(p.sku)}</span>`:''}
+        <span class="int-name" title="${esc(p.name)}">${esc(p.name)}</span>
+        <span style="font-size:12px;color:#15803d;font-weight:700;white-space:nowrap">${p.price?'₹'+esc(String(p.price)):''}${p.unit?` /${esc(p.unit)}`:''}</span>
+      </div>`).join('');
+  }).join('');
+}
+
+// ── Product detail view (image + details) — shared by reference panel & picker.
+// When opened from the picker (cid given), also lets you set quantity & confirm-add to interests.
+let _pdCtxCid = null, _pdCtxPid = null;
+function openProdDetail(pid, cid) {
+  const p = allProducts.find(x => x.id === pid);
+  if (!p) return;
+  _pdCtxCid = cid; _pdCtxPid = pid;
+  let imgs = []; try { imgs = JSON.parse(p.images || '[]'); } catch(e){}
+  const imgHtml = imgs.length ? `<img src="/uploads/${esc(imgs[0])}" style="width:100%;max-height:220px;object-fit:cover;border-radius:10px;margin-bottom:10px;background:#f1f5f9">` :
+    `<div style="width:100%;height:120px;background:#f1f5f9;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;margin-bottom:10px">No image</div>`;
+  let specsHtml = '';
+  try {
+    const sp = JSON.parse(p.specs || '{}');
+    specsHtml = Object.entries(sp).filter(([k,v]) => v).map(([k,v]) =>
+      `<div style="display:flex;justify-content:space-between;gap:10px;font-size:12px;padding:4px 0;border-bottom:1px solid #f1f5f9">
+        <span style="color:var(--muted)">${esc(k)}</span><span style="font-weight:500;text-align:right">${esc(String(v))}</span>
+      </div>`).join('');
+  } catch(e){}
+  document.getElementById('prodDetailBody').innerHTML = `
+    ${imgHtml}
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+      ${p.sku?`<span class="int-sku" style="background:#eef2ff;color:var(--primary)">SKU ${esc(p.sku)}</span>`:''}
+      <span style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">${esc(p.category||'')}</span>
+    </div>
+    <div style="font-size:16px;font-weight:700;margin-bottom:4px">${esc(p.name)}</div>
+    <div style="font-size:15px;color:#15803d;font-weight:700;margin-bottom:8px">${p.price?'₹'+esc(String(p.price)):'Price on request'}${p.unit?` / ${esc(p.unit)}`:''}</div>
+    ${p.details?`<div style="font-size:13px;line-height:1.65;color:var(--text);margin-bottom:8px;white-space:pre-wrap">${esc(p.details)}</div>`:''}
+    ${p.applications?`<div style="font-size:12px;color:var(--muted);margin-bottom:8px"><strong style="color:var(--text)">Applications:</strong> ${esc(p.applications)}</div>`:''}
+    ${specsHtml ? `<div style="margin-top:4px">${specsHtml}</div>` : ''}
+  `;
+  const footer = document.getElementById('prodDetailFooter');
+  if (cid) {
+    footer.style.display = 'flex';
+    footer.innerHTML = `
+      <input type="text" id="pdQty" placeholder="Quantity / units e.g. 100 pcs" style="flex:1;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none">
+      <button class="btn btn-primary btn-sm" onclick="confirmAddInterest()">Add to interests</button>
+    `;
+  } else {
+    footer.style.display = 'none';
+    footer.innerHTML = '';
+  }
+  document.getElementById('prodDetailModal').classList.add('open');
+}
+function closeProdDetail() {
+  document.getElementById('prodDetailModal').classList.remove('open');
+  _pdCtxCid = null; _pdCtxPid = null;
+}
+async function confirmAddInterest() {
+  const cid = _pdCtxCid, pid = _pdCtxPid;
+  const p = allProducts.find(x => x.id === pid);
+  if (!cid || !p) return;
+  const qty = (document.getElementById('pdQty')?.value || '').trim();
+  closeProdDetail();
+  closePicker();
+  const r = await fetch(`/api/crm/customers/${cid}/interests`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ interest: p.name, sku: p.sku, quantity: qty })
+  });
+  const d = await r.json();
+  if (!selCust.interests) selCust.interests = [];
+  selCust.interests.push({ id: d.id, interest: p.sku ? `[${p.sku}] ${p.name}` : p.name, quantity: qty });
+  const el = document.getElementById('interestList-'+cid);
+  if (el) el.innerHTML = renderIntList(selCust.interests, cid);
+  await logActivity(`Product added: ${p.sku ? '['+p.sku+'] ' : ''}${p.name}${qty ? ' — qty: '+qty : ''} (₹${p.price||'—'}${p.unit?'/'+p.unit:''})`);
+  toast('Product added', 'success');
+}
+
+// ── Accordion toggle (Details / WhatsApp / Timeline) ─────────────
+function toggleAcc(key) {
+  const body=document.getElementById('accBody-'+key);
+  const arrow=document.getElementById('accArrow-'+key);
+  if(!body)return;
+  const open=body.classList.toggle('open');
+  if(arrow)arrow.classList.toggle('open',open);
+  if(key.startsWith('wa-')){
+    const cid=key.slice(3);
+    if(open){
+      if(_waOpenCid!==cid){ _waOpenCid=cid; loadWaThread(cid); }
+      _waStartPoll(cid);
+    } else if(_waOpenCid===cid){
+      _waOpenCid=null; _waStopPoll();
+    }
+  }
+}
+
+// Poll the open WhatsApp thread every few seconds so incoming replies show up without manual action
+let _waPollTimer=null;
+function _waStartPoll(cid){
+  _waStopPoll();
+  _waPollTimer=setInterval(()=>{ if(_waOpenCid===cid) loadWaThread(cid,true); }, 6000);
+}
+function _waStopPoll(){
+  if(_waPollTimer){ clearInterval(_waPollTimer); _waPollTimer=null; }
+}
+
+// ── Voice-to-text mic for Timeline notes — speak in Hindi/English/any language ──
+let _tlRec=false, _tlRecog=null, _tlAudio='', _tlMicCid=null;
+function toggleTlMic(cid) {
+  if (_tlRec) { stopTlMic(); return; }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { toast('Use Chrome for voice notes', 'error'); return; }
+  _tlMicCid = cid;
+  _tlAudio = (document.getElementById('d-ntxt')?.value || '').trim();
+  if (_tlAudio) _tlAudio += ' ';
+  const lang = document.getElementById('tlMicLang-'+cid)?.value || 'en-IN';
+  _tlRecog = new SR(); _tlRecog.continuous = true; _tlRecog.interimResults = true; _tlRecog.lang = lang;
+  _tlRecog.onresult = e => {
+    let fin='', interim='';
+    for (let i=e.resultIndex; i<e.results.length; i++) {
+      if (e.results[i].isFinal) fin += e.results[i][0].transcript + ' ';
+      else interim += e.results[i][0].transcript;
+    }
+    if (fin) _tlAudio += fin;
+    const ta = document.getElementById('d-ntxt');
+    if (ta) ta.value = _tlAudio + interim;
+  };
+  _tlRecog.onerror = () => stopTlMic();
+  _tlRecog.onend = () => { if (_tlRec) _tlRecog.start(); };
+  _tlRecog.start(); _tlRec = true;
+  const btn = document.getElementById('tlMicBtn-'+cid);
+  if (btn) btn.classList.add('btn-danger');
+  const icon = document.getElementById('tlMicIcon-'+cid); if (icon) icon.textContent = '🔴';
+  const txt = document.getElementById('tlMicText-'+cid); if (txt) txt.textContent = 'Stop';
+}
+async function stopTlMic() {
+  if (_tlRecog) { try { _tlRecog.stop(); } catch(e){} _tlRecog = null; }
+  _tlRec = false;
+  const cid = _tlMicCid;
+  const raw = _tlAudio.trim();
+  _tlMicCid = null;
+  if (cid != null) {
+    const btn = document.getElementById('tlMicBtn-'+cid);
+    if (btn) btn.classList.remove('btn-danger');
+    const icon = document.getElementById('tlMicIcon-'+cid); if (icon) icon.textContent = '🎤';
+    const txt = document.getElementById('tlMicText-'+cid); if (txt) txt.textContent = 'Speak';
+  }
+  const ta = document.getElementById('d-ntxt');
+  if (!ta || !raw) return;
+  // AI rephrase: send raw transcript → get clean CRM note
+  ta.value = '⏳ Rephrasing…';
+  ta.disabled = true;
+  try {
+    const r = await fetch('/api/ai/extract-note', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ transcript: raw, customerName: selCust?.name || '' })
+    });
+    const d = await r.json();
+    ta.value = d.note || raw;
+  } catch(e) {
+    ta.value = raw; // fallback to raw if AI fails
+  }
+  ta.disabled = false;
+  ta.focus();
+}
+async function saveInlineNote(cid) {
+  const text=document.getElementById('d-ntxt').value.trim();
+  if(!text)return toast('Write something first','error');
+  const type=document.getElementById('d-nt').value;
+  const r=await fetch(`/api/crm/customers/${cid}/discussions`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({note:text,author:PERSON,type})});
+  const d=await r.json();
+  if(_tlRec) stopTlMic();
+  _tlAudio='';
+  document.getElementById('d-ntxt').value='';
+  if(!selCust.discussions)selCust.discussions=[];
+  selCust.discussions.unshift({id:d.id,note:text,author:PERSON,type,created_at:new Date().toISOString()});
+  const tl=document.getElementById('d-tl');
+  if(tl)tl.insertAdjacentHTML('afterbegin',`<div class="tl-item"><div class="tl-av">${PERSON[0]}</div><div style="flex:1"><div class="tl-meta">${esc(PERSON)} · just now</div><div class="tl-note">${esc(text)}</div></div></div>`);
+  toast('Note saved','success');
+}
+
+// ── WhatsApp panel ────────────────────────────────────────────────
+let _waOpenCid=null;
+async function loadWaThread(cid,silent) {
+  const thread=document.getElementById('waThread-'+cid);
+  if(!thread)return;
+  if(!silent) thread.innerHTML='<div class="wa-empty">Loading conversation…</div>';
+  try {
+    const r=await fetch(`/api/whatsapp/messages/${cid}`);
+    const msgs=await r.json();
+    if(!msgs.length){ thread.innerHTML='<div class="wa-empty">No WhatsApp conversation yet — send the first message below 👇</div>'; return; }
+    const wasNearBottom = thread.scrollHeight - thread.scrollTop - thread.clientHeight < 80;
+    thread.innerHTML=msgs.map(m=>{
+      const t=new Date(m.created_at.replace(' ','T')+'Z').toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+      return `<div class="wa-bubble ${m.direction==='out'?'out':'in'}">${esc(m.body)}<span class="wa-time">${t}${m.direction==='out'?(' · '+(m.status||'sent')):''}</span></div>`;
+    }).join('');
+    if(!silent || wasNearBottom) thread.scrollTop=thread.scrollHeight;
+  } catch(e){ if(!silent) thread.innerHTML='<div class="wa-empty">Could not load messages</div>'; }
+}
+function _waPhone(cid,phone) {
+  // Production number — always message the customer's actual phone (no test override)
+  return phone;
+}
+async function sendWaText(cid,phone) {
+  phone=_waPhone(cid,phone);
+  const inp=document.getElementById('waInput-'+cid);
+  const text=inp.value.trim();
+  if(!text)return;
+  if(!phone){ toast('No phone number on file','error'); return; }
+  inp.value=''; inp.disabled=true;
+  try {
+    const r=await fetch('/api/whatsapp/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({customerId:cid,phone,text,author:PERSON})});
+    const j=await r.json();
+    if(!j.success) throw new Error(j.error||'Send failed');
+    toast('Message sent','success');
+    loadWaThread(cid);
+  } catch(e){ toast(e.message.includes('window')||e.message.includes('24')?'Outside 24h window — use a template instead':e.message,'error'); inp.value=text; }
+  inp.disabled=false; inp.focus();
+}
+async function sendWaFile(cid,phone) {
+  phone=_waPhone(cid,phone);
+  const inp=document.getElementById('waFile-'+cid);
+  const file=inp.files && inp.files[0];
+  if(!file)return;
+  if(!phone){ toast('No phone number on file','error'); inp.value=''; return; }
+  if(file.size > 16*1024*1024){ toast('File too large — WhatsApp limit is 16MB','error'); inp.value=''; return; }
+  const caption=(prompt('Add a caption (optional):')||'').trim();
+  toast('Uploading & sending…','success');
+  try {
+    const fd=new FormData();
+    fd.append('file',file); fd.append('customerId',cid); fd.append('phone',phone); fd.append('caption',caption); fd.append('author',PERSON);
+    const r=await fetch('/api/whatsapp/send-media',{method:'POST',body:fd});
+    const j=await r.json();
+    if(!j.success) throw new Error(j.error||'Send failed');
+    toast('Attachment sent','success');
+    loadWaThread(cid);
+  } catch(e){ toast(e.message.includes('window')||e.message.includes('24')?'Outside 24h window — use a template instead':e.message,'error'); }
+  inp.value='';
+}
+function _fillWaTplSelect(sel) {
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">— pick a template —</option>' +
+    allWaTemplates.map(t=>`<option value="${esc(t.name)}" data-lang="${esc(t.language||'en_US')}">${esc(t.name.replace(/_/g,' '))}</option>`).join('');
+  if (prev) sel.value = prev;
+}
+// Called after renderDetail so the newly-created select gets populated
+function initWaTplRow(cid) {
+  const sel = document.getElementById('waTplSel-'+cid);
+  if (sel && allWaTemplates.length) _fillWaTplSelect(sel);
+}
+async function sendSelectedTemplate(cid, phone, name) {
+  phone = _waPhone(cid, phone);
+  if (!phone) { toast('No phone number on file', 'error'); return; }
+  const sel = document.getElementById('waTplSel-'+cid);
+  if (!sel || !sel.value) { toast('Pick a template first', 'error'); return; }
+  const tplName = sel.value;
+  const lang = sel.selectedOptions[0]?.dataset.lang || 'en_US';
+  const tpl = allWaTemplates.find(t => t.name === tplName);
+  const body = tpl?.body || '';
+  // Extract unique variable slots {{1}}, {{2}} … sorted
+  const slots = [...new Set((body.match(/\{\{\d+\}\}/g)||[]).map(x=>parseInt(x.replace(/\D/g,''))))].sort((a,b)=>a-b);
+  const params = [];
+  for (const idx of slots) {
+    if (idx === 1) { params[idx-1] = name; }
+    else {
+      const val = prompt(`Value for {{${idx}}} in "${tplName.replace(/_/g,' ')}":\n\n${body}`);
+      if (val === null) return;
+      params[idx-1] = val.trim() || `{{${idx}}}`;
+    }
+  }
+  const preview = body.replace(/\{\{(\d+)\}\}/g, (_,i)=>params[parseInt(i)-1]||`{{${i}}}`);
+  if (!confirm(`Send to ${name} (${phone})?\n\n${preview}`)) return;
+  try {
+    const r = await fetch('/api/whatsapp/send-template', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ customerId:cid, phone, template:tplName, language:lang, params, author:PERSON })
+    });
+    const j = await r.json();
+    if (!j.success) throw new Error(j.error||'Send failed');
+    toast('Template sent ✓','success');
+    loadWaThread(cid);
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function markCalled(cid) {
+  const dt=new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+  await fetch(`/api/crm/customers/${cid}/discussions`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({note:`Called on ${dt}.`,author:PERSON,type:'call'})});
+  await patchC(cid,{status:'Contacted'});
+  updateMine(cid,{status:'Contacted'}); renderStats(); renderList();
+  if(selCust&&selCust.id===cid){selCust.status='Contacted'; renderDetail();}
+  toast('Marked as Called','success'); openFU(cid);
+}
+async function markNoAnswer(cid) {
+  const dt=new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+  await fetch(`/api/crm/customers/${cid}/discussions`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({note:`Called on ${dt} — no answer.`,author:PERSON,type:'call'})});
+  await patchC(cid,{status:'Contacted but No Response'});
+  updateMine(cid,{status:'Contacted but No Response'}); renderStats(); renderList();
+  if(selCust&&selCust.id===cid){selCust.status='Contacted but No Response'; renderDetail();}
+  toast('No answer recorded','success'); openFU(cid);
+}
+function updateMine(cid,fields){const i=mine.findIndex(c=>c.id===cid);if(i>-1)Object.assign(mine[i],fields);}
+// ── Inline editable fields (any team member can edit any customer) ──
+function efHtml(c, field, placeholder, opts) {
+  opts = opts || {};
+  const val = c[field] || '';
+  const prefix = opts.prefix || '';
+  const isArea = !!opts.area;
+  const display = val ? (prefix + esc(val)) : esc(placeholder);
+  const cls = 'ef' + (isArea ? ' ef-area' : '') + (val ? '' : ' ph');
+  const inputTag = isArea
+    ? `<textarea class="ef-inp" data-ph="${esc(placeholder)}">${esc(val)}</textarea>`
+    : `<input class="ef-inp" data-ph="${esc(placeholder)}" value="${esc(val)}">`;
+  return `<span class="${cls}" data-cid="${c.id}" data-field="${field}" data-prefix="${esc(prefix)}" onclick="startEditTm(this)">
+    <span class="ef-val${val?'':' ef-ph'}">${display}</span>
+    ${inputTag}
+  </span>`;
+}
+function startEditTm(el) {
+  if (el.classList.contains('editing')) return;
+  document.querySelectorAll('.ef.editing').forEach(e => { if (e !== el) commitEditTm(e); });
+  el.classList.add('editing');
+  const inp = el.querySelector('.ef-inp');
+  inp.focus();
+  if (inp.select) inp.select();
+  inp.onblur = () => setTimeout(() => commitEditTm(el), 120);
+  inp.onkeydown = ev => {
+    if (ev.key === 'Enter' && el.querySelector('textarea') == null) { ev.preventDefault(); inp.blur(); }
+    if (ev.key === 'Escape') { inp.value = el.querySelector('.ef-val').dataset.raw || ''; el.classList.remove('editing'); }
+  };
+}
+async function commitEditTm(el) {
+  if (!el.classList.contains('editing')) return;
+  el.classList.remove('editing');
+  const cid = +el.dataset.cid, field = el.dataset.field, prefix = el.dataset.prefix || '';
+  const inp = el.querySelector('.ef-inp');
+  const val = inp.value.trim();
+  const disp = el.querySelector('.ef-val');
+  const oldVal = String((selCust && selCust[field]) || '');
+  if (val === oldVal) return;
+  disp.textContent = val ? (prefix + val) : inp.dataset.ph;
+  disp.className = 'ef-val' + (val ? '' : ' ef-ph');
+  await patchC(cid, { [field]: val });
+  if (selCust) selCust[field] = val;
+  const c = allCust.find(x=>x.id===cid); if (c) c[field] = val;
+  toast('Updated', 'success');
+  if (field === 'company' || field === 'city' || field === 'state') {
+    // refresh header summary line without a full re-render (keeps scroll position)
+    const sub = document.querySelector('.d-co');
+    if (sub && selCust) sub.textContent = [selCust.company, selCust.city, selCust.state].filter(Boolean).join(' · ') || '—';
+  }
+  if (field === 'name') {
+    const li = document.querySelector(`#li-${cid} .tm-item-name`);
+    if (li) li.firstChild.textContent = val || '—';
+  }
+}
+
+async function changeCustStatus(cid, val) {
+  await patchC(cid, { status: val });
+  if (selCust && selCust.id === cid) selCust.status = val;
+  const c = allCust.find(x => x.id === cid); if (c) c.status = val;
+  const li = document.querySelector(`#li-${cid} .s-badge`);
+  if (li) { li.textContent = val; li.className = 's-badge ' + (S_MAP[val] || ''); }
+  toast('Status updated', 'success');
+  await logActivity(`Status changed to ${val}`);
+}
+async function patchC(cid,fields){
+  const r=await fetch(`/api/crm/customers/${cid}`);const c=await r.json();
+  const body={...c,...fields};delete body.discussions;delete body.interests;
+  await fetch(`/api/crm/customers/${cid}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  updateMine(cid,fields);
+}
+
+function openQN(cid,name){qnActiveCid=cid;document.getElementById('qnTitle').textContent='Note — '+name;document.getElementById('qnText').value='';document.getElementById('qnModal').classList.add('open');setTimeout(()=>document.getElementById('qnText').focus(),100);}
+function closeQN(){document.getElementById('qnModal').classList.remove('open');}
+async function saveQN(){
+  const note=document.getElementById('qnText').value.trim();if(!note)return toast('Write a note','error');
+  const type=document.getElementById('qnType').value;
+  await fetch(`/api/crm/customers/${qnActiveCid}/discussions`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({note,author:PERSON,type})});
+  closeQN();toast('Note saved','success');
+  if(selCust&&selCust.id===qnActiveCid){if(!selCust.discussions)selCust.discussions=[];selCust.discussions.unshift({note,author:PERSON,type,created_at:new Date().toISOString()});renderDetail();}
+}
+
+function openFU(cid){fuActiveCid=cid;document.getElementById('fuDate').value='';document.getElementById('fuModal').classList.add('open');}
+function closeFU(){document.getElementById('fuModal').classList.remove('open');fuActiveCid=null;}
+function setFUDays(n){const d=new Date();d.setDate(d.getDate()+n);document.getElementById('fuDate').value=d.toISOString().split('T')[0];}
+async function saveFU(){
+  const date=document.getElementById('fuDate').value;if(!date)return closeFU();
+  await patchC(fuActiveCid,{next_followup:date});
+  if(selCust&&selCust.id===fuActiveCid){selCust.next_followup=date;}
+  closeFU();renderStats();renderList();if(selCust&&selCust.id===fuActiveCid)renderDetail();
+  toast('Follow-up date set','success');
+}
+
+// ── Broadcast ─────────────────────────────────────────────────────
+function bcAudienceList(){
+  const status = document.getElementById('bcStatus').value;
+  let list = allCust.slice();
+  if (status) list = list.filter(c=>c.status===status);
+  return list.filter(c=>c.phone && String(c.phone).trim());
+}
+function bcUpdateCount(){
+  const n = bcAudienceList().length;
+  document.getElementById('bcCount').textContent = n ? `Will send to ${n} customer${n===1?'':'s'} (only those with a phone number on file).` : 'No customers with a phone number match this audience.';
+}
+function openBroadcast(){
+  const sel = document.getElementById('bcStatus');
+  sel.innerHTML = '<option value="">Any status</option>' + allStatuses.map(s=>`<option value="${esc(s.name||s)}">${esc(s.name||s)}</option>`).join('');
+  document.getElementById('bcProgress').style.display='none';
+  document.getElementById('bcProgress').innerHTML='';
+  document.getElementById('bcSendBtn').disabled=false;
+  bcUpdateCount();
+  document.getElementById('bcModal').classList.add('open');
+}
+function closeBroadcast(){ document.getElementById('bcModal').classList.remove('open'); }
+async function sendBroadcast(){
+  const template = document.getElementById('bcTemplate').value.trim();
+  const language = document.getElementById('bcLang').value.trim() || 'en_US';
+  const useName = document.getElementById('bcUseName').checked;
+  if(!template) return toast('Enter the approved template name','error');
+  const list = bcAudienceList();
+  if(!list.length) return toast('No matching customers with a phone number','error');
+  if(!confirm(`Send template "${template}" to ${list.length} customer(s)? This cannot be undone.`)) return;
+
+  const btn = document.getElementById('bcSendBtn'); btn.disabled = true; btn.textContent='Sending…';
+  const prog = document.getElementById('bcProgress'); prog.style.display='block'; prog.innerHTML='Starting…';
+  try {
+    const r = await fetch('/api/whatsapp/broadcast',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      customerIds:list.map(c=>c.id), template, language, paramsFn: useName?'name':null, author:PERSON
+    })});
+    const j = await r.json();
+    if(!j.success) throw new Error(j.error||'Broadcast failed');
+    const ok = j.results.filter(x=>x.ok).length, fail = j.results.filter(x=>!x.ok);
+    prog.innerHTML = `✅ Sent: ${ok} &nbsp;|&nbsp; ❌ Failed: ${fail.length}` +
+      (fail.length ? '<br>' + fail.map(f=>{ const c=list.find(x=>x.id===f.id); return `• ${esc(c?c.name:('#'+f.id))}: ${esc(f.error||'failed')}`; }).join('<br>') : '');
+    toast(`Broadcast done — ${ok} sent, ${fail.length} failed`, fail.length ? 'error' : 'success');
+  } catch(e){ prog.innerHTML = 'Error: '+esc(e.message); toast(e.message,'error'); }
+  btn.disabled = false; btn.textContent = 'Send to all';
+}
+
+function loadStoredBrief() {
+  const stored = localStorage.getItem('brief_' + PERSON);
+  if (!stored) return;
+  try {
+    const {text, ts} = JSON.parse(stored);
+    renderBriefContent(text, ts);
+  } catch(e) {}
+}
+
+function renderBriefContent(text, ts) {
+  const body = document.getElementById('briefBody');
+  const tsEl = document.getElementById('briefTimestamp');
+  if (ts) {
+    const d = new Date(ts);
+    tsEl.textContent = 'Last generated: ' + d.toLocaleDateString('en-IN',{day:'numeric',month:'short'}) + ' at ' + d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  }
+  body.innerHTML = `<div class="brief-content">${esc(text).replace(/\n/g,'<br>')}</div>`;
+}
+
+async function loadBrief() {
+  const btn = document.getElementById('briefRefreshBtn');
+  const body = document.getElementById('briefBody');
+  body.innerHTML = '<div class="brief-loading">⏳ Generating your daily brief…</div>';
+  document.getElementById('briefTimestamp').textContent = 'Generating…';
+  btn.disabled = true; btn.textContent = '⏳ Loading…';
+  try {
+    const r = await fetch('/api/ai/daily-brief',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({person:PERSON})});
+    const d = await r.json();
+    const text = d.brief || d.error || 'No brief generated.';
+    const ts = new Date().toISOString();
+    localStorage.setItem('brief_' + PERSON, JSON.stringify({text, ts}));
+    renderBriefContent(text, ts);
+  } catch(e) {
+    body.innerHTML = `<div class="brief-empty">Could not load brief: ${esc(e.message)}</div>`;
+    document.getElementById('briefTimestamp').textContent = '—';
+  }
+  btn.disabled = false; btn.textContent = '🔄 Refresh';
+}
+
+function openImport(){ document.getElementById('importJson').value=''; document.getElementById('importResult').textContent=''; document.getElementById('importModal').classList.add('open'); }
+async function runImport(){
+  const res = document.getElementById('importResult');
+  let data;
+  try { data = JSON.parse(document.getElementById('importJson').value); } catch(e){ res.textContent='❌ Invalid JSON'; res.style.color='var(--danger)'; return; }
+  if (!Array.isArray(data)){ res.textContent='❌ Must be a JSON array'; res.style.color='var(--danger)'; return; }
+  res.textContent='⏳ Importing…'; res.style.color='var(--muted)';
+  try {
+    const r = await fetch('/api/crm/import',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    const j = await r.json();
+    res.textContent=`✅ Done — ${j.inserted} inserted, ${j.updated} updated, ${j.noPhone} no-phone`;
+    res.style.color='#16a34a';
+    const rf = await fetch('/api/crm/customers'); allCust=(await rf.json()).data||[];
+    renderTiles(); renderFilterSidebar(); renderList();
+  } catch(e){ res.textContent='❌ '+e.message; res.style.color='var(--danger)'; }
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtD(iso){if(!iso)return'';const[y,m,d]=iso.split('-');return`${parseInt(d)} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1]} ${y}`;}
+function ago(ts){if(!ts)return'';const m=Math.floor((Date.now()-new Date(ts).getTime())/60000);if(m<1)return'just now';if(m<60)return`${m}m ago`;const h=Math.floor(m/60);if(h<24)return`${h}h ago`;const d=Math.floor(h/24);return d<30?`${d}d ago`:fmtD((ts+'').split('T')[0]);}
+function toast(msg,type=''){const el=document.getElementById('toast');el.textContent=msg;el.className=type?`show ${type}`:'show';setTimeout(()=>el.className='',3500);}
+
+document.getElementById('qnModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeQN();});
+document.getElementById('fuModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeFU();});
+document.getElementById('acpOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeACP();});
+
+// ── Add Customer Panel ────────────────────────────────────────────────
+let _acpImg=null, _acpMime=null, _acpRecog=null, _acpRec=false, _acpAudio='';
+
+function openACP(){
+  document.getElementById('acpTag').value='4th Jun Exhibition';
+  document.getElementById('acpOverlay').classList.add('open');
+}
+function closeACP(){ document.getElementById('acpOverlay').classList.remove('open'); resetACP(); }
+function resetACP(){
+  _acpImg=null;_acpMime=null;_acpAudio='';_acpRec=false;
+  if(_acpRecog){try{_acpRecog.stop();}catch(e){}_acpRecog=null;}
+  ['acpPreview','acpTranscript','acpForm'].forEach(id=>{ document.getElementById(id).style.display='none'; });
+  document.getElementById('acpPreviewImg').src='';
+  document.getElementById('acpTranscript').value='';
+  document.getElementById('acpStatus').textContent='';
+  document.getElementById('acpStatus').className='acp-status';
+  document.getElementById('acpExtractBtn').disabled=true;
+  document.getElementById('acpCamIcon').textContent='📷';
+  document.getElementById('acpCamText').textContent='Tap to take photo or upload card';
+  document.getElementById('acpMicIcon').textContent='🎤';
+  document.getElementById('acpMicText').textContent='Tap to record voice notes';
+  document.getElementById('acpMicBtn').classList.remove('rec');
+  document.getElementById('acpFileInput').value='';
+}
+
+function onAcpCardFile(inp){
+  const file=inp.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const url=e.target.result;
+    document.getElementById('acpPreviewImg').src=url;
+    document.getElementById('acpPreview').style.display='block';
+    document.getElementById('acpCamIcon').textContent='✅';
+    document.getElementById('acpCamText').textContent='Card captured — tap to replace';
+    const img=new Image();
+    img.onload=()=>{
+      const scale=Math.min(1,1024/img.width);
+      const c=document.createElement('canvas');
+      c.width=img.width*scale; c.height=img.height*scale;
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      _acpImg=c.toDataURL('image/jpeg',0.85).split(',')[1]; _acpMime='image/jpeg';
+      document.getElementById('acpExtractBtn').disabled=false;
+    };
+    img.src=url;
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeAcpCard(){
+  _acpImg=null;
+  document.getElementById('acpPreview').style.display='none';
+  document.getElementById('acpPreviewImg').src='';
+  document.getElementById('acpCamIcon').textContent='📷';
+  document.getElementById('acpCamText').textContent='Tap to take photo or upload card';
+  document.getElementById('acpFileInput').value='';
+  if(!_acpAudio.trim()) document.getElementById('acpExtractBtn').disabled=true;
+}
+
+function toggleAcpMic(){
+  if(_acpRec){stopAcpMic();return;}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){toast('Use Chrome for voice notes','error');return;}
+  _acpRecog=new SR(); _acpRecog.continuous=true; _acpRecog.interimResults=true; _acpRecog.lang='en-IN';
+  _acpRecog.onresult=e=>{
+    let fin='',interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal) fin+=e.results[i][0].transcript+' ';
+      else interim+=e.results[i][0].transcript;
+    }
+    if(fin) _acpAudio+=fin;
+    const el=document.getElementById('acpTranscript');
+    el.style.display='block'; el.value=_acpAudio+interim;
+    document.getElementById('acpExtractBtn').disabled=false;
+  };
+  _acpRecog.onerror=()=>stopAcpMic();
+  _acpRecog.onend=()=>{if(_acpRec)_acpRecog.start();};
+  _acpRecog.start(); _acpRec=true;
+  document.getElementById('acpMicBtn').classList.add('rec');
+  document.getElementById('acpMicIcon').textContent='🔴';
+  document.getElementById('acpMicText').textContent='Recording… tap to stop';
+}
+
+function stopAcpMic(){
+  if(_acpRecog){try{_acpRecog.stop();}catch(e){}_acpRecog=null;}
+  _acpRec=false;
+  document.getElementById('acpMicBtn').classList.remove('rec');
+  document.getElementById('acpMicIcon').textContent='🎤';
+  document.getElementById('acpMicText').textContent=_acpAudio.trim()?'✅ Saved — tap to add more':'Tap to record voice notes';
+  // Sync _acpAudio from textarea (captures manual edits)
+  const tEl=document.getElementById('acpTranscript');
+  if(tEl.value.trim()) _acpAudio=tEl.value.trim();
+  // Push to requirement field if form already open
+  if(_acpAudio.trim()&&document.getElementById('acpForm').style.display!=='none'){
+    document.getElementById('acpReq').value=_acpAudio.trim();
+  }
+  document.getElementById('acpExtractBtn').disabled=!(_acpImg||_acpAudio.trim());
+}
+
+async function extractAcp(){
+  const status=document.getElementById('acpStatus');
+  const btn=document.getElementById('acpExtractBtn');
+  if(!_acpImg&&!_acpAudio.trim())return;
+  if(_acpRec) stopAcpMic();
+  const acpAudioText=document.getElementById('acpTranscript').value.trim()||_acpAudio.trim();
+  btn.disabled=true;
+  status.className='acp-status loading'; status.textContent='⏳ Extracting customer info from card…';
+  try{
+    const r=await fetch('/api/ai/extract-card',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({imageBase64:_acpImg,mimeType:_acpMime,audioText:acpAudioText})});
+    const d=await r.json();
+    if(!d.success) throw new Error(d.error||'Extraction failed');
+    fillAcpForm(d.data);
+    status.className='acp-status ok'; status.textContent='✅ Info extracted — review and save below';
+    document.getElementById('acpForm').style.display='block';
+    setTimeout(()=>document.getElementById('acpName').focus(),100);
+  }catch(e){
+    status.className='acp-status err'; status.textContent='⚠ '+e.message+' — fill form manually';
+    fillAcpForm({});
+    document.getElementById('acpForm').style.display='block';
+  }
+  btn.disabled=false;
+}
+
+function fillAcpForm(d){
+  document.getElementById('acpName').value    = d.name||'';
+  document.getElementById('acpCompany').value = d.company||'';
+  document.getElementById('acpPhone').value   = d.phone||'';
+  document.getElementById('acpEmail').value   = d.email||'';
+  document.getElementById('acpCity').value    = d.city||'';
+  document.getElementById('acpState').value   = d.state||'';
+  document.getElementById('acpGst').value     = d.gst_number||'';
+  const acpVoice=document.getElementById('acpTranscript').value.trim()||_acpAudio.trim();
+  const extras=[
+    d.designation ? 'Designation: '+d.designation : '',
+    d.website     ? 'Website: '+d.website : '',
+    d.notes       || '',
+    acpVoice
+  ].filter(Boolean).join('\n').trim();
+  document.getElementById('acpReq').value = extras;
+}
+
+async function saveACP(){
+  const name=document.getElementById('acpName').value.trim();
+  if(!name)return toast('Name is required','error');
+  const body={
+    name, company:document.getElementById('acpCompany').value.trim(),
+    phone:document.getElementById('acpPhone').value.trim(),
+    email:document.getElementById('acpEmail').value.trim(),
+    city:document.getElementById('acpCity').value.trim(),
+    state:document.getElementById('acpState').value.trim(),
+    gst_number:document.getElementById('acpGst').value.trim(),
+    requirement:document.getElementById('acpReq').value.trim(),
+    source:document.getElementById('acpTag').value.trim(),
+    status:'Lead'
+  };
+  const r=await fetch('/api/crm/customers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d=await r.json();
+  if(!d.success)return toast('Save failed','error');
+  toast(name+' added!','success');
+  closeACP();
+  // Refresh list and open new customer
+  const rf=await fetch('/api/crm/customers');
+  allCust=(await rf.json()).data||[];
+  renderTiles(); renderFilterSidebar(); renderList();
+  if(d.id) selectC(d.id);
+}
+
+init();
+</script>
+<script src="js/nav.js"></script>
+</body>
+</html>
