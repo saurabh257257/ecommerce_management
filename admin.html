@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>(function(){try{var a=JSON.parse(sessionStorage.getItem("arambhika_auth")||"null");if(!a||!a.role){location.replace("login.html");return;}window.__AUTH=a;if(a.role==="member"){var p=location.pathname.split("/").pop();if(p!=="team.html"){location.replace("team.html?name="+encodeURIComponent(a.name));}}}catch(e){location.replace("login.html");}})();</script>
+<script>(function(){try{var a=JSON.parse(sessionStorage.getItem("arambhika_auth")||"null");if(!a||!a.role){location.replace("login.html");return;}window.__AUTH=a;}catch(e){location.replace("login.html");}})();</script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin — Arambhika Enablers</title>
@@ -98,7 +98,7 @@
   <div class="content">
 
     <!-- Stat strip -->
-    <div class="stat-strip">
+    <div class="stat-strip" style="grid-template-columns:repeat(3,1fr)">
       <div class="stat-box">
         <div class="stat-icon" style="background:#ede9fe">📦</div>
         <div class="stat-body">
@@ -107,17 +107,10 @@
         </div>
       </div>
       <div class="stat-box">
-        <div class="stat-icon" style="background:#dbeafe">👥</div>
+        <div class="stat-icon" style="background:#dbeafe">🏢</div>
         <div class="stat-body">
-          <div class="stat-val" id="statMembers">—</div>
-          <div class="stat-lbl">Team Members</div>
-        </div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-icon" style="background:#dcfce7">🏷️</div>
-        <div class="stat-body">
-          <div class="stat-val" id="statTags">—</div>
-          <div class="stat-lbl">Tags</div>
+          <div class="stat-val" id="statCtypes">—</div>
+          <div class="stat-lbl">Customer Types</div>
         </div>
       </div>
       <div class="stat-box">
@@ -132,96 +125,55 @@
     <!-- 3-column grid -->
     <div class="admin-grid">
 
-      <!-- ── Col 1: Team Members ── -->
+      <!-- ── Col 1: Customer Types ── -->
       <div class="admin-card">
         <div class="ac-head">
-          <h3>👥 Team Members</h3>
-          <span class="ac-count" id="memberCount"></span>
+          <h3>🏢 Customer Types</h3>
+          <span class="ac-count" id="ctypeCount"></span>
         </div>
-        <div id="memberList"></div>
+        <div id="ctypeList"></div>
         <div class="add-form">
           <div class="add-row">
-            <input type="text" id="newName" placeholder="Name *" onkeydown="if(event.key==='Enter')addMember()" />
-            <input type="text" id="newRole" placeholder="Role" style="width:90px;flex:none" />
-            <input type="color" id="newColor" value="#4f46e5" />
-            <button class="btn btn-primary btn-sm" onclick="addMember()">Add</button>
+            <input type="text" id="newCtypeName" placeholder="Type name *" onkeydown="if(event.key==='Enter')addCtype()" />
+            <input type="color" id="newCtypeColor" value="#0ea5e9" />
+            <button class="btn btn-primary btn-sm" onclick="addCtype()">Add</button>
           </div>
-          <div class="color-presets" id="colorPresets"></div>
+          <div class="color-presets" id="ctypeColorPresets"></div>
         </div>
       </div>
 
-      <!-- ── Col 2: Customer Types + Tags ── -->
-      <div style="display:flex;flex-direction:column;gap:18px">
-
-        <div class="admin-card">
-          <div class="ac-head">
-            <h3>🏢 Customer Types</h3>
-            <span class="ac-count" id="ctypeCount"></span>
-          </div>
-          <div id="ctypeList"></div>
-          <div class="add-form">
-            <div class="add-row">
-              <input type="text" id="newCtypeName" placeholder="Type name *" onkeydown="if(event.key==='Enter')addCtype()" />
-              <input type="color" id="newCtypeColor" value="#0ea5e9" />
-              <button class="btn btn-primary btn-sm" onclick="addCtype()">Add</button>
-            </div>
-            <div class="color-presets" id="ctypeColorPresets"></div>
-          </div>
+      <!-- ── Col 2: Statuses ── -->
+      <div class="admin-card">
+        <div class="ac-head">
+          <h3>📊 Customer Statuses</h3>
+          <span class="ac-count" id="statusCount"></span>
         </div>
-
-        <div class="admin-card">
-          <div class="ac-head">
-            <h3>🏷️ Tags</h3>
-            <span class="ac-count" id="tagCount"></span>
+        <div id="statusList"></div>
+        <div class="add-form">
+          <div class="add-row">
+            <input type="text" id="newStatusName" placeholder="Status name *" onkeydown="if(event.key==='Enter')addStatus()" />
+            <input type="color" id="newStatusColor" value="#6366f1" />
+            <button class="btn btn-primary btn-sm" onclick="addStatus()">Add</button>
           </div>
-          <div id="tagList"></div>
-          <div class="add-form">
-            <div class="add-row">
-              <input type="text" id="newTagName" placeholder="Tag name *" onkeydown="if(event.key==='Enter')addTag()" />
-              <input type="color" id="newTagColor" value="#6366f1" />
-              <button class="btn btn-primary btn-sm" onclick="addTag()">Add</button>
-            </div>
-            <div class="color-presets" id="tagColorPresets"></div>
-          </div>
+          <div class="color-presets" id="statusColorPresets"></div>
         </div>
-
       </div>
 
-      <!-- ── Col 3: Statuses + Products ── -->
-      <div style="display:flex;flex-direction:column;gap:18px">
-
-        <div class="admin-card">
-          <div class="ac-head">
-            <h3>📊 Customer Statuses</h3>
-            <span class="ac-count" id="statusCount"></span>
-          </div>
-          <div id="statusList"></div>
-          <div class="add-form">
-            <div class="add-row">
-              <input type="text" id="newStatusName" placeholder="Status name *" onkeydown="if(event.key==='Enter')addStatus()" />
-              <input type="color" id="newStatusColor" value="#6366f1" />
-              <button class="btn btn-primary btn-sm" onclick="addStatus()">Add</button>
-            </div>
-            <div class="color-presets" id="statusColorPresets"></div>
+      <!-- ── Col 3: Products ── -->
+      <div class="admin-card">
+        <div class="ac-head">
+          <h3>📦 Products</h3>
+          <span class="ac-count" id="productAdminCount"></span>
+        </div>
+        <div class="prod-actions">
+          <a href="products.html?add=1" class="btn btn-primary btn-sm" style="text-align:center">
+            + Add Product
+          </a>
+          <div class="prod-stat-row">
+            <a href="products.html" class="btn btn-outline btn-sm" style="flex:1;text-align:center">View All</a>
+            <a href="/api/download/products.csv" class="btn btn-outline btn-sm" style="flex:1;text-align:center">Export CSV</a>
           </div>
         </div>
-
-        <div class="admin-card">
-          <div class="ac-head">
-            <h3>📦 Products</h3>
-            <span class="ac-count" id="productAdminCount"></span>
-          </div>
-          <div class="prod-actions">
-            <a href="products.html?add=1" class="btn btn-primary btn-sm" style="text-align:center">
-              + Add Product
-            </a>
-            <div class="prod-stat-row">
-              <a href="products.html" class="btn btn-outline btn-sm" style="flex:1;text-align:center">View All</a>
-              <a href="/api/download/products.csv" class="btn btn-outline btn-sm" style="flex:1;text-align:center">Export CSV</a>
-            </div>
-          </div>
-        </div>
-
       </div>
 
     </div><!-- /admin-grid -->
@@ -280,33 +232,26 @@
 
 <script>
 const PRESET_COLORS = ['#4f46e5','#7c3aed','#db2777','#dc2626','#ea580c','#d97706','#16a34a','#0891b2','#0284c7','#475569'];
-let members = [], tags = [], statuses = [], ctypes = [];
+let statuses = [], ctypes = [];
 
 async function init() {
-  renderPresets('colorPresets', 'newColor', selectMemberColor);
-  renderPresets('tagColorPresets', 'newTagColor', selectTagColor);
   renderPresets('statusColorPresets', 'newStatusColor', selectStatusColor);
   renderPresets('ctypeColorPresets', 'newCtypeColor', selectCtypeColor);
-  const [mr, tr, sr, pr, ctr] = await Promise.all([
-    fetch('/api/team-members').then(r => r.json()),
-    fetch('/api/tags').then(r => r.json()),
+  const [sr, pr, ctr] = await Promise.all([
     fetch('/api/statuses').then(r => r.json()),
     fetch('/api/products').then(r => r.json()),
     fetch('/api/customer-types').then(r => r.json()),
   ]);
-  members = mr.data || [];
-  tags    = tr.data || [];
   statuses = sr.data || [];
   ctypes  = ctr.data || [];
   const products = pr.data || [];
 
   document.getElementById('statProducts').textContent = products.length;
-  document.getElementById('statMembers').textContent  = members.length;
-  document.getElementById('statTags').textContent     = tags.length;
+  document.getElementById('statCtypes').textContent   = ctypes.length;
   document.getElementById('statStatuses').textContent = statuses.length;
   document.getElementById('productAdminCount').textContent = products.length + ' product' + (products.length !== 1 ? 's' : '');
 
-  renderMembers(); renderTags(); renderStatuses(); renderCtypes();
+  renderStatuses(); renderCtypes();
   loadWaTemplates(); loadBackups();
 }
 
@@ -421,32 +366,10 @@ function renderPresets(elId, inputId, cb) {
   ).join('');
 }
 
-function selectMemberColor(c) { document.getElementById('newColor').value = c; renderPresets('colorPresets','newColor',selectMemberColor); }
-function selectTagColor(c)    { document.getElementById('newTagColor').value = c; renderPresets('tagColorPresets','newTagColor',selectTagColor); }
 function selectStatusColor(c) { document.getElementById('newStatusColor').value = c; renderPresets('statusColorPresets','newStatusColor',selectStatusColor); }
 function selectCtypeColor(c)  { document.getElementById('newCtypeColor').value = c; renderPresets('ctypeColorPresets','newCtypeColor',selectCtypeColor); }
 
 /* ── Render helpers ── */
-function renderMembers() {
-  document.getElementById('memberCount').textContent = members.length + ' member' + (members.length!==1?'s':'');
-  const el = document.getElementById('memberList');
-  if (!members.length) { el.innerHTML = '<div class="empty-state">No team members yet</div>'; return; }
-  el.innerHTML = members.map(m => `
-    <div class="member-row" id="mr-${m.id}" style="flex-wrap:wrap">
-      <div class="member-av" style="background:${m.color}">${(m.name||'?')[0].toUpperCase()}</div>
-      <div style="flex:1;min-width:0">
-        <div class="member-name">${esc(m.name)}</div>
-        <div class="member-role">${m.role ? esc(m.role) : '<em style="opacity:.5">No role</em>'}</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <input type="text" id="mpw-${m.id}" placeholder="Login password" value="${esc(m.password||'')}" style="font-size:12px;padding:5px 9px;border:1px solid var(--border);border-radius:7px;width:130px">
-        <button class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 9px" onclick="saveMemberPassword(${m.id})">Save</button>
-      </div>
-      <a href="team.html?name=${encodeURIComponent(m.name)}" class="member-link">View →</a>
-      <button class="btn btn-danger btn-sm" style="font-size:11px;padding:3px 8px" onclick="deleteMember(${m.id},'${esc(m.name).replace(/'/g,"\\'")}')">✕</button>
-    </div>`).join('');
-}
-
 function renderCtypes() {
   document.getElementById('ctypeCount').textContent = ctypes.length + ' type' + (ctypes.length!==1?'s':'');
   const el = document.getElementById('ctypeList');
@@ -456,19 +379,6 @@ function renderCtypes() {
       <span class="tag-chip" style="background:${t.color}">${esc(t.name)}</span>
       <span class="tag-spacer"></span>
       <button class="btn btn-danger btn-sm" style="font-size:11px;padding:3px 8px" onclick="deleteCtype(${t.id},'${esc(t.name).replace(/'/g,"\\'")}')">✕</button>
-    </div>`).join('');
-}
-
-function renderTags() {
-  document.getElementById('tagCount').textContent = tags.length + ' tag' + (tags.length!==1?'s':'');
-  document.getElementById('statTags').textContent = tags.length;
-  const el = document.getElementById('tagList');
-  if (!tags.length) { el.innerHTML = '<div class="empty-state">No tags yet</div>'; return; }
-  el.innerHTML = tags.map(t => `
-    <div class="tag-row" id="tr-${t.id}">
-      <span class="tag-chip" style="background:${t.color}">${esc(t.name)}</span>
-      <span class="tag-spacer"></span>
-      <button class="btn btn-danger btn-sm" style="font-size:11px;padding:3px 8px" onclick="deleteTag(${t.id},'${esc(t.name).replace(/'/g,"\\'")}')">✕</button>
     </div>`).join('');
 }
 
@@ -486,37 +396,6 @@ function renderStatuses() {
 }
 
 /* ── Add / Delete ── */
-async function addMember() {
-  const name = document.getElementById('newName').value.trim();
-  const role = document.getElementById('newRole').value.trim();
-  const color = document.getElementById('newColor').value;
-  if (!name) { toast('Name is required', 'error'); return; }
-  const r = await fetch('/api/team-members', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name,role,color}) });
-  const d = await r.json();
-  if (d.error) { toast(d.error, 'error'); return; }
-  members.push({ id:d.id, name:d.name, role, color });
-  document.getElementById('newName').value = '';
-  document.getElementById('newRole').value = '';
-  document.getElementById('statMembers').textContent = members.length;
-  renderMembers(); toast('Team member added', 'success');
-}
-async function saveMemberPassword(id) {
-  const pwInput = document.getElementById('mpw-'+id);
-  const password = pwInput.value.trim();
-  if (password.toLowerCase() === 'admin') { toast('That password is reserved for Admin — choose another', 'error'); return; }
-  const m = members.find(x => x.id === id);
-  await fetch(`/api/team-members/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ color: m.color, role: m.role, password }) });
-  if (m) m.password = password;
-  toast(password ? `Login password set for ${m.name}` : `Password cleared for ${m.name}`, 'success');
-}
-async function deleteMember(id, name) {
-  if (!confirm(`Remove ${name}?`)) return;
-  await fetch(`/api/team-members/${id}`, { method:'DELETE' });
-  members = members.filter(m => m.id !== id);
-  document.getElementById('statMembers').textContent = members.length;
-  renderMembers(); toast('Member removed', 'success');
-}
-
 async function addCtype() {
   const name = document.getElementById('newCtypeName').value.trim();
   const color = document.getElementById('newCtypeColor').value;
@@ -533,24 +412,6 @@ async function deleteCtype(id, name) {
   await fetch(`/api/customer-types/${id}`, { method:'DELETE' });
   ctypes = ctypes.filter(t => t.id !== id);
   renderCtypes(); toast('Type deleted', 'success');
-}
-
-async function addTag() {
-  const name = document.getElementById('newTagName').value.trim();
-  const color = document.getElementById('newTagColor').value;
-  if (!name) { toast('Tag name is required', 'error'); return; }
-  const r = await fetch('/api/tags', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name, color}) });
-  const d = await r.json();
-  if (d.error) { toast(d.error, 'error'); return; }
-  tags.push({ id:d.id, name:d.name, color });
-  document.getElementById('newTagName').value = '';
-  renderTags(); toast('Tag created', 'success');
-}
-async function deleteTag(id, name) {
-  if (!confirm(`Delete tag "${name}"?`)) return;
-  await fetch(`/api/tags/${id}`, { method:'DELETE' });
-  tags = tags.filter(t => t.id !== id);
-  renderTags(); toast('Tag deleted', 'success');
 }
 
 async function addStatus() {
