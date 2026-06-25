@@ -657,18 +657,38 @@ let sideFilter = { type:null, status:null };
 let selCust = null, selId = null, tabFilter = 'All', qnActiveCid = null, fuActiveCid = null;
 let allProducts = [], pickerOpen = false, pickerOpenCid = null;
 let allWaTemplates = [];
+let custTotal = 0, custLoading = false, custAllLoaded = false;
+let _serverStats = null;
+const PAGE_SIZE = 200;
 
 function todayISO() { return new Date().toISOString().split('T')[0]; }
 function isUnassignedRow(c){ const a=(c.assigned_to||'').trim(); return a===''||a==='Unassigned'; }
+
+async function loadMoreCustomers() {
+  if (custLoading || custAllLoaded) return;
+  custLoading = true;
+  try {
+    const r = await fetch(`/api/crm/customers?limit=${PAGE_SIZE}&offset=${allCust.length}`);
+    const j = await r.json();
+    const batch = j.data || [];
+    custTotal = j.total || custTotal;
+    allCust = allCust.concat(batch);
+    if (batch.length < PAGE_SIZE || allCust.length >= custTotal) custAllLoaded = true;
+  } catch(e) {}
+  custLoading = false;
+}
 
 async function init() {
   document.title = 'CRM — Arambhika Enablers';
   document.getElementById('pageTitle').textContent = 'CRM';
   const [custR, tmR, stR, ctR, prR] = await Promise.all([
-    fetch('/api/crm/customers'), fetch('/api/team-members'),
+    fetch(`/api/crm/customers?limit=${PAGE_SIZE}&offset=0`), fetch('/api/team-members'),
     fetch('/api/statuses'), fetch('/api/customer-types'), fetch('/api/products')
   ]);
-  allCust = (await custR.json()).data || [];
+  const custJ = await custR.json();
+  allCust = custJ.data || [];
+  custTotal = custJ.total || allCust.length;
+  if (allCust.length >= custTotal) custAllLoaded = true;
   teamMembers = (await tmR.json()).data || [];
   allStatuses = (await stR.json()).data || [];
   allTypes = (await ctR.json()).data || [];
@@ -677,6 +697,21 @@ async function init() {
   loadStoredBrief();
   loadNotifications();
   setInterval(loadNotifications, 20000);
+  // Fetch accurate tile counts from server
+  fetch('/api/dashboard/stats').then(r=>r.json()).then(st=>{
+    _serverStats = st;
+    renderTiles();
+  }).catch(()=>{});
+  // Lazy-load remaining customers in background
+  if (!custAllLoaded) {
+    (async function bgLoad() {
+      while (!custAllLoaded) {
+        await loadMoreCustomers();
+        renderList();
+      }
+      renderTiles();
+    })();
+  }
   // Load WhatsApp templates in background (triggers Meta sync)
   fetch('/api/whatsapp/templates').then(r=>r.json()).then(data=>{
     allWaTemplates = (data||[]).filter(t=>t.status==='APPROVED'||t.status==='ACTIVE'||t.status==='approved');
@@ -752,17 +787,20 @@ function renderTiles() {
        <div class="tm-tile-val">${val}</div>
        <div class="tm-tile-sub">${sub||''}</div>
      </div>`;
-  const overdue = allCust.filter(c=>c.next_followup&&c.next_followup<t).length;
+  const ss = _serverStats;
+  const sCount = (key) => ss ? (ss.byStatus[key]||0) : allCust.filter(c=>c.status===key).length;
+  const overdue = ss ? (ss.overdue||0) : allCust.filter(c=>c.next_followup&&c.next_followup<t).length;
+  const total = ss ? (ss.total||0) : (custTotal||allCust.length);
   el.innerHTML =
     `<div class="tm-tile${!sideFilter.status?' active':''}" onclick="filterByStatus(null)" style="border-color:#6366f1;background:#eef2ff">
        <div class="tm-tile-label">Total Contacts</div>
-       <div class="tm-tile-val">${allCust.length}</div>
+       <div class="tm-tile-val">${total}</div>
        <div class="tm-tile-sub"><span><b class="ov">${overdue}</b> overdue</span></div>
      </div>` +
-    mk('Lead','🆕 New Leads', allCust.filter(c=>c.status==='Lead').length, '') +
-    mk('Contacted','📞 Contacted', allCust.filter(c=>c.status==='Contacted').length, '') +
-    mk('Contacted but No Response','🔇 No Response', allCust.filter(c=>c.status==='Contacted but No Response').length, '') +
-    mk('Onboarded','✅ Onboarded', allCust.filter(c=>c.status==='Onboarded').length, '');
+    mk('Lead','🆕 New Leads', sCount('Lead'), '') +
+    mk('Contacted','📞 Contacted', sCount('Contacted'), '') +
+    mk('Contacted but No Response','🔇 No Response', sCount('Contacted but No Response'), '') +
+    mk('Onboarded','✅ Onboarded', sCount('Onboarded'), '');
 }
 function filterByStatus(val) {
   sideFilter.status = val;

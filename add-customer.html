@@ -2,388 +2,156 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Add Customer — Arambhika</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --primary: #6366f1;
-      --primary-dark: #4f46e5;
-      --bg: #f8fafc;
-      --card: #ffffff;
-      --border: #e2e8f0;
-      --text: #1e293b;
-      --muted: #94a3b8;
-      --danger: #ef4444;
-      --success: #16a34a;
-    }
-    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-
-    /* Header */
-    .page-head { background: var(--card); border-bottom: 1px solid var(--border); padding: 14px 20px; display: flex; align-items: center; gap: 12px; }
-    .page-head-logo { font-size: 18px; font-weight: 800; color: var(--primary); }
-    .page-head-sub { font-size: 12px; color: var(--muted); }
-
-    /* Container */
-    .container { max-width: 520px; margin: 0 auto; padding: 24px 16px 48px; }
-
-    /* Cards */
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
-    .card-title { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 14px; }
-
-    /* Event tag */
-    .tag-input { width: 100%; border: 2px solid var(--primary); border-radius: 10px; padding: 11px 14px; font-size: 14px; font-family: inherit; outline: none; background: #f0f4ff; color: var(--text); font-weight: 600; }
-    .tag-hint { font-size: 11px; color: var(--muted); margin-top: 6px; }
-
-    /* Camera */
-    .cam-label { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 28px 20px; border: 2px dashed var(--border); border-radius: 12px; cursor: pointer; font-size: 15px; font-weight: 500; color: var(--muted); transition: all .15s; text-align: center; }
-    .cam-label:hover { border-color: var(--primary); color: var(--primary); background: #f0f4ff; }
-    .cam-label.done { border-color: var(--success); color: var(--success); background: #f0fdf4; border-style: solid; }
-    .preview-wrap { margin-top: 14px; display: none; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); position: relative; }
-    .preview-wrap img { width: 100%; display: block; max-height: 260px; object-fit: contain; background: #f8fafc; }
-    .preview-rm { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,.65); color: #fff; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; font-size: 13px; line-height: 28px; text-align: center; }
-
-    /* Mic */
-    .mic-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 13px 16px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; font-size: 14px; background: var(--bg); font-family: inherit; color: var(--text); transition: all .15s; }
-    .mic-btn:hover { border-color: #ef4444; background: #fff5f5; }
-    .mic-btn.rec { background: #fef2f2; border-color: #ef4444; color: #ef4444; animation: pulse 1.2s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.65} }
-    .transcript-box { margin-top: 10px; font-size: 13px; line-height: 1.6; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; min-height: 64px; display: none; white-space: pre-wrap; width: 100%; box-sizing: border-box; font-family: inherit; resize: vertical; }
-
-    /* Extract button */
-    .extract-btn { width: 100%; padding: 14px; border-radius: 11px; border: none; background: linear-gradient(135deg, var(--primary), #8b5cf6); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; letter-spacing: .2px; transition: opacity .15s; box-shadow: 0 2px 8px rgba(99,102,241,.35); }
-    .extract-btn:disabled { opacity: .45; cursor: default; box-shadow: none; }
-    .extract-btn:not(:disabled):hover { opacity: .88; }
-    .status-line { font-size: 12px; padding: 7px 0 2px; min-height: 22px; display: flex; align-items: center; gap: 6px; }
-    .status-line.loading { color: var(--primary); }
-    .status-line.ok  { color: var(--success); }
-    .status-line.err { color: var(--danger); }
-
-    /* Form */
-    .form-section { display: none; }
-    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-    .field { width: 100%; border: 1px solid var(--border); border-radius: 9px; padding: 10px 13px; font-size: 14px; font-family: inherit; outline: none; background: var(--bg); color: var(--text); margin-bottom: 10px; }
-    .field:focus { border-color: var(--primary); background: #fff; }
-    .field.required { border-color: var(--primary); }
-    textarea.field { height: 80px; resize: none; margin-bottom: 0; }
-    .field-row .field { margin-bottom: 0; }
-    .save-btn { width: 100%; padding: 15px; border-radius: 11px; border: none; background: var(--primary); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit; margin-top: 14px; transition: background .15s; }
-    .save-btn:hover { background: var(--primary-dark); }
-    .save-btn:disabled { opacity: .5; cursor: default; }
-
-    /* Success screen */
-    .success-screen { display: none; text-align: center; padding: 48px 24px; }
-    .success-icon { font-size: 56px; margin-bottom: 16px; }
-    .success-title { font-size: 22px; font-weight: 800; margin-bottom: 8px; color: var(--success); }
-    .success-sub { font-size: 14px; color: var(--muted); margin-bottom: 28px; line-height: 1.6; }
-    .add-another-btn { padding: 12px 28px; border-radius: 10px; border: 2px solid var(--primary); background: none; color: var(--primary); font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
-    .add-another-btn:hover { background: var(--primary); color: #fff; }
-
-    /* Manual toggle */
-    .manual-link { font-size: 12px; color: var(--primary); cursor: pointer; text-align: center; display: block; margin-top: 4px; }
-    .manual-link:hover { text-decoration: underline; }
-
-    .divider { border: none; border-top: 1px solid var(--border); margin: 6px 0 18px; }
+    :root { --primary:#6366f1; --primary-dark:#4f46e5; --bg:#f8fafc; --card:#fff; --border:#e2e8f0; --text:#1e293b; --muted:#94a3b8; --success:#16a34a; }
+    body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+    .page-head { background:var(--card); border-bottom:1px solid var(--border); padding:14px 20px; display:flex; align-items:center; justify-content:space-between; }
+    .page-head-logo { font-size:18px; font-weight:800; color:var(--primary); }
+    .page-head-sub { font-size:12px; color:var(--muted); }
+    .page-head a { font-size:13px; color:var(--primary); text-decoration:none; font-weight:600; }
+    .container { max-width:520px; margin:0 auto; padding:24px 16px 48px; }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:20px; margin-bottom:16px; }
+    .card-title { font-size:13px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:14px; }
+    .field { width:100%; border:1px solid var(--border); border-radius:9px; padding:10px 13px; font-size:14px; font-family:inherit; outline:none; background:var(--bg); color:var(--text); margin-bottom:10px; }
+    .field:focus { border-color:var(--primary); background:#fff; }
+    select.field { cursor:pointer; }
+    textarea.field { height:80px; resize:vertical; }
+    .field-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+    .field-row .field { margin-bottom:0; }
+    .save-btn { width:100%; padding:14px; border-radius:11px; border:none; background:var(--primary); color:#fff; font-size:16px; font-weight:700; cursor:pointer; font-family:inherit; margin-top:8px; transition:background .15s; }
+    .save-btn:hover { background:var(--primary-dark); }
+    .save-btn:disabled { opacity:.5; cursor:default; }
+    .wa-btn { width:100%; padding:12px; border-radius:11px; border:none; background:#25d366; color:#fff; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit; margin-top:8px; display:flex; align-items:center; justify-content:center; gap:8px; }
+    .wa-btn:hover { background:#1ebe5d; }
+    .success-screen { display:none; text-align:center; padding:48px 24px; }
+    .success-title { font-size:22px; font-weight:800; margin-bottom:8px; color:var(--success); }
+    .success-sub { font-size:14px; color:var(--muted); margin-bottom:28px; line-height:1.6; }
+    .btn-row { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+    .btn-outline { padding:12px 28px; border-radius:10px; border:2px solid var(--primary); background:none; color:var(--primary); font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; text-decoration:none; }
+    .btn-outline:hover { background:var(--primary); color:#fff; }
+    @media(max-width:600px) { .field-row { grid-template-columns:1fr; } }
   </style>
 </head>
 <body>
 
 <div class="page-head">
-  <div>
-    <div class="page-head-logo">Arambhika</div>
-    <div class="page-head-sub">Add New Customer</div>
-  </div>
+  <div><div class="page-head-logo">Arambhika</div><div class="page-head-sub">Add New Customer</div></div>
+  <a href="crm.html">Back to CRM</a>
 </div>
 
 <div class="container">
-
-  <!-- Main form (hidden after success) -->
   <div id="mainForm">
-
-    <!-- Event tag -->
     <div class="card">
-      <div class="card-title">Event / Source</div>
-      <input type="text" class="tag-input" id="evtTag" placeholder="e.g. 4 Jun Exhibition" />
-      <div class="tag-hint">This will be saved as the customer's source / event tag</div>
-    </div>
-
-    <!-- Step 1: Capture -->
-    <div class="card">
-      <div class="card-title">Step 1 — Capture Info</div>
-
-      <label class="cam-label" for="cardFile" id="camLabel">
-        <span id="camIcon">📷</span>
-        <span id="camText">Tap to photograph visiting card</span>
-      </label>
-      <input type="file" id="cardFile" accept="image/*" capture="environment" style="display:none" onchange="onCardFile(this)" />
-      <div class="preview-wrap" id="previewWrap">
-        <img id="previewImg" src="" alt="Card" />
-        <button class="preview-rm" onclick="removeCard()">✕</button>
-      </div>
-
-      <div style="margin: 14px 0 6px; font-size: 12px; color: var(--muted); text-align:center">— or add voice notes —</div>
-
-      <button class="mic-btn" id="micBtn" onclick="toggleMic()">
-        <span id="micIcon">🎤</span>
-        <span id="micText">Tap to record voice notes</span>
-      </button>
-      <textarea class="transcript-box" id="transcript" placeholder="Voice transcript will appear here — you can edit it…"></textarea>
-    </div>
-
-    <!-- Step 2: Extract -->
-    <div class="card">
-      <div class="card-title">Step 2 — Extract &amp; Review</div>
-      <button class="extract-btn" id="extractBtn" onclick="doExtract()" disabled>✨ Extract Customer Info</button>
-      <div class="status-line" id="statusLine"></div>
-      <span class="manual-link" id="manualLink" onclick="showFormManual()" style="display:none">Skip AI — fill manually instead</span>
-    </div>
-
-    <!-- Step 3: Review form -->
-    <div class="card form-section" id="formCard">
-      <div class="card-title">Step 3 — Review &amp; Save</div>
-      <hr class="divider" />
-      <input  type="text"  class="field required" id="fName"    placeholder="Name *" />
-      <input  type="text"  class="field"          id="fCompany" placeholder="Company" />
-      <input  type="tel"   class="field"          id="fPhone"   placeholder="Phone" />
-      <input  type="email" class="field"          id="fEmail"   placeholder="Email" />
+      <div class="card-title">Customer Details</div>
+      <input type="text" class="field" id="fName" placeholder="Name *" autofocus />
+      <input type="text" class="field" id="fCompany" placeholder="Company" />
       <div class="field-row">
-        <input type="text" class="field" id="fCity"  placeholder="City" />
+        <input type="tel" class="field" id="fPhone" placeholder="Phone *" />
+        <input type="email" class="field" id="fEmail" placeholder="Email" />
+      </div>
+      <div class="field-row">
+        <select class="field" id="fType">
+          <option value="Battery Manufacturer">Battery Manufacturer</option>
+          <option value="Trader">Trader</option>
+          <option value="Others" selected>Others</option>
+        </select>
+        <select class="field" id="fStatus">
+          <option value="Lead" selected>Lead</option>
+          <option value="Contacted but No Response">Contacted but No Response</option>
+          <option value="Onboarded">Onboarded</option>
+        </select>
+      </div>
+      <div class="field-row">
+        <input type="text" class="field" id="fCity" placeholder="City" />
         <input type="text" class="field" id="fState" placeholder="State" />
       </div>
-      <input  type="text"  class="field"          id="fGst"     placeholder="GST Number" />
-      <textarea            class="field"          id="fReq"     placeholder="Requirement / Notes…"></textarea>
-      <button class="save-btn" id="saveBtn" onclick="doSave()">💾 Save Customer</button>
+      <input type="text" class="field" id="fSource" placeholder="Source / Reference" />
+      <input type="text" class="field" id="fGst" placeholder="GST Number" />
+      <textarea class="field" id="fReq" placeholder="Requirement / Notes..."></textarea>
+      <button class="save-btn" id="saveBtn" onclick="doSave()">Save Customer</button>
+      <button class="wa-btn" onclick="openWA()" type="button">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        WhatsApp
+      </button>
     </div>
-
   </div>
 
-  <!-- Success screen -->
   <div class="success-screen" id="successScreen">
-    <div class="success-icon">🎉</div>
     <div class="success-title" id="successName">Customer Added!</div>
-    <div class="success-sub" id="successSub">The customer has been saved and assigned to the team.</div>
-    <button class="add-another-btn" onclick="resetAll()">➕ Add Another</button>
+    <div class="success-sub" id="successSub"></div>
+    <div class="btn-row">
+      <button class="btn-outline" onclick="resetAll()">+ Add Another</button>
+      <a href="crm.html" class="btn-outline">Go to CRM</a>
+      <button class="wa-btn" style="width:auto;padding:12px 24px;margin:0" onclick="openWA()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        WhatsApp
+      </button>
+    </div>
   </div>
-
 </div>
 
 <script>
-let _img = null, _mime = null, _recog = null, _rec = false, _audio = '';
+let savedPhone = '';
 
-document.getElementById('evtTag').value = '4th Jun Exhibition';
-
-// ── Card capture ──────────────────────────────────────────────────────
-function onCardFile(inp) {
-  const file = inp.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const url = e.target.result;
-    document.getElementById('previewImg').src = url;
-    document.getElementById('previewWrap').style.display = 'block';
-    document.getElementById('camLabel').classList.add('done');
-    document.getElementById('camIcon').textContent = '✅';
-    document.getElementById('camText').textContent = 'Card captured — tap to replace';
-    const img = new Image();
-    img.onload = () => {
-      const scale = Math.min(1, 1024 / img.width);
-      const c = document.createElement('canvas');
-      c.width = img.width * scale; c.height = img.height * scale;
-      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-      const out = c.toDataURL('image/jpeg', 0.82);
-      _img = out.split(',')[1]; _mime = 'image/jpeg';
-      setExtractReady();
-    };
-    img.src = url;
-  };
-  reader.readAsDataURL(file);
-}
-
-function removeCard() {
-  _img = null;
-  document.getElementById('previewWrap').style.display = 'none';
-  document.getElementById('previewImg').src = '';
-  document.getElementById('camLabel').classList.remove('done');
-  document.getElementById('camIcon').textContent = '📷';
-  document.getElementById('camText').textContent = 'Tap to photograph visiting card';
-  document.getElementById('cardFile').value = '';
-  setExtractReady();
-}
-
-// ── Voice recording — Chrome Web Speech API ───────────────────────────
-function toggleMic() {
-  if (_rec) { stopMic(); return; }
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { alert('Use Chrome for voice notes.'); return; }
-  _recog = new SR();
-  _recog.continuous = true;
-  _recog.interimResults = true;
-  _recog.lang = 'en-IN';
-  _recog.onresult = e => {
-    let fin = '', interim = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) fin += e.results[i][0].transcript + ' ';
-      else interim += e.results[i][0].transcript;
-    }
-    if (fin) _audio += fin;
-    const el = document.getElementById('transcript');
-    el.style.display = 'block';
-    el.value = _audio + interim;
-    setExtractReady();
-  };
-  _recog.onerror = () => stopMic();
-  _recog.onend = () => { if (_rec) _recog.start(); };
-  _recog.start();
-  _rec = true;
-  document.getElementById('micBtn').classList.add('rec');
-  document.getElementById('micIcon').textContent = '🔴';
-  document.getElementById('micText').textContent = 'Recording… tap to stop';
-}
-
-function stopMic() {
-  if (_recog) { try { _recog.stop(); } catch(e){} _recog = null; }
-  _rec = false;
-  document.getElementById('micBtn').classList.remove('rec');
-  document.getElementById('micIcon').textContent = '🎤';
-  document.getElementById('micText').textContent = _audio.trim() ? '✅ Saved — tap to add more' : 'Tap to record voice notes';
-  // Sync _audio from textarea (captures any live edits made mid-session)
-  const tEl = document.getElementById('transcript');
-  if (tEl.value.trim()) _audio = tEl.value.trim();
-  // Push to requirement field if form is already visible
-  if (_audio.trim() && document.getElementById('formCard').style.display !== 'none') {
-    const req = document.getElementById('fReq');
-    req.value = _audio.trim();
-  }
-  setExtractReady();
-}
-
-// ── Extract / form ────────────────────────────────────────────────────
-function setExtractReady() {
-  const ready = !!_img || !!_audio.trim();
-  document.getElementById('extractBtn').disabled = !ready;
-  document.getElementById('manualLink').style.display = ready ? 'block' : 'none';
-}
-
-async function doExtract() {
-  const sl = document.getElementById('statusLine');
-  const btn = document.getElementById('extractBtn');
-  if (!_img && !_audio.trim()) return;
-  if (_rec) stopMic();
-  const audioText = document.getElementById('transcript').value.trim() || _audio.trim();
-  btn.disabled = true;
-  sl.className = 'status-line loading'; sl.textContent = '⏳ Reading card and extracting details…';
-  try {
-    const r = await fetch('/api/ai/extract-card', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageBase64: _img, mimeType: _mime, audioText })
-    });
-    if (!r.ok) throw new Error('Server error ' + r.status);
-    const d = await r.json();
-    if (!d.success) throw new Error(d.error || 'Extraction failed');
-    fillForm(d.data);
-    sl.className = 'status-line ok'; sl.textContent = '✅ Info extracted — review below and save';
-    showFormSection();
-  } catch(e) {
-    sl.className = 'status-line err'; sl.textContent = '⚠ ' + e.message + ' — fill form manually';
-    fillForm({});
-    showFormSection();
-  }
-  btn.disabled = !(_img || _audio.trim());
-}
-
-function showFormManual() {
-  fillForm({});
-  document.getElementById('statusLine').className = 'status-line';
-  document.getElementById('statusLine').textContent = '';
-  showFormSection();
-}
-
-function showFormSection() {
-  const fc = document.getElementById('formCard');
-  fc.style.display = 'block';
-  fc.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  setTimeout(() => { if (!document.getElementById('fName').value) document.getElementById('fName').focus(); }, 400);
-}
-
-function fillForm(d) {
-  document.getElementById('fName').value    = d.name    || '';
-  document.getElementById('fCompany').value = d.company || '';
-  document.getElementById('fPhone').value   = d.phone   || '';
-  document.getElementById('fEmail').value   = d.email   || '';
-  document.getElementById('fCity').value    = d.city    || '';
-  document.getElementById('fState').value   = d.state   || '';
-  document.getElementById('fGst').value     = d.gst_number || '';
-  const voiceText = document.getElementById('transcript').value.trim() || _audio.trim();
-  const extras = [
-    d.designation ? 'Designation: ' + d.designation : '',
-    d.website     ? 'Website: '     + d.website     : '',
-    d.notes       || '',
-    voiceText
-  ].filter(Boolean).join('\n').trim();
-  document.getElementById('fReq').value = extras;
-}
-
-// ── Save ─────────────────────────────────────────────────────────────
 async function doSave() {
   const name = document.getElementById('fName').value.trim();
-  if (!name) { document.getElementById('fName').focus(); document.getElementById('fName').style.borderColor = '#ef4444'; return; }
-  document.getElementById('fName').style.borderColor = '';
+  const phone = document.getElementById('fPhone').value.trim().replace(/\D/g,'');
+  if (!name) { document.getElementById('fName').focus(); document.getElementById('fName').style.borderColor='#ef4444'; return; }
+  if (phone.length < 10) { document.getElementById('fPhone').focus(); document.getElementById('fPhone').style.borderColor='#ef4444'; return; }
   const btn = document.getElementById('saveBtn');
-  btn.disabled = true; btn.textContent = '⏳ Saving…';
+  btn.disabled = true; btn.textContent = 'Saving...';
   const body = {
     name,
-    company:     document.getElementById('fCompany').value.trim(),
-    phone:       document.getElementById('fPhone').value.trim(),
-    email:       document.getElementById('fEmail').value.trim(),
-    city:        document.getElementById('fCity').value.trim(),
-    state:       document.getElementById('fState').value.trim(),
-    gst_number:  document.getElementById('fGst').value.trim(),
+    company: document.getElementById('fCompany').value.trim(),
+    phone: phone.slice(-10),
+    email: document.getElementById('fEmail').value.trim(),
+    customer_type: document.getElementById('fType').value,
+    status: document.getElementById('fStatus').value,
+    city: document.getElementById('fCity').value.trim(),
+    state: document.getElementById('fState').value.trim(),
+    source: document.getElementById('fSource').value.trim(),
+    gst_number: document.getElementById('fGst').value.trim(),
     requirement: document.getElementById('fReq').value.trim(),
-    source:      document.getElementById('evtTag').value.trim(),
-    assigned_to: 'Unassigned',
-    status:      'Lead'
+    country: 'India'
   };
   try {
-    const r = await fetch('/api/crm/customers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const r = await fetch('/api/crm/customers', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
     const d = await r.json();
     if (!d.success) throw new Error('Save failed');
-    document.getElementById('successName').textContent = '🎉 ' + name + ' added!';
-    document.getElementById('successSub').textContent  = `Saved as Lead · Source: ${body.source} · Assigned to team.`;
-    document.getElementById('mainForm').style.display     = 'none';
+    savedPhone = phone.slice(-10);
+    document.getElementById('successName').textContent = name + ' added!';
+    document.getElementById('successSub').textContent = `${body.customer_type} | ${body.status} | ${body.source||'No source'}`;
+    document.getElementById('mainForm').style.display = 'none';
     document.getElementById('successScreen').style.display = 'block';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({top:0,behavior:'smooth'});
   } catch(e) {
-    btn.disabled = false; btn.textContent = '💾 Save Customer';
+    btn.disabled = false; btn.textContent = 'Save Customer';
     alert('Could not save: ' + e.message);
   }
 }
 
-// ── Reset ─────────────────────────────────────────────────────────────
+function openWA() {
+  const phone = savedPhone || document.getElementById('fPhone').value.trim().replace(/\D/g,'');
+  if (phone.length < 10) { alert('Enter a phone number first'); return; }
+  window.open('https://wa.me/91' + phone.slice(-10), '_blank');
+}
+
 function resetAll() {
-  _img = null; _mime = null; _audio = ''; _rec = false;
-  if (_recog) { try { _recog.stop(); } catch(e){} _recog = null; }
-  document.getElementById('mainForm').style.display     = 'block';
+  savedPhone = '';
+  document.getElementById('mainForm').style.display = 'block';
   document.getElementById('successScreen').style.display = 'none';
-  document.getElementById('previewWrap').style.display   = 'none';
-  document.getElementById('previewImg').src = '';
-  document.getElementById('transcript').style.display   = 'none';
-  document.getElementById('transcript').value           = '';
-  document.getElementById('formCard').style.display     = 'none';
-  document.getElementById('statusLine').textContent     = '';
-  document.getElementById('statusLine').className       = 'status-line';
-  document.getElementById('extractBtn').disabled        = true;
-  document.getElementById('manualLink').style.display   = 'none';
-  document.getElementById('camLabel').classList.remove('done');
-  document.getElementById('camIcon').textContent = '📷';
-  document.getElementById('camText').textContent = 'Tap to photograph visiting card';
-  document.getElementById('cardFile').value = '';
-  document.getElementById('micIcon').textContent = '🎤';
-  document.getElementById('micText').textContent = 'Tap to record voice notes';
-  document.getElementById('saveBtn').disabled    = false;
-  document.getElementById('saveBtn').textContent = '💾 Save Customer';
-  ['fName','fCompany','fPhone','fEmail','fCity','fState','fGst','fReq'].forEach(id => document.getElementById(id).value = '');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  ['fName','fCompany','fPhone','fEmail','fCity','fState','fSource','fGst','fReq'].forEach(id => {
+    const el = document.getElementById(id);
+    el.value = ''; el.style.borderColor = '';
+  });
+  document.getElementById('saveBtn').disabled = false;
+  document.getElementById('saveBtn').textContent = 'Save Customer';
+  document.getElementById('fName').focus();
 }
 </script>
 </body>

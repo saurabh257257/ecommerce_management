@@ -382,14 +382,19 @@ app.delete('/api/crm/customers/:id/tags/:tagId', (req, res) => {
 
 // ── Customers V2 (CRM) ───────────────────────────────────────
 app.get('/api/crm/customers', (req, res) => {
-  const { assigned_to, status, search } = req.query;
+  const { assigned_to, status, search, limit, offset } = req.query;
   let sql = 'SELECT * FROM customers_v2';
+  let countSql = 'SELECT COUNT(*) as total FROM customers_v2';
   const params = [], conds = [];
   if (assigned_to) { conds.push('assigned_to = ?'); params.push(assigned_to); }
   if (status) { conds.push('status = ?'); params.push(status); }
   if (search) { conds.push('(name LIKE ? OR company LIKE ? OR phone LIKE ? OR phone2 LIKE ? OR email LIKE ? OR city LIKE ? OR state LIKE ? OR country LIKE ? OR requirement LIKE ? OR remark LIKE ? OR source LIKE ? OR customer_type LIKE ? OR status LIKE ?)'); params.push(...Array(13).fill(`%${search}%`)); }
-  if (conds.length) sql += ' WHERE ' + conds.join(' AND ');
+  if (conds.length) { const w = ' WHERE ' + conds.join(' AND '); sql += w; countSql += w; }
+  const total = db.prepare(countSql).get(...params).total;
   sql += ' ORDER BY updated_at DESC';
+  const lim = Math.min(parseInt(limit) || 200, 500);
+  const off = parseInt(offset) || 0;
+  sql += ` LIMIT ${lim} OFFSET ${off}`;
   const customers = db.prepare(sql).all(...params);
   if (customers.length) {
     const ids = customers.map(c => c.id);
@@ -398,7 +403,7 @@ app.get('/api/crm/customers', (req, res) => {
     tagRows.forEach(t => { if (!byC[t.customer_id]) byC[t.customer_id]=[]; byC[t.customer_id].push({id:t.id,name:t.name,color:t.color}); });
     customers.forEach(c => { c.tags = byC[c.id] || []; });
   }
-  res.json({ data: customers });
+  res.json({ data: customers, total, limit: lim, offset: off });
 });
 
 app.get('/api/crm/customers/:id', (req, res) => {
