@@ -653,7 +653,7 @@ function logout(){ sessionStorage.removeItem('arambhika_auth'); location.replace
 const S_MAP  = { Lead:'s-lead', Contacted:'s-contacted', 'Contacted but No Response':'s-noresp', Onboarded:'s-onboarded' };
 let allCust = [], teamMembers = [], allStatuses = [], allTypes = [];
 let scope = 'all';
-let sideFilter = { type:null, status:null };
+let sideFilter = { type:null, status:null, state:null };
 let selCust = null, selId = null, tabFilter = 'All', qnActiveCid = null, fuActiveCid = null;
 let allProducts = [], pickerOpen = false, pickerOpenCid = null;
 let allWaTemplates = [];
@@ -807,7 +807,7 @@ function filterByStatus(val) {
   renderTiles(); renderFilterSidebar(); renderList();
 }
 function setScope(s){
-  scope=s; sideFilter={type:null,status:null}; tabFilter='All';
+  scope=s; sideFilter={type:null,status:null,state:null}; tabFilter='All';
   renderTiles(); renderFilterSidebar(); renderList();
   // On mobile, collapse the drawer after picking a scope so the list is immediately visible
   const drawer=document.getElementById('tmFilters'), toggle=document.getElementById('tmFiltToggle');
@@ -822,11 +822,16 @@ function toggleFiltersDrawer(){
 // ── Filters bar — clicking a group's button expands its options as a   ──
 // ── horizontal strip directly above the search bar (not a dropdown)    ──
 let openFiltGroup = null; // 'type' | 'status' | null
-const FILT_DEFS = { type: ['Customer Type', () => allTypes], status: ['Status', () => allStatuses] };
+function getStateList() {
+  const s = {};
+  allCust.forEach(c => { const st = (c.state||'').trim(); if (st) s[st] = (s[st]||0)+1; });
+  return Object.keys(s).sort().map(n => ({name:n, color:'#0ea5e9'}));
+}
+const FILT_DEFS = { type: ['Customer Type', () => allTypes], status: ['Status', () => allStatuses], state: ['State', getStateList] };
 
 function renderFilterSidebar() {
   const el = document.getElementById('tmFilterGroups');
-  const groups = [['type',allTypes],['status',allStatuses]];
+  const groups = [['type',allTypes],['status',allStatuses],['state',getStateList()]];
   el.innerHTML = groups.map(([key,items])=>{
     if (!items.length) return '';
     const title = FILT_DEFS[key][0];
@@ -837,7 +842,7 @@ function renderFilterSidebar() {
         <span style="overflow:hidden;text-overflow:ellipsis;max-width:140px">${btnLabel}</span><span class="tm-filt-dd-arr">▾</span>
       </button>
     </div>`;
-  }).join('') + (sideFilter.type||sideFilter.status ? `<span class="tm-filt-clear" onclick="clearSideFilters()">✕ Clear filters</span>` : '');
+  }).join('') + (sideFilter.type||sideFilter.status||sideFilter.state ? `<span class="tm-filt-clear" onclick="clearSideFilters()">✕ Clear filters</span>` : '');
   renderFiltOptionsRow();
 }
 
@@ -850,6 +855,7 @@ function renderFiltOptionsRow() {
   const cntOf = it => base.filter(c=>{
     if(key==='status') return c.status===it.name;
     if(key==='type') return (c.customer_type||'')===it.name;
+    if(key==='state') return (c.state||'')===it.name;
   }).length;
   const items = [...getItems()].sort((a,b)=>cntOf(a)-cntOf(b));
   const chips = items.map(it=>{
@@ -877,7 +883,7 @@ function toggleSideFilter(key, val){
   const drawer=document.getElementById('tmFilters'), toggle=document.getElementById('tmFiltToggle');
   if (drawer && drawer.classList.contains('open') && window.innerWidth<=860){ drawer.classList.remove('open'); toggle.classList.remove('open'); }
 }
-function clearSideFilters(){ sideFilter={type:null,status:null}; openFiltGroup=null; renderFilterSidebar(); renderList(); }
+function clearSideFilters(){ sideFilter={type:null,status:null,state:null}; openFiltGroup=null; renderFilterSidebar(); renderList(); }
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.tm-filters') && openFiltGroup){ openFiltGroup=null; renderFilterSidebar(); }
 });
@@ -896,6 +902,7 @@ function renderList() {
   else if (tabFilter!=='All')     list=list.filter(c=>c.status===tabFilter);
   if (sideFilter.type)   list=list.filter(c=>(c.customer_type||'')===sideFilter.type);
   if (sideFilter.status) list=list.filter(c=>c.status===sideFilter.status);
+  if (sideFilter.state)  list=list.filter(c=>(c.state||'')===sideFilter.state);
   if (q) list=list.filter(c=>[c.name,c.company,c.phone,c.phone2,c.email,c.city,c.state,c.country,c.gst_number,c.source,c.requirement,c.remark,c.customer_type].join(' ').toLowerCase().includes(q));
   list.sort((a,b)=>{
     const rank=x=>!x.next_followup?3:x.next_followup<t?0:x.next_followup===t?1:2;
