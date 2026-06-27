@@ -586,62 +586,35 @@
       <button class="acp-close" onclick="closeACP()">✕</button>
     </div>
     <div class="acp-body">
-
-      <!-- Event Tag -->
-      <div class="acp-sec">
-        <div class="acp-lbl">Event / Source</div>
-        <input type="text" class="acp-tag-inp" id="acpTag" placeholder="e.g. 4 Jun Exhibition" />
+      <input  type="text" class="acp-field" id="acpName"    placeholder="Name *" />
+      <input  type="text" class="acp-field" id="acpCompany" placeholder="Company" />
+      <div class="acp-form-row">
+        <input  type="tel"  class="acp-field" id="acpPhone"   placeholder="Phone *" />
+        <input  type="email" class="acp-field" id="acpEmail"   placeholder="Email" />
       </div>
-
-      <!-- Visiting Card -->
-      <div class="acp-sec">
-        <div class="acp-lbl">Visiting Card Photo</div>
-        <label class="acp-cam-lbl" for="acpFileInput">
-          <span id="acpCamIcon">📷</span>
-          <span id="acpCamText">Tap to take photo or upload card</span>
-        </label>
-        <input type="file" id="acpFileInput" accept="image/*" capture="environment" style="display:none" onchange="onAcpCardFile(this)" />
-        <div class="acp-preview" id="acpPreview">
-          <img id="acpPreviewImg" src="" alt="Card preview" />
-          <button class="acp-preview-rm" onclick="removeAcpCard()" title="Remove">✕</button>
-        </div>
+      <div class="acp-form-row">
+        <select class="acp-field" id="acpType" style="padding:10px 13px">
+          <option value="Battery Manufacturer">Battery Manufacturer</option>
+          <option value="Retailer">Retailer</option>
+          <option value="Trader">Trader</option>
+          <option value="Others" selected>Others</option>
+        </select>
+        <select class="acp-field" id="acpStatus" style="padding:10px 13px">
+          <option value="Lead" selected>Lead</option>
+          <option value="Contacted but No Response">No Response</option>
+          <option value="Onboarded">Onboarded</option>
+        </select>
       </div>
-
-      <!-- Voice Notes -->
-      <div class="acp-sec">
-        <div class="acp-lbl">Voice Notes <span style="font-weight:400;color:var(--muted);text-transform:none;font-size:11px">(optional — speak extra details)</span></div>
-        <button class="acp-mic-btn" id="acpMicBtn" onclick="toggleAcpMic()">
-          <span id="acpMicIcon">🎤</span>
-          <span id="acpMicText">Tap to record voice notes</span>
-        </button>
-        <textarea class="acp-transcript" id="acpTranscript" placeholder="Voice transcript — you can edit it…"></textarea>
+      <div class="acp-form-row">
+        <input type="text" class="acp-field" id="acpCity"  placeholder="City" />
+        <input type="text" class="acp-field" id="acpState" placeholder="State" />
       </div>
-
-      <!-- Extract -->
-      <div class="acp-sec">
-        <button class="acp-extract-btn" id="acpExtractBtn" onclick="extractAcp()" disabled>✨ Extract Customer Info</button>
-        <div class="acp-status" id="acpStatus"></div>
-      </div>
-
-      <!-- Review Form -->
-      <div id="acpForm" style="display:none">
-        <hr class="acp-divider" />
-        <div class="acp-lbl" style="margin-bottom:12px">Review &amp; Edit</div>
-        <input  type="text" class="acp-field" id="acpName"    placeholder="Name *" />
-        <input  type="text" class="acp-field" id="acpCompany" placeholder="Company" />
-        <input  type="text" class="acp-field" id="acpPhone"   placeholder="Phone" />
-        <input  type="text" class="acp-field" id="acpEmail"   placeholder="Email" />
-        <div class="acp-form-row">
-          <input type="text" class="acp-field" id="acpCity"  placeholder="City" />
-          <input type="text" class="acp-field" id="acpState" placeholder="State" />
-        </div>
-        <input  type="text" class="acp-field" id="acpGst"     placeholder="GST Number" />
-        <textarea class="acp-field acp-area"  id="acpReq"     placeholder="Requirement / Notes…"></textarea>
-        <button class="btn btn-primary" style="width:100%;padding:12px;font-size:14px;margin-top:2px" onclick="saveACP()">
-          💾 Save Customer
-        </button>
-      </div>
-
+      <input  type="text" class="acp-field" id="acpSource"  placeholder="Source / Reference" />
+      <input  type="text" class="acp-field" id="acpGst"     placeholder="GST Number" />
+      <textarea class="acp-field acp-area"  id="acpReq"     placeholder="Requirement / Notes..."></textarea>
+      <button class="btn btn-primary" style="width:100%;padding:12px;font-size:14px;margin-top:2px" onclick="saveACP()">
+        Save Customer
+      </button>
     </div>
   </div>
 </div>
@@ -1748,168 +1721,42 @@ document.getElementById('fuModal').addEventListener('click',e=>{if(e.target===e.
 document.getElementById('acpOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeACP();});
 
 // ── Add Customer Panel ────────────────────────────────────────────────
-let _acpImg=null, _acpMime=null, _acpRecog=null, _acpRec=false, _acpAudio='';
-
 function openACP(){
-  document.getElementById('acpTag').value='4th Jun Exhibition';
   document.getElementById('acpOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('acpName').focus(),100);
 }
-function closeACP(){ document.getElementById('acpOverlay').classList.remove('open'); resetACP(); }
-function resetACP(){
-  _acpImg=null;_acpMime=null;_acpAudio='';_acpRec=false;
-  if(_acpRecog){try{_acpRecog.stop();}catch(e){}_acpRecog=null;}
-  ['acpPreview','acpTranscript','acpForm'].forEach(id=>{ document.getElementById(id).style.display='none'; });
-  document.getElementById('acpPreviewImg').src='';
-  document.getElementById('acpTranscript').value='';
-  document.getElementById('acpStatus').textContent='';
-  document.getElementById('acpStatus').className='acp-status';
-  document.getElementById('acpExtractBtn').disabled=true;
-  document.getElementById('acpCamIcon').textContent='📷';
-  document.getElementById('acpCamText').textContent='Tap to take photo or upload card';
-  document.getElementById('acpMicIcon').textContent='🎤';
-  document.getElementById('acpMicText').textContent='Tap to record voice notes';
-  document.getElementById('acpMicBtn').classList.remove('rec');
-  document.getElementById('acpFileInput').value='';
-}
-
-function onAcpCardFile(inp){
-  const file=inp.files[0]; if(!file)return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const url=e.target.result;
-    document.getElementById('acpPreviewImg').src=url;
-    document.getElementById('acpPreview').style.display='block';
-    document.getElementById('acpCamIcon').textContent='✅';
-    document.getElementById('acpCamText').textContent='Card captured — tap to replace';
-    const img=new Image();
-    img.onload=()=>{
-      const scale=Math.min(1,1024/img.width);
-      const c=document.createElement('canvas');
-      c.width=img.width*scale; c.height=img.height*scale;
-      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-      _acpImg=c.toDataURL('image/jpeg',0.85).split(',')[1]; _acpMime='image/jpeg';
-      document.getElementById('acpExtractBtn').disabled=false;
-    };
-    img.src=url;
-  };
-  reader.readAsDataURL(file);
-}
-
-function removeAcpCard(){
-  _acpImg=null;
-  document.getElementById('acpPreview').style.display='none';
-  document.getElementById('acpPreviewImg').src='';
-  document.getElementById('acpCamIcon').textContent='📷';
-  document.getElementById('acpCamText').textContent='Tap to take photo or upload card';
-  document.getElementById('acpFileInput').value='';
-  if(!_acpAudio.trim()) document.getElementById('acpExtractBtn').disabled=true;
-}
-
-function toggleAcpMic(){
-  if(_acpRec){stopAcpMic();return;}
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){toast('Use Chrome for voice notes','error');return;}
-  _acpRecog=new SR(); _acpRecog.continuous=true; _acpRecog.interimResults=true; _acpRecog.lang='en-IN';
-  _acpRecog.onresult=e=>{
-    let fin='',interim='';
-    for(let i=e.resultIndex;i<e.results.length;i++){
-      if(e.results[i].isFinal) fin+=e.results[i][0].transcript+' ';
-      else interim+=e.results[i][0].transcript;
-    }
-    if(fin) _acpAudio+=fin;
-    const el=document.getElementById('acpTranscript');
-    el.style.display='block'; el.value=_acpAudio+interim;
-    document.getElementById('acpExtractBtn').disabled=false;
-  };
-  _acpRecog.onerror=()=>stopAcpMic();
-  _acpRecog.onend=()=>{if(_acpRec)_acpRecog.start();};
-  _acpRecog.start(); _acpRec=true;
-  document.getElementById('acpMicBtn').classList.add('rec');
-  document.getElementById('acpMicIcon').textContent='🔴';
-  document.getElementById('acpMicText').textContent='Recording… tap to stop';
-}
-
-function stopAcpMic(){
-  if(_acpRecog){try{_acpRecog.stop();}catch(e){}_acpRecog=null;}
-  _acpRec=false;
-  document.getElementById('acpMicBtn').classList.remove('rec');
-  document.getElementById('acpMicIcon').textContent='🎤';
-  document.getElementById('acpMicText').textContent=_acpAudio.trim()?'✅ Saved — tap to add more':'Tap to record voice notes';
-  // Sync _acpAudio from textarea (captures manual edits)
-  const tEl=document.getElementById('acpTranscript');
-  if(tEl.value.trim()) _acpAudio=tEl.value.trim();
-  // Push to requirement field if form already open
-  if(_acpAudio.trim()&&document.getElementById('acpForm').style.display!=='none'){
-    document.getElementById('acpReq').value=_acpAudio.trim();
-  }
-  document.getElementById('acpExtractBtn').disabled=!(_acpImg||_acpAudio.trim());
-}
-
-async function extractAcp(){
-  const status=document.getElementById('acpStatus');
-  const btn=document.getElementById('acpExtractBtn');
-  if(!_acpImg&&!_acpAudio.trim())return;
-  if(_acpRec) stopAcpMic();
-  const acpAudioText=document.getElementById('acpTranscript').value.trim()||_acpAudio.trim();
-  btn.disabled=true;
-  status.className='acp-status loading'; status.textContent='⏳ Extracting customer info from card…';
-  try{
-    const r=await fetch('/api/ai/extract-card',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({imageBase64:_acpImg,mimeType:_acpMime,audioText:acpAudioText})});
-    const d=await r.json();
-    if(!d.success) throw new Error(d.error||'Extraction failed');
-    fillAcpForm(d.data);
-    status.className='acp-status ok'; status.textContent='✅ Info extracted — review and save below';
-    document.getElementById('acpForm').style.display='block';
-    setTimeout(()=>document.getElementById('acpName').focus(),100);
-  }catch(e){
-    status.className='acp-status err'; status.textContent='⚠ '+e.message+' — fill form manually';
-    fillAcpForm({});
-    document.getElementById('acpForm').style.display='block';
-  }
-  btn.disabled=false;
-}
-
-function fillAcpForm(d){
-  document.getElementById('acpName').value    = d.name||'';
-  document.getElementById('acpCompany').value = d.company||'';
-  document.getElementById('acpPhone').value   = d.phone||'';
-  document.getElementById('acpEmail').value   = d.email||'';
-  document.getElementById('acpCity').value    = d.city||'';
-  document.getElementById('acpState').value   = d.state||'';
-  document.getElementById('acpGst').value     = d.gst_number||'';
-  const acpVoice=document.getElementById('acpTranscript').value.trim()||_acpAudio.trim();
-  const extras=[
-    d.designation ? 'Designation: '+d.designation : '',
-    d.website     ? 'Website: '+d.website : '',
-    d.notes       || '',
-    acpVoice
-  ].filter(Boolean).join('\n').trim();
-  document.getElementById('acpReq').value = extras;
+function closeACP(){
+  document.getElementById('acpOverlay').classList.remove('open');
+  ['acpName','acpCompany','acpPhone','acpEmail','acpCity','acpState','acpSource','acpGst','acpReq'].forEach(id=>document.getElementById(id).value='');
 }
 
 async function saveACP(){
   const name=document.getElementById('acpName').value.trim();
+  const phone=document.getElementById('acpPhone').value.trim().replace(/\D/g,'');
   if(!name)return toast('Name is required','error');
+  if(phone.length<10)return toast('Valid phone required','error');
   const body={
     name, company:document.getElementById('acpCompany').value.trim(),
-    phone:document.getElementById('acpPhone').value.trim(),
+    phone:phone.slice(-10),
     email:document.getElementById('acpEmail').value.trim(),
+    customer_type:document.getElementById('acpType').value,
+    status:document.getElementById('acpStatus').value,
     city:document.getElementById('acpCity').value.trim(),
     state:document.getElementById('acpState').value.trim(),
     gst_number:document.getElementById('acpGst').value.trim(),
     requirement:document.getElementById('acpReq').value.trim(),
-    source:document.getElementById('acpTag').value.trim(),
-    status:'Lead'
+    source:document.getElementById('acpSource').value.trim(),
+    country:'India'
   };
   const r=await fetch('/api/crm/customers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   const d=await r.json();
   if(!d.success)return toast('Save failed','error');
   toast(name+' added!','success');
   closeACP();
-  // Refresh list and open new customer
-  const rf=await fetch('/api/crm/customers');
-  allCust=(await rf.json()).data||[];
+  const rf=await fetch(`/api/crm/customers?limit=${PAGE_SIZE}&offset=0`);
+  const rj=await rf.json();
+  allCust=rj.data||[]; custTotal=rj.total||allCust.length;
+  _serverStats=null; fetch('/api/dashboard/stats').then(r=>r.json()).then(st=>{_serverStats=st;renderTiles();}).catch(()=>{});
   renderTiles(); renderFilterSidebar(); renderList();
   if(d.id) selectC(d.id);
 }
