@@ -953,12 +953,11 @@ async function loadCustomerPhones(cid) {
     if (!el) return;
     if (!phones.length) { el.innerHTML = '<span style="color:var(--muted)">No numbers added</span>'; return; }
     el.innerHTML = phones.map(p => `
-      <div style="display:flex;align-items:center;gap:7px;padding:3px 0">
-        <button title="${p.is_primary?'Used for WhatsApp':'Use this number for WhatsApp'}" onclick="selectCustomerPhone(${cid},${p.id})"
-          style="border:none;background:none;cursor:pointer;font-size:15px;color:${p.is_primary?'#16a34a':'var(--muted)'}">${p.is_primary?'✅':'⬜'}</button>
-        <a href="tel:${esc(p.phone)}" style="font-size:12.5px">${esc(p.phone)}</a>
-        ${p.label?`<span style="font-size:10.5px;color:var(--muted)">(${esc(p.label)})</span>`:''}
-        <button title="Remove" onclick="removeCustomerPhone(${cid},${p.id})" style="border:none;background:none;cursor:pointer;color:var(--muted);font-size:12px;margin-left:auto">✕</button>
+      <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:8px;cursor:pointer;${p.is_primary?'background:#ecfdf3;border:1px solid #bbf7d0':'background:var(--bg);border:1px solid var(--border)'};margin-bottom:4px" onclick="selectCustomerPhone(${cid},${p.id})">
+        <span style="font-size:16px">${p.is_primary?'🟢':'⚪'}</span>
+        <a href="tel:${esc(p.phone)}" onclick="event.stopPropagation()" style="font-size:13px;font-weight:${p.is_primary?'600':'400'};color:var(--text);text-decoration:none">${esc(p.phone)}</a>
+        ${p.is_primary?'<span style="font-size:10px;background:#16a34a;color:#fff;padding:1px 7px;border-radius:10px;font-weight:600">WhatsApp</span>':'<span style="font-size:10px;color:var(--muted)">tap to select</span>'}
+        <button title="Remove" onclick="event.stopPropagation();removeCustomerPhone(${cid},${p.id})" style="border:none;background:none;cursor:pointer;color:var(--muted);font-size:12px;margin-left:auto">✕</button>
       </div>
     `).join('');
   } catch(e) {}
