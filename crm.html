@@ -64,7 +64,7 @@
     .ef { display:inline-flex; align-items:center; border-radius:6px; padding:2px 6px; cursor:pointer; transition:background .12s; max-width:100%; }
     .ef:hover:not(.editing) { background:#f0f0ff; }
     .ef.editing { background:#eef2ff; cursor:text; box-shadow:0 0 0 2px #a5b4fc; }
-    .ef-val { line-height:1.4; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; pointer-events:none; }
+    .ef-val { line-height:1.4; pointer-events:none; word-break:break-word; white-space:normal; }
     .ef-ph { color:var(--muted); font-style:italic; }
     .ef-inp { display:none; border:none; outline:none; background:transparent; font-family:inherit; font-size:inherit; font-weight:inherit; color:var(--text); padding:0; min-width:60px; width:100%; }
     .ef.editing .ef-val { display:none; }
@@ -87,7 +87,12 @@
     .acc-body.open { display:block; }
 
     /* Left panel */
-    .tm-left { width:340px; flex-shrink:0; display:flex; flex-direction:column; border-right:1px solid var(--border); background:var(--bg); }
+    .tm-left { width:340px; flex-shrink:0; display:flex; flex-direction:column; border-right:1px solid var(--border); background:var(--bg); transition:width .2s ease; position:relative; }
+    .tm-left.collapsed { width:0; min-width:0; overflow:hidden; border-right:none; }
+    .panel-toggle { position:absolute; top:8px; z-index:10; width:22px; height:22px; border-radius:50%; border:1px solid var(--border); background:var(--card); color:var(--muted); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:10px; box-shadow:0 1px 4px rgba(0,0,0,.1); }
+    .panel-toggle:hover { background:var(--primary); color:#fff; border-color:var(--primary); }
+    .left-toggle { right:-12px; }
+    .detail-toggle { left:-12px; }
     .tm-left-head { padding:12px 14px 10px; border-bottom:1px solid var(--border); flex-shrink:0; }
     .tm-person { font-size:17px; font-weight:700; }
     .tm-date   { font-size:11px; color:var(--muted); margin-top:1px; }
@@ -392,7 +397,8 @@
 
   <div class="tm-wrap">
     <!-- LEFT: customer list -->
-    <div class="tm-left">
+    <div class="tm-left" id="tmLeft">
+      <button class="panel-toggle left-toggle" onclick="toggleLeftPanel()" title="Collapse list">◀</button>
       <div class="tm-search-bar">
         <input type="text" id="tmSearch" placeholder="Search name, phone, email, company, city…" oninput="onSearchInput()" />
       </div>
@@ -400,9 +406,10 @@
         <div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Loading…</div>
       </div>
     </div>
+    <div id="leftExpandBtn" style="display:none;flex-shrink:0;writing-mode:vertical-rl;cursor:pointer;background:var(--bg);border-right:1px solid var(--border);padding:8px 4px;color:var(--primary);font-size:11px;font-weight:600;letter-spacing:1px;user-select:none" onclick="toggleLeftPanel()">▶ CONTACTS</div>
 
-    <!-- Customer detail (shown in place of list on mobile when a customer is selected) -->
-    <div class="tm-detail" id="tmDetail" style="display:none"></div>
+    <!-- Customer detail -->
+    <div class="tm-detail" id="tmDetail" style="display:none;position:relative"></div>
   </div>
   </div>
 </div>
@@ -982,7 +989,7 @@ function renderDetail() {
           </div>
           <div class="d-field"><div class="d-field-label">Company <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'company','Add company name')}</div></div>
           <div class="d-field"><div class="d-field-label">Email <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'email','Add email')}</div></div>
-          <div class="d-field"><div class="d-field-label">City <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'city','Add city')}</div></div>
+          <div class="d-field" style="grid-column:1/-1"><div class="d-field-label">Address <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'city','Add address')}</div></div>
           <div class="d-field"><div class="d-field-label">State <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'state','Add state')}</div></div>
           <div class="d-field"><div class="d-field-label">GST Number <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'gst_number','Add GST number')}</div></div>
           <div class="d-field"><div class="d-field-label">Source <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'source','Add source')}</div></div>
@@ -1908,6 +1915,13 @@ async function sendPIWhatsApp(cid, invId, filename) {
     toast('PI sent via WhatsApp!', 'success');
     if (selCust) loadWaThread(cid, true);
   } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+function toggleLeftPanel() {
+  const left = document.getElementById('tmLeft');
+  const expandBtn = document.getElementById('leftExpandBtn');
+  const collapsed = left.classList.toggle('collapsed');
+  expandBtn.style.display = collapsed ? 'block' : 'none';
 }
 
 init();
