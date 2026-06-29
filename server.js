@@ -406,6 +406,13 @@ app.get('/api/crm/customers/:id', (req, res) => {
 
 app.post('/api/crm/customers', (req, res) => {
   const c = req.body;
+  if (c.phone) {
+    const clean = c.phone.replace(/[^\d]/g, '').slice(-10);
+    if (clean.length >= 10) {
+      const dup = db.prepare("SELECT id, name FROM customers_v2 WHERE SUBSTR(REPLACE(phone,' ',''),-10) = ?").get(clean);
+      if (dup) return res.status(400).json({ error: `Phone already exists for "${dup.name}"`, success: false });
+    }
+  }
   const r = db.prepare(`INSERT INTO customers_v2 (name,company,phone,phone2,email,city,state,country,gst_number,assigned_to,status,source,requirement,followup_action,next_followup,remark,customer_type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
     .run(c.name, c.company||'', c.phone||'', c.phone2||'', c.email||'', c.city||'', c.state||'', c.country||'', c.gst_number||'', c.assigned_to||'', c.status||'Lead', c.source||'', c.requirement||'', c.followup_action||'', c.next_followup||'', c.remark||'', c.customer_type||'');
   res.json({ success: true, id: r.lastInsertRowid });
@@ -500,6 +507,11 @@ app.post('/api/crm/customers/:id/phones', (req, res) => {
   const { phone, label } = req.body;
   if (!phone || !phone.trim()) return res.status(400).json({ error: 'Phone required' });
   const cid = req.params.id;
+  const clean = phone.trim().replace(/[^\d]/g, '').slice(-10);
+  const existing = db.prepare("SELECT cp.customer_id, c.name FROM customer_phones cp JOIN customers_v2 c ON c.id=cp.customer_id WHERE SUBSTR(REPLACE(cp.phone,' ',''),-10) = ? AND cp.customer_id != ?").get(clean, cid);
+  if (existing) return res.status(400).json({ error: `This number is already assigned to "${existing.name}"` });
+  const dup = db.prepare("SELECT 1 FROM customer_phones WHERE customer_id=? AND SUBSTR(REPLACE(phone,' ',''),-10) = ?").get(cid, clean);
+  if (dup) return res.status(400).json({ error: 'This number is already added for this customer' });
   const isFirst = db.prepare('SELECT COUNT(*) c FROM customer_phones WHERE customer_id=?').get(cid).c === 0;
   const r = db.prepare('INSERT INTO customer_phones (customer_id, phone, label, is_primary) VALUES (?,?,?,?)')
     .run(cid, phone.trim(), label || '', isFirst ? 1 : 0);

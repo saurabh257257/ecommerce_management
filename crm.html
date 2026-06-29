@@ -104,8 +104,9 @@
     .tm-stat.warn   .tm-stat-v { color:#f59e0b; }
     .tm-stat.ok     .tm-stat-v { color:#16a34a; }
 
-    .sidebar.hidden { display:none; }
-    .sidebar-show-btn { position:fixed; top:12px; left:12px; z-index:200; width:32px; height:32px; border-radius:50%; border:1px solid var(--border); background:var(--card); color:var(--primary); cursor:pointer; display:none; align-items:center; justify-content:center; font-size:14px; box-shadow:0 2px 8px rgba(0,0,0,.1); }
+    .sidebar.hidden { width:0; min-width:0; overflow:hidden; border:none; }
+    .sidebar.hidden ~ .main { margin-left:0; }
+    .sidebar-show-btn { position:fixed; top:50%; left:0; transform:translateY(-50%); z-index:200; width:20px; height:48px; border-radius:0 8px 8px 0; border:1px solid var(--primary); border-left:none; background:var(--primary); color:#fff; cursor:pointer; display:none; align-items:center; justify-content:center; font-size:11px; box-shadow:2px 0 8px rgba(0,0,0,.15); }
     .sidebar.hidden ~ .main .sidebar-show-btn { display:flex; }
     .detail-back { font-size:11px; color:var(--primary); cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:3px; margin-bottom:12px; background:none; border:none; font-family:inherit; padding:0; }
     .detail-back:hover { text-decoration:underline; }
