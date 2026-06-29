@@ -1954,11 +1954,16 @@ async function sendPIWhatsApp(cid, invId, filename) {
   const phone = selCust && selCust.phone;
   if (!phone) { toast('No phone number', 'error'); return; }
   try {
-    const pdfUrl = window.location.origin + `/api/crm/invoices/${invId}/pdf`;
-    const r = await fetch('/api/whatsapp/send-media', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, mediaUrl: pdfUrl, type: 'document', filename, caption: 'Proforma Invoice - ' + filename })
-    });
+    toast('Sending PI...', '');
+    const pdfResp = await fetch(`/api/crm/invoices/${invId}/pdf`);
+    const pdfBlob = await pdfResp.blob();
+    const formData = new FormData();
+    formData.append('file', pdfBlob, filename || 'invoice.pdf');
+    formData.append('phone', phone);
+    formData.append('customerId', cid);
+    formData.append('caption', 'Proforma Invoice - ' + (filename || ''));
+    formData.append('author', typeof PERSON !== 'undefined' ? PERSON : 'CRM');
+    const r = await fetch('/api/whatsapp/send-media', { method: 'POST', body: formData });
     const d = await r.json();
     if (!r.ok) { toast(d.error || 'Failed to send', 'error'); return; }
     toast('PI sent via WhatsApp!', 'success');
