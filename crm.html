@@ -984,7 +984,10 @@ function renderDetail() {
   }).join(''):'<div style="color:var(--muted);font-size:12px">No activity yet</div>';
 
   document.getElementById('tmDetail').innerHTML=`
-    <button class="detail-back" onclick="showBrief()">← Back to list</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <button class="detail-back" onclick="showBrief()">← Back to list</button>
+      <button onclick="deleteCustomer(${c.id},'${esc(c.name).replace(/'/g,"\\'")}')" style="border:none;background:none;color:var(--muted);cursor:pointer;font-size:11px;padding:4px 8px;border-radius:6px" onmouseover="this.style.color='#dc2626';this.style.background='#fef2f2'" onmouseout="this.style.color='var(--muted)';this.style.background='none'">🗑 Delete</button>
+    </div>
     <div class="d-head">
       <div style="min-width:0;flex:1">
         <div class="d-name">${efHtml(c,'name','Customer name')}</div>
@@ -1944,6 +1947,24 @@ async function sendPIWhatsApp(cid, invId, filename) {
     toast('PI sent via WhatsApp!', 'success');
     if (selCust) loadWaThread(cid, true);
   } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function deleteCustomer(cid, name) {
+  const pw = prompt('Enter admin password to delete "' + name + '":');
+  if (!pw) return;
+  if (pw !== 'deletebyadmin') { toast('Wrong password', 'error'); return; }
+  if (!confirm('Are you sure you want to permanently delete "' + name + '"?')) return;
+  try {
+    const r = await fetch('/api/crm/customers/' + cid, { method: 'DELETE' });
+    if (!r.ok) { toast('Delete failed', 'error'); return; }
+    toast(name + ' deleted', 'success');
+    selCust = null; selId = null;
+    document.getElementById('tmDetail').style.display = 'none';
+    document.querySelector('.tm-wrap').classList.remove('show-detail');
+    allCust = allCust.filter(c => c.id !== cid);
+    renderList();
+    fetch('/api/dashboard/stats').then(r=>r.json()).then(st=>{_serverStats=st;renderTiles();}).catch(()=>{});
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
 }
 
 function toggleLeftPanel() {
