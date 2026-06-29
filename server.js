@@ -1121,8 +1121,12 @@ function waNorm(phone) {
 function findCustomerByPhone(phone) {
   const norm = waNorm(phone);
   if (!norm) return null;
-  const rows = db.prepare("SELECT id, name, phone FROM customers_v2").all();
-  return rows.find(r => waNorm(r.phone) === norm) || null;
+  const last10 = norm.slice(-10);
+  const direct = db.prepare("SELECT id, name, phone FROM customers_v2 WHERE SUBSTR(REPLACE(phone,' ',''),-10) = ?").get(last10);
+  if (direct) return direct;
+  const fromPhones = db.prepare("SELECT cp.customer_id, c.name, c.phone FROM customer_phones cp JOIN customers_v2 c ON c.id=cp.customer_id WHERE SUBSTR(REPLACE(cp.phone,' ',''),-10) = ? LIMIT 1").get(last10);
+  if (fromPhones) return { id: fromPhones.customer_id, name: fromPhones.name, phone: fromPhones.phone };
+  return null;
 }
 function waToE164(phone) {
   // Build a "to" number for the Graph API: digits only, prefixed with 91 if it's a bare 10-digit Indian number
