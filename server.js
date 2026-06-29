@@ -1284,7 +1284,7 @@ app.get('/api/whatsapp/webhook', (req, res) => {
 });
 
 // Webhook receiver (Meta POSTs incoming messages + status updates here)
-app.post('/api/whatsapp/webhook', (req, res) => {
+app.post('/api/whatsapp/webhook', async (req, res) => {
   try {
     const entry = req.body.entry?.[0];
     const change = entry?.changes?.[0];
