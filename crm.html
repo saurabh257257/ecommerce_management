@@ -559,8 +559,8 @@
         </select>
       </div>
       <div class="acp-form-row">
-        <input type="text" class="acp-field" id="acpCity"  placeholder="City" />
-        <input type="text" class="acp-field" id="acpState" placeholder="State" />
+        <input type="text" class="acp-field" id="acpCity"  placeholder="Address" />
+        <select class="acp-field" id="acpState" style="padding:10px 13px"><option value="">— State —</option></select>
       </div>
       <input  type="text" class="acp-field" id="acpSource"  placeholder="Source / Reference" />
       <input  type="text" class="acp-field" id="acpGst"     placeholder="GST Number" />
@@ -650,10 +650,14 @@ function onSearchInput() {
 async function init() {
   document.title = 'CRM — Arambhika Enablers';
   document.getElementById('pageTitle').textContent = 'CRM';
-  const [statsR, tmR, stR, ctR, prR] = await Promise.all([
+  const [statsR, tmR, stR, ctR, prR, scR] = await Promise.all([
     fetch('/api/dashboard/stats'), fetch('/api/team-members'),
-    fetch('/api/statuses'), fetch('/api/customer-types'), fetch('/api/products')
+    fetch('/api/statuses'), fetch('/api/customer-types'), fetch('/api/products'),
+    fetch('/api/state-codes')
   ]);
+  window._stateCodes = await scR.json();
+  const acpStateSel = document.getElementById('acpState');
+  if (acpStateSel) acpStateSel.innerHTML = '<option value="">— State —</option>' + window._stateCodes.map(s => `<option value="${s.code}-${s.name}">${s.code} - ${s.name}</option>`).join('');
   _serverStats = await statsR.json();
   custTotal = _serverStats.total || 0;
   teamMembers = (await tmR.json()).data || [];
@@ -990,7 +994,12 @@ function renderDetail() {
           <div class="d-field"><div class="d-field-label">Company <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'company','Add company name')}</div></div>
           <div class="d-field"><div class="d-field-label">Email <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'email','Add email')}</div></div>
           <div class="d-field" style="grid-column:1/-1"><div class="d-field-label">Address <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'city','Add address')}</div></div>
-          <div class="d-field"><div class="d-field-label">State <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'state','Add state')}</div></div>
+          <div class="d-field"><div class="d-field-label">State</div><div class="d-field-val">
+            <select class="inline-sel" onchange="patchC(${c.id},{state:this.value});if(selCust)selCust.state=this.value;var x=allCust.find(z=>z.id===${c.id});if(x)x.state=this.value;toast('State updated','success')" style="font-size:13px;padding:4px 8px;border-radius:8px;border:1px solid var(--border);font-family:inherit;background:var(--card,#fff);color:var(--text);width:100%">
+              <option value="">— Select state —</option>
+              ${(window._stateCodes||[]).map(s=>`<option value="${s.code}-${s.name}"${(c.state||'')===s.code+'-'+s.name?' selected':''}>${s.code} - ${s.name}</option>`).join('')}
+            </select>
+          </div></div>
           <div class="d-field"><div class="d-field-label">GST Number <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'gst_number','Add GST number')}</div></div>
           <div class="d-field"><div class="d-field-label">Source <span class="ef-edit-hint">✏️ tap to edit</span></div><div class="d-field-val">${efHtml(c,'source','Add source')}</div></div>
           <div class="d-field"><div class="d-field-label">Customer Type</div><div class="d-field-val">

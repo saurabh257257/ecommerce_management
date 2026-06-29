@@ -242,6 +242,25 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage, limits: { fileSize: 20 * 1024 * 1024 } });
 
+// ── State Codes (GST) ─────────────────────────────────────────
+const STATE_CODES = [
+  {code:'1',name:'JAMMU AND KASHMIR'},{code:'2',name:'HIMACHAL PRADESH'},{code:'3',name:'PUNJAB'},
+  {code:'4',name:'CHANDIGARH'},{code:'5',name:'UTTARAKHAND'},{code:'6',name:'HARYANA'},
+  {code:'7',name:'DELHI'},{code:'8',name:'RAJASTHAN'},{code:'9',name:'UTTAR PRADESH'},
+  {code:'10',name:'BIHAR'},{code:'11',name:'SIKKIM'},{code:'12',name:'ARUNACHAL PRADESH'},
+  {code:'13',name:'NAGALAND'},{code:'14',name:'MANIPUR'},{code:'15',name:'MIZORAM'},
+  {code:'16',name:'TRIPURA'},{code:'17',name:'MEGHALAYA'},{code:'18',name:'ASSAM'},
+  {code:'19',name:'WEST BENGAL'},{code:'20',name:'JHARKHAND'},{code:'21',name:'ORISSA'},
+  {code:'22',name:'CHHATTISGARH'},{code:'23',name:'MADHYA PRADESH'},{code:'24',name:'GUJARAT'},
+  {code:'25',name:'DAMAN AND DIU'},{code:'26',name:'DADAR AND NAGAR HAVELI'},
+  {code:'27',name:'MAHARASTRA'},{code:'29',name:'KARNATAKA'},{code:'30',name:'GOA'},
+  {code:'31',name:'LAKSHADWEEP'},{code:'32',name:'KERALA'},{code:'33',name:'TAMIL NADU'},
+  {code:'34',name:'PUDUCHERRY'},{code:'35',name:'ANDAMAN AND NICOBAR'},
+  {code:'36',name:'TELANGANA'},{code:'37',name:'ANDHRA PRADESH'},
+  {code:'96',name:'OTHER COUNTRY'},{code:'97',name:'OTHER TERRITORY'}
+];
+app.get('/api/state-codes', (req, res) => res.json(STATE_CODES));
+
 // ── Tags ──────────────────────────────────────────────────────
 app.get('/api/tags', (req, res) => {
   res.json({ data: db.prepare('SELECT * FROM tags ORDER BY name').all() });
@@ -1440,7 +1459,9 @@ app.get('/api/crm/invoices/:id/pdf', (req, res) => {
   rlbl('GSTIN :', c.gst_number || '', ry); ry += 14;
   rlbl('NAME :', c.name || '', ry); ry += 14;
   rlbl('ADDRESS :', [c.city, c.state].filter(Boolean).join(', ') || '', ry); ry += 28;
-  rlbl('STATE CODE', c.state || '', ry); ry += 14;
+  const custStateCode = (c.state || '').split('-')[0].trim();
+  const custStateName = (c.state || '').split('-').slice(1).join('-').trim();
+  rlbl('STATE CODE', custStateCode + (custStateName ? ' - ' + custStateName : ''), ry); ry += 14;
   rlbl('CONTACT PERSON :', c.name || '', ry); ry += 14;
   rlbl('CONTACT NO :', c.phone || '', ry);
 
