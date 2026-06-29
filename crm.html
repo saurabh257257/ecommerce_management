@@ -447,28 +447,8 @@
   <a href="index.html" class="nav-link"><span class="ic">🏠</span>Dashboard</a>
   <a href="customers.html" class="nav-link"><span class="ic">👥</span>CRM</a>
   <a href="products.html" class="nav-link"><span class="ic">📦</span>Products</a>
-  <button onclick="openBrief()"><span class="ic">🤖</span>Brief</button>
   <button onclick="logout()"><span class="ic">⏻</span>Logout</button>
 </nav>
-
-<!-- AI Brief — slide-over panel, opens/closes on click -->
-<div class="brief-overlay" id="briefOverlay" onclick="if(event.target===this)closeBrief()">
-  <div class="tm-brief-view" id="tmBriefView">
-    <div class="brief-rh">
-      <div>
-        <div class="brief-rh-title">🤖 AI Daily Brief</div>
-        <div class="brief-rh-ts" id="briefTimestamp">—</div>
-      </div>
-      <div class="brief-rh-actions">
-        <button class="btn btn-outline btn-sm" id="briefRefreshBtn" onclick="loadBrief()">🔄 Refresh</button>
-        <button class="btn btn-outline btn-sm" onclick="closeBrief()" title="Close">✕</button>
-      </div>
-    </div>
-    <div class="brief-body" id="briefBody">
-      <div class="brief-empty">Click <strong>🔄 Refresh</strong> to generate your daily brief.</div>
-    </div>
-  </div>
-</div>
 
 <!-- Quick note modal -->
 <div class="qn-overlay" id="qnModal">
@@ -667,7 +647,6 @@ async function init() {
   allTypes = (await ctR.json()).data || [];
   allProducts = (await prR.json()).data || [];
   renderTiles(); renderFilterSidebar(); renderList();
-  loadStoredBrief();
   loadNotifications();
   setInterval(loadNotifications, 20000);
   // Fetch accurate tile counts from server
@@ -972,12 +951,6 @@ function showBrief() {
   document.querySelector('.tm-wrap').classList.remove('show-detail');
 }
 
-function openBrief() {
-  document.getElementById('briefOverlay').classList.add('open');
-}
-function closeBrief() {
-  document.getElementById('briefOverlay').classList.remove('open');
-}
 
 function renderDetail() {
   const c=selCust, t=todayISO();
@@ -1144,6 +1117,7 @@ function renderDetail() {
             <button class="btn btn-outline btn-sm" id="tlMicBtn-${c.id}" onclick="toggleTlMic(${c.id})" title="Record voice note — speak in Hindi, English or any language">
               <span id="tlMicIcon-${c.id}">🎤</span> <span id="tlMicText-${c.id}">Speak</span>
             </button>
+            <button class="btn btn-outline btn-sm" id="aiRephraseBtn" onclick="aiRephraseNote(${c.id})" title="AI cleans up your spoken/typed note into professional text" style="background:#f5f3ff;border-color:#8b5cf6;color:#8b5cf6">🤖 AI Clean</button>
             <button class="btn btn-primary btn-sm" onclick="saveInlineNote(${c.id})">Save</button>
           </div>
         </div>
@@ -1689,43 +1663,23 @@ async function sendBroadcast(){
   btn.disabled = false; btn.textContent = 'Send to all';
 }
 
-function loadStoredBrief() {
-  const stored = localStorage.getItem('brief_' + PERSON);
-  if (!stored) return;
+// ── AI Rephrase for timeline notes ────────────────────────────
+async function aiRephraseNote(cid) {
+  const textarea = document.getElementById('d-ntxt');
+  const text = textarea.value.trim();
+  if (!text) { toast('Write or speak something first', 'error'); return; }
+  const btn = document.getElementById('aiRephraseBtn');
+  btn.disabled = true; btn.textContent = '⏳ AI...';
   try {
-    const {text, ts} = JSON.parse(stored);
-    renderBriefContent(text, ts);
-  } catch(e) {}
-}
-
-function renderBriefContent(text, ts) {
-  const body = document.getElementById('briefBody');
-  const tsEl = document.getElementById('briefTimestamp');
-  if (ts) {
-    const d = new Date(ts);
-    tsEl.textContent = 'Last generated: ' + d.toLocaleDateString('en-IN',{day:'numeric',month:'short'}) + ' at ' + d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-  }
-  body.innerHTML = `<div class="brief-content">${esc(text).replace(/\n/g,'<br>')}</div>`;
-}
-
-async function loadBrief() {
-  const btn = document.getElementById('briefRefreshBtn');
-  const body = document.getElementById('briefBody');
-  body.innerHTML = '<div class="brief-loading">⏳ Generating your daily brief…</div>';
-  document.getElementById('briefTimestamp').textContent = 'Generating…';
-  btn.disabled = true; btn.textContent = '⏳ Loading…';
-  try {
-    const r = await fetch('/api/ai/daily-brief',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({person:PERSON})});
+    const r = await fetch('/api/ai/extract-note', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transcript: text, language: 'auto' })
+    });
     const d = await r.json();
-    const text = d.brief || d.error || 'No brief generated.';
-    const ts = new Date().toISOString();
-    localStorage.setItem('brief_' + PERSON, JSON.stringify({text, ts}));
-    renderBriefContent(text, ts);
-  } catch(e) {
-    body.innerHTML = `<div class="brief-empty">Could not load brief: ${esc(e.message)}</div>`;
-    document.getElementById('briefTimestamp').textContent = '—';
-  }
-  btn.disabled = false; btn.textContent = '🔄 Refresh';
+    if (d.note) textarea.value = d.note;
+    else if (d.error) toast(d.error, 'error');
+  } catch (e) { toast('AI error: ' + e.message, 'error'); }
+  btn.disabled = false; btn.textContent = '🤖 AI Clean';
 }
 
 function openImport(){ document.getElementById('importJson').value=''; document.getElementById('importResult').textContent=''; document.getElementById('importModal').classList.add('open'); }
