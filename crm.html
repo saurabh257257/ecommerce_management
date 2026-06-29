@@ -1022,7 +1022,7 @@ async function loadWaThreadByPhone(cid, phone, uid) {
     if (!filtered.length) { thread.innerHTML = '<div class="wa-empty">No messages yet</div>'; return; }
     thread.innerHTML = filtered.map(m => {
       const t = new Date(m.created_at.replace(' ','T')+'Z').toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-      return '<div class="wa-bubble '+(m.direction==='out'?'out':'in')+'">'+esc(m.body)+'<span class="wa-time">'+t+(m.direction==='out'?(' · '+(m.status||'sent')):'')+'</span></div>';
+      return '<div class="wa-bubble '+(m.direction==='out'?'out':'in')+'">'+renderWaBody(m.body)+'<span class="wa-time">'+t+(m.direction==='out'?(' · '+(m.status||'sent')):'')+'</span></div>';
     }).join('');
     thread.scrollTop = thread.scrollHeight;
   } catch(e) { thread.innerHTML = '<div class="wa-empty">Could not load</div>'; }
@@ -1588,7 +1588,7 @@ async function loadWaThread(cid,silent) {
     const wasNearBottom = thread.scrollHeight - thread.scrollTop - thread.clientHeight < 80;
     thread.innerHTML=msgs.map(m=>{
       const t=new Date(m.created_at.replace(' ','T')+'Z').toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-      return `<div class="wa-bubble ${m.direction==='out'?'out':'in'}">${esc(m.body)}<span class="wa-time">${t}${m.direction==='out'?(' · '+(m.status||'sent')):''}</span></div>`;
+      return `<div class="wa-bubble ${m.direction==='out'?'out':'in'}">${renderWaBody(m.body)}<span class="wa-time">${t}${m.direction==='out'?(' · '+(m.status||'sent')):''}</span></div>`;
     }).join('');
     if(!silent || wasNearBottom) thread.scrollTop=thread.scrollHeight;
   } catch(e){ if(!silent) thread.innerHTML='<div class="wa-empty">Could not load messages</div>'; }
@@ -2129,6 +2129,10 @@ function toggleWaFullscreen(uid, title) {
   const sel = document.getElementById('waTplSelFs-' + uid);
   if (sel) _fillWaTplSelect(sel);
   loadWaThreadFs(uid, cid, phone);
+  overlay._pollTimer = setInterval(() => loadWaThreadFs(uid, cid, phone), 5000);
+  overlay.addEventListener('remove', () => clearInterval(overlay._pollTimer));
+  const origRemove = overlay.remove.bind(overlay);
+  overlay.remove = () => { clearInterval(overlay._pollTimer); origRemove(); };
 }
 
 async function sendWaTextFs(uid, cid, phone) {
@@ -2151,10 +2155,21 @@ async function loadWaThreadFs(uid, cid, phone) {
     if (!filtered.length) { thread.innerHTML = '<div class="wa-empty">No messages yet</div>'; return; }
     thread.innerHTML = filtered.map(m => {
       const t = new Date(m.created_at.replace(' ','T')+'Z').toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-      return '<div class="wa-bubble '+(m.direction==='out'?'out':'in')+'">'+esc(m.body)+'<span class="wa-time">'+t+(m.direction==='out'?(' · '+(m.status||'sent')):'')+'</span></div>';
+      return '<div class="wa-bubble '+(m.direction==='out'?'out':'in')+'">'+renderWaBody(m.body)+'<span class="wa-time">'+t+(m.direction==='out'?(' · '+(m.status||'sent')):'')+'</span></div>';
     }).join('');
     thread.scrollTop = thread.scrollHeight;
   } catch(e) { thread.innerHTML = '<div class="wa-empty">Could not load</div>'; }
+}
+
+function renderWaBody(body) {
+  if (!body) return '';
+  const lines = body.split('\n');
+  return lines.map(line => {
+    if (line.match(/^\/uploads\/.*\.(jpg|jpeg|png|gif|webp)/i)) return `<img src="${esc(line)}" style="max-width:240px;border-radius:8px;display:block;margin:4px 0;cursor:pointer" onclick="window.open('${esc(line)}','_blank')">`;
+    if (line.match(/^\/uploads\/.*\.(mp4|mov|webm)/i)) return `<video src="${esc(line)}" controls style="max-width:240px;border-radius:8px;display:block;margin:4px 0"></video>`;
+    if (line.match(/^\/uploads\//)) return `<a href="${esc(line)}" target="_blank" style="color:var(--primary)">${esc(line.split('/').pop())}</a>`;
+    return esc(line);
+  }).join('<br>');
 }
 
 async function deleteCustomer(cid, name) {

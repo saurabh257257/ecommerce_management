@@ -1291,8 +1291,25 @@ app.post('/api/whatsapp/webhook', (req, res) => {
     const value = change?.value;
     if (value?.messages) {
       for (const m of value.messages) {
-        const fromPhone = m.from; // e.g. "918886772827"
-        const body = m.text?.body || m.button?.text || m.interactive?.button_reply?.title || `[${m.type}]`;
+        const fromPhone = m.from;
+        let body = m.text?.body || m.button?.text || m.interactive?.button_reply?.title || `[${m.type}]`;
+        // Download media (image/video/document/audio)
+        if (m.image?.id || m.video?.id || m.document?.id || m.audio?.id) {
+          const mediaId = m.image?.id || m.video?.id || m.document?.id || m.audio?.id;
+          try {
+            const urlR = await fetch(`https://graph.facebook.com/v21.0/${mediaId}`, { headers: { Authorization: `Bearer ${WA_TOKEN}` } });
+            const urlJ = await urlR.json();
+            if (urlJ.url) {
+              const mediaR = await fetch(urlJ.url, { headers: { Authorization: `Bearer ${WA_TOKEN}` } });
+              const buf = Buffer.from(await mediaR.arrayBuffer());
+              const ext = m.image ? '.jpg' : m.video ? '.mp4' : m.audio ? '.ogg' : '.bin';
+              const fname = `wa_${Date.now()}${ext}`;
+              fs.writeFileSync(path.join(uploadsDir, fname), buf);
+              body = `/uploads/${fname}`;
+            }
+          } catch(e) { body = `[${m.type} - download failed]`; }
+          if (m.image?.caption) body += '\n' + m.image.caption;
+        }
         let cust = findCustomerByPhone(fromPhone);
         if (!cust) {
           const clean = fromPhone.replace(/\D/g,'').slice(-10);
