@@ -1839,11 +1839,8 @@ function addPIRow(cid) {
         <button onclick="document.getElementById('piRow-${rid}').remove()" style="border:none;background:none;color:var(--muted);cursor:pointer;font-size:14px">✕</button>
       </div>
       <input type="text" id="piDesc-${rid}" placeholder="Description" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;margin-bottom:6px">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:6px">
-        <div><label style="font-size:9px;color:var(--muted)">HSN</label><input type="text" id="piHsn-${rid}" value="85079090" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px"></div>
-        <div><label style="font-size:9px;color:var(--muted)">Width</label><input type="text" id="piW-${rid}" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px"></div>
-        <div><label style="font-size:9px;color:var(--muted)">Thickness</label><input type="text" id="piT-${rid}" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px"></div>
-        <div><label style="font-size:9px;color:var(--muted)">Grade</label><input type="text" id="piG-${rid}" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div><label style="font-size:9px;color:var(--muted)">HSN Code</label><input type="text" id="piHsn-${rid}" value="85079090" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px"></div>
         <div><label style="font-size:9px;color:var(--muted)">QTY (kg)</label><input type="number" id="piQ-${rid}" value="1" min="1" oninput="calcPIRow(${rid})" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px"></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:6px">

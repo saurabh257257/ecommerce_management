@@ -1442,24 +1442,28 @@ app.get('/api/crm/invoices/:id/pdf', (req, res) => {
   const LX = 40;
   const invDate = new Date(inv.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-');
 
-  // Title
-  doc.font('Helvetica-Bold').fontSize(18).text('PROFORMA INVOICE', LX, 40, { align: 'center', width: W });
-  doc.fontSize(10).text(`PROFORMA INVOICE-`, LX + W - 180, 40, { width: 180, align: 'right' });
-  doc.text(`Date: ${invDate}`, LX + W - 180, 52, { width: 180, align: 'right' });
+  // Logo banner
+  doc.rect(LX, 30, W, 50).fill('#1a2332');
+  doc.font('Helvetica-Bold').fontSize(20).fillColor('#ffffff').text('ARAMBHIKA', LX + 15, 38, { continued: false });
+  doc.font('Helvetica').fontSize(10).fillColor('#8899aa').text('ENABLERS', LX + 155, 48);
+  doc.font('Helvetica').fontSize(7.5).fillColor('#aabbcc').text('Nickel & Copper Battery Connectors: Mfg. & Dist.', LX + 15, 62);
+  doc.fillColor('#000');
+
+  // Title + Date
+  doc.font('Helvetica-Bold').fontSize(16).fillColor('#1a2332').text('PROFORMA INVOICE', LX, 90, { align: 'center', width: W });
+  doc.font('Helvetica').fontSize(10).fillColor('#000').text(`Date: ${invDate}`, LX + W - 180, 90, { width: 180, align: 'right' });
 
   // Header table
-  const HY = 80;
+  const HY = 115;
   const HW = W / 2;
   doc.rect(LX, HY, W, 120).stroke();
   doc.moveTo(LX + HW, HY).lineTo(LX + HW, HY + 120).stroke();
 
-  // Consignee label
-  doc.font('Helvetica-Bold').fontSize(9).text('Consignee (Ship to)', LX + HW, HY - 12, { width: HW, align: 'right' });
+  doc.font('Helvetica-Bold').fontSize(9).fillColor('#000').text('Consignee (Ship to)', LX + HW, HY - 12, { width: HW, align: 'right' });
 
-  // Left side - Swastik
   let ly = HY + 8;
   const lbl = (label, val, y) => {
-    doc.font('Helvetica-Bold').fontSize(8).text(label, LX + 5, y, { width: 65 });
+    doc.font('Helvetica-Bold').fontSize(8).fillColor('#000').text(label, LX + 5, y, { width: 65 });
     doc.font('Helvetica').fontSize(8).text(val, LX + 72, y, { width: HW - 82 });
   };
   lbl('GSTIN :', COMPANY.gstin, ly); ly += 14;
@@ -1467,10 +1471,9 @@ app.get('/api/crm/invoices/:id/pdf', (req, res) => {
   lbl('ADDRESS :', COMPANY.address, ly); ly += 36;
   lbl('STATE CODE', COMPANY.stateCode, ly);
 
-  // Right side - Customer
   let ry = HY + 8;
   const rlbl = (label, val, y) => {
-    doc.font('Helvetica-Bold').fontSize(8).text(label, LX + HW + 5, y, { width: 85 });
+    doc.font('Helvetica-Bold').fontSize(8).fillColor('#000').text(label, LX + HW + 5, y, { width: 85 });
     doc.font('Helvetica').fontSize(8).text(val || '', LX + HW + 92, y, { width: HW - 102 });
   };
   rlbl('GSTIN :', c.gst_number || '', ry); ry += 14;
@@ -1480,35 +1483,32 @@ app.get('/api/crm/invoices/:id/pdf', (req, res) => {
   rlbl('CONTACT PERSON :', c.name || '', ry); ry += 14;
   rlbl('CONTACT NO :', c.phone || '', ry);
 
-  // Items table header
+  // Items table — no width/thickness/grade
   let TY = HY + 135;
   const cols = [
-    { label: 'Sr', w: 22 }, { label: 'HSN CODE', w: 55 }, { label: 'DESCRIPTION', w: 120 },
-    { label: 'WIDTH', w: 38 }, { label: 'THICK', w: 38 }, { label: 'GRADE', w: 40 },
-    { label: 'QTY', w: 30 }, { label: 'PER KG\nRATE', w: 50 }, { label: 'P&F/\nFREIGHT', w: 45 },
-    { label: 'TAXABLE\nVALUE', w: 55 }, { label: 'IGST %', w: 35 }, { label: 'Date', w: 50 }
+    { label: 'Sr', w: 25 }, { label: 'HSN CODE', w: 65 }, { label: 'DESCRIPTION OF GOODS', w: 180 },
+    { label: 'QTY', w: 40 }, { label: 'PER KG\nRATE', w: 60 }, { label: 'P&F/\nFREIGHT', w: 55 },
+    { label: 'TAXABLE\nVALUE', w: 65 }, { label: 'IGST %', w: 40 }, { label: 'Date', w: 55 }
   ];
   const totalColW = cols.reduce((s, c) => s + c.w, 0);
   const scale = W / totalColW;
   cols.forEach(c => c.w = Math.round(c.w * scale));
 
-  // Header row
   doc.rect(LX, TY, W, 28).fillAndStroke('#f0f0f0', '#000');
   let cx = LX;
   cols.forEach(col => {
-    doc.fillColor('#000').font('Helvetica-Bold').fontSize(6.5).text(col.label, cx + 2, TY + 4, { width: col.w - 4, align: 'center' });
+    doc.fillColor('#000').font('Helvetica-Bold').fontSize(7).text(col.label, cx + 2, TY + 4, { width: col.w - 4, align: 'center' });
     cx += col.w;
   });
   TY += 28;
 
-  // Item rows
   items.forEach((it, i) => {
     const rh = 22;
     doc.rect(LX, TY, W, rh).stroke();
     cx = LX;
     const vals = [
-      i + 1, it.hsn || '85079090', it.description || '', it.width || '', it.thickness || '',
-      it.grade || '', it.qty || '', parseFloat(it.rate || 0).toFixed(2),
+      i + 1, it.hsn || '85079090', it.description || '',
+      it.qty || '', parseFloat(it.rate || 0).toFixed(2),
       parseFloat(it.pf_freight || 0).toFixed(2), parseFloat(it.taxable || 0).toFixed(2),
       it.igst || '18', invDate
     ];
