@@ -1095,12 +1095,12 @@ function renderDetail() {
         </div>
       </div>
     </div>
-    <div class="acc-sec" id="accSec-pi-${c.id}" style="border-left-color:#d97706">
-      <div class="acc-head" onclick="toggleAcc('pi-${c.id}')" style="background:#fffbeb">
+    <div class="acc-sec" id="accSec-inv-${c.id}" style="border-left-color:#d97706">
+      <div class="acc-head" onclick="toggleAcc('inv-${c.id}')" style="background:#fffbeb">
         <div class="acc-head-title">📄 Proforma Invoices</div>
-        <div class="acc-arrow" id="accArrow-pi-${c.id}">▶</div>
+        <div class="acc-arrow" id="accArrow-inv-${c.id}">▶</div>
       </div>
-      <div class="acc-body" id="accBody-pi-${c.id}">
+      <div class="acc-body" id="accBody-inv-${c.id}">
         <div id="piList-${c.id}" style="margin-bottom:12px"><span style="color:var(--muted);font-size:12px">Loading...</span></div>
         <button class="btn btn-primary btn-sm" onclick="openPIForm(${c.id})">+ Create Proforma Invoice</button>
         <div id="piForm-${c.id}" style="display:none;margin-top:14px;border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--bg)">
@@ -1335,7 +1335,7 @@ function toggleAcc(key) {
       _waOpenCid=null; _waStopPoll();
     }
   }
-  if(key.startsWith('pi-')){ const cid=key.slice(3); if(open) loadPIList(+cid); }
+  if(key.startsWith('inv-')){ const cid=key.slice(4); if(open) loadPIList(+cid); }
 }
 
 // Poll the open WhatsApp thread every few seconds so incoming replies show up without manual action
