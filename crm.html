@@ -920,7 +920,137 @@ async function loadCustomerPhones(cid) {
         <button title="Remove" onclick="event.stopPropagation();removeCustomerPhone(${cid},${p.id})" style="border:none;background:none;cursor:pointer;color:var(--muted);font-size:12px">✕</button>
       </div>
     `).join('');
+    renderWaSections(cid, phones);
   } catch(e) {}
+}
+
+function renderWaSections(cid, phones) {
+  const container = document.getElementById('waPhoneSections-' + cid);
+  if (!container) return;
+  const sorted = [...phones].sort((a,b) => b.is_primary - a.is_primary);
+  const custName = selCust ? selCust.name : '';
+  container.innerHTML = sorted.map(p => {
+    const ph = esc(p.phone);
+    const label = (!p.label || p.label === 'Primary') ? custName : p.label;
+    const uid = cid + '_' + p.phone.replace(/\D/g,'');
+    return `<div class="acc-sec sec-wa">
+      <div class="acc-head" onclick="toggleAcc('wa-${uid}')" style="background:${p.is_primary?'#ecfdf3':'#f0f9ff'}">
+        <div class="acc-head-title">💬 ${esc(label)} — ${ph} ${p.is_primary?'<span style="font-size:9px;background:#16a34a;color:#fff;padding:1px 6px;border-radius:8px;margin-left:4px">Primary</span>':''}</div>
+        <div class="acc-arrow" id="accArrow-wa-${uid}">▶</div>
+      </div>
+      <div class="acc-body" id="accBody-wa-${uid}">
+        <div class="wa-template-row">
+          ⚡ First message or &gt;24h since reply? Use a template:
+          <div style="display:flex;gap:6px;align-items:center;margin-top:5px;width:100%">
+            <select id="waTplSel-${uid}" style="flex:1;min-width:0;font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:8px;font-family:inherit;background:var(--card);color:var(--text)">
+              <option value="">— pick a template —</option>
+            </select>
+            <button class="btn btn-outline btn-sm" style="flex-shrink:0" onclick="sendSelectedTemplate(${cid},'${ph}','${esc(custName).replace(/'/g,"\\'")}')">Send ➤</button>
+          </div>
+        </div>
+        <div class="wa-thread" id="waThread-${uid}" style="max-height:300px;overflow-y:auto"><div class="wa-empty">Click to load…</div></div>
+        <div class="wa-compose">
+          <input type="file" id="waFile-${uid}" style="display:none" onchange="sendWaFileByPhone(${cid},'${ph}','${uid}')">
+          <button title="Attach" onclick="document.getElementById('waFile-${uid}').click()">📎</button>
+          <input type="text" id="waInput-${uid}" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendWaTextByPhone(${cid},'${ph}','${uid}')">
+          <button onclick="sendWaTextByPhone(${cid},'${ph}','${uid}')">➤</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;padding:8px 10px;border-top:1px solid var(--border);background:#fffbeb;font-size:12px">
+          <span style="flex-shrink:0;font-weight:600;color:#d97706">📄 Send PI:</span>
+          <select id="waPISel-${uid}" style="flex:1;min-width:0;font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-family:inherit;background:var(--card)">
+            <option value="">— select invoice —</option>
+          </select>
+          <button class="btn btn-primary btn-sm" style="flex-shrink:0;font-size:11px;padding:4px 12px;background:#d97706;border-color:#d97706" onclick="sendSelectedPIByPhone(${cid},'${ph}','${uid}')">Send ➤</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  sorted.forEach(p => {
+    const uid = cid + '_' + p.phone.replace(/\D/g,'');
+    const sel = document.getElementById('waTplSel-' + uid);
+    if (sel) _fillWaTplSelect(sel);
+    loadWaPISelectByUid(cid, uid);
+  });
+}
+
+async function sendWaTextByPhone(cid, phone, uid) {
+  const inp = document.getElementById('waInput-' + uid);
+  const text = inp.value.trim();
+  if (!text) return;
+  if (!phone) { toast('No phone number', 'error'); return; }
+  try {
+    await fetch('/api/whatsapp/send', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({customerId:cid, phone, text, author:PERSON}) });
+    inp.value = '';
+    loadWaThreadByPhone(cid, phone, uid);
+  } catch(e) { toast('Error: '+e.message,'error'); }
+}
+
+async function sendWaFileByPhone(cid, phone, uid) {
+  const fileInput = document.getElementById('waFile-' + uid);
+  if (!fileInput.files[0]) return;
+  const formData = new FormData();
+  formData.append('file', fileInput.files[0]);
+  formData.append('phone', phone);
+  formData.append('customerId', cid);
+  formData.append('author', PERSON);
+  await fetch('/api/whatsapp/send-media', { method:'POST', body: formData });
+  fileInput.value = '';
+  loadWaThreadByPhone(cid, phone, uid);
+}
+
+async function loadWaThreadByPhone(cid, phone, uid) {
+  const thread = document.getElementById('waThread-' + uid);
+  if (!thread) return;
+  try {
+    const r = await fetch('/api/whatsapp/messages/' + cid);
+    const msgs = await r.json();
+    const filtered = msgs.filter(m => {
+      const mPhone = (m.phone||'').replace(/\D/g,'').slice(-10);
+      const targetPhone = phone.replace(/\D/g,'').slice(-10);
+      return mPhone === targetPhone;
+    });
+    if (!filtered.length) { thread.innerHTML = '<div class="wa-empty">No messages yet</div>'; return; }
+    thread.innerHTML = filtered.map(m => {
+      const t = new Date(m.created_at.replace(' ','T')+'Z').toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+      return '<div class="wa-bubble '+(m.direction==='out'?'out':'in')+'">'+esc(m.body)+'<span class="wa-time">'+t+(m.direction==='out'?(' · '+(m.status||'sent')):'')+'</span></div>';
+    }).join('');
+    thread.scrollTop = thread.scrollHeight;
+  } catch(e) { thread.innerHTML = '<div class="wa-empty">Could not load</div>'; }
+}
+
+async function loadWaPISelectByUid(cid, uid) {
+  const sel = document.getElementById('waPISel-' + uid);
+  if (!sel) return;
+  try {
+    const invoices = await fetch('/api/crm/customers/' + cid + '/invoices').then(r => r.json());
+    sel.innerHTML = '<option value="">— select invoice —</option>' +
+      invoices.map(inv => {
+        const d = new Date(inv.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+        return '<option value="'+inv.id+'" data-fn="'+esc(inv.filename)+'">'+esc(inv.filename)+' ('+d+')</option>';
+      }).join('');
+  } catch(e) {}
+}
+
+async function sendSelectedPIByPhone(cid, phone, uid) {
+  const sel = document.getElementById('waPISel-' + uid);
+  if (!sel || !sel.value) { toast('Select an invoice first', 'error'); return; }
+  const invId = sel.value;
+  const filename = sel.options[sel.selectedIndex].dataset.fn || 'invoice.pdf';
+  try {
+    toast('Sending PI...', '');
+    const pdfResp = await fetch('/api/crm/invoices/' + invId + '/pdf');
+    const pdfBlob = await pdfResp.blob();
+    const formData = new FormData();
+    formData.append('file', pdfBlob, filename);
+    formData.append('phone', phone);
+    formData.append('customerId', cid);
+    formData.append('caption', 'Proforma Invoice - ' + filename);
+    formData.append('author', PERSON);
+    const r = await fetch('/api/whatsapp/send-media', { method:'POST', body: formData });
+    if (!r.ok) { toast('Failed to send', 'error'); return; }
+    toast('PI sent!', 'success');
+    loadWaThreadByPhone(cid, phone, uid);
+  } catch(e) { toast('Error: '+e.message, 'error'); }
 }
 
 async function addCustomerPhone(cid) {
@@ -1068,34 +1198,36 @@ function renderDetail() {
         </div>
       </div>
     </div>
-    <div class="acc-sec sec-wa" id="accSec-wa-${c.id}">
-      <div class="acc-head" onclick="toggleAcc('wa-${c.id}')">
-        <div class="acc-head-title">💬 WhatsApp ${c.phone?('— '+esc(c.phone)):''}</div>
-        <div class="acc-arrow" id="accArrow-wa-${c.id}">▶</div>
-      </div>
-      <div class="acc-body" id="accBody-wa-${c.id}">
-        <div class="wa-template-row" id="waTplRow-${c.id}">
-          ⚡ First message or &gt;24h since reply? Use a template:
-          <div style="display:flex;gap:6px;align-items:center;margin-top:5px;width:100%">
-            <select id="waTplSel-${c.id}" style="flex:1;min-width:0;font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:8px;font-family:inherit;background:var(--card);color:var(--text)">
-              <option value="">— pick a template —</option>
-            </select>
-            <button class="btn btn-outline btn-sm" style="flex-shrink:0" onclick="sendSelectedTemplate(${c.id},'${esc(c.phone||'')}','${esc(c.name).replace(/'/g,"\\'")}')">Send ➤</button>
+    <div id="waPhoneSections-${c.id}">
+      <div class="acc-sec sec-wa" id="accSec-wa-${c.id}">
+        <div class="acc-head" onclick="toggleAcc('wa-${c.id}')">
+          <div class="acc-head-title">💬 WhatsApp ${c.phone?('— '+esc(c.phone)):''}</div>
+          <div class="acc-arrow" id="accArrow-wa-${c.id}">▶</div>
+        </div>
+        <div class="acc-body" id="accBody-wa-${c.id}">
+          <div class="wa-template-row" id="waTplRow-${c.id}">
+            ⚡ First message or &gt;24h since reply? Use a template:
+            <div style="display:flex;gap:6px;align-items:center;margin-top:5px;width:100%">
+              <select id="waTplSel-${c.id}" style="flex:1;min-width:0;font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:8px;font-family:inherit;background:var(--card);color:var(--text)">
+                <option value="">— pick a template —</option>
+              </select>
+              <button class="btn btn-outline btn-sm" style="flex-shrink:0" onclick="sendSelectedTemplate(${c.id},'${esc(c.phone||'')}','${esc(c.name).replace(/'/g,"\\'")}')">Send ➤</button>
+            </div>
           </div>
-        </div>
-        <div class="wa-thread" id="waThread-${c.id}"><div class="wa-empty">Loading conversation…</div></div>
-        <div class="wa-compose">
-          <input type="file" id="waFile-${c.id}" style="display:none" onchange="sendWaFile(${c.id},'${esc(c.phone||'')}')">
-          <button title="Attach image, document, video…" onclick="document.getElementById('waFile-${c.id}').click()">📎</button>
-          <input type="text" id="waInput-${c.id}" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendWaText(${c.id},'${esc(c.phone||'')}')">
-          <button onclick="sendWaText(${c.id},'${esc(c.phone||'')}')">➤</button>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;padding:8px 10px;border-top:1px solid var(--border);background:#fffbeb;font-size:12px">
-          <span style="flex-shrink:0;font-weight:600;color:#d97706">📄 Send PI:</span>
-          <select id="waPISel-${c.id}" style="flex:1;min-width:0;font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-family:inherit;background:var(--card)">
-            <option value="">— select invoice —</option>
-          </select>
-          <button class="btn btn-primary btn-sm" style="flex-shrink:0;font-size:11px;padding:4px 12px;background:#d97706;border-color:#d97706" onclick="sendSelectedPI(${c.id})">Send ➤</button>
+          <div class="wa-thread" id="waThread-${c.id}"><div class="wa-empty">Loading conversation…</div></div>
+          <div class="wa-compose">
+            <input type="file" id="waFile-${c.id}" style="display:none" onchange="sendWaFile(${c.id},'${esc(c.phone||'')}')">
+            <button title="Attach image, document, video…" onclick="document.getElementById('waFile-${c.id}').click()">📎</button>
+            <input type="text" id="waInput-${c.id}" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendWaText(${c.id},'${esc(c.phone||'')}')">
+            <button onclick="sendWaText(${c.id},'${esc(c.phone||'')}')">➤</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;padding:8px 10px;border-top:1px solid var(--border);background:#fffbeb;font-size:12px">
+            <span style="flex-shrink:0;font-weight:600;color:#d97706">📄 Send PI:</span>
+            <select id="waPISel-${c.id}" style="flex:1;min-width:0;font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-family:inherit;background:var(--card)">
+              <option value="">— select invoice —</option>
+            </select>
+            <button class="btn btn-primary btn-sm" style="flex-shrink:0;font-size:11px;padding:4px 12px;background:#d97706;border-color:#d97706" onclick="sendSelectedPI(${c.id})">Send ➤</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1332,8 +1464,13 @@ function toggleAcc(key) {
   const open=body.classList.toggle('open');
   if(arrow)arrow.classList.toggle('open',open);
   if(key.startsWith('wa-')){
-    const cid=key.slice(3);
-    if(open){
+    const parts=key.slice(3);
+    if(open && parts.includes('_')){
+      const cid = parts.split('_')[0];
+      const phone = parts.split('_')[1];
+      loadWaThreadByPhone(+cid, phone, parts);
+    } else if(open){
+      const cid=parts;
       if(_waOpenCid!==cid){ _waOpenCid=cid; loadWaThread(cid); }
       loadWaPISelect(+cid);
       _waStartPoll(cid);
