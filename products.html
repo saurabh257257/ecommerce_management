@@ -88,6 +88,13 @@
     .modal-flags { display:flex; gap:20px; flex-wrap:wrap; padding:12px 0 4px; }
     .modal-flag-cb { display:flex; align-items:center; gap:7px; font-size:13px; cursor:pointer; }
     .modal-flag-cb input { width:15px; height:15px; cursor:pointer; accent-color:var(--primary); }
+    @media (max-width: 768px) {
+      .product-grid { grid-template-columns:1fr; gap:12px; }
+      .modal { width:100%; max-width:100%; border-radius:12px 12px 0 0; margin:0; }
+      .modal-tabs { overflow-x:auto; }
+      .cat-tabs { overflow-x:auto; flex-wrap:nowrap; -webkit-overflow-scrolling:touch; }
+      .cat-tab { flex-shrink:0; }
+    }
   </style>
 </head>
 <body>
