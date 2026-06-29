@@ -108,6 +108,13 @@
     .sidebar.hidden ~ .main { margin-left:0; }
     .sidebar-show-btn { position:fixed; top:50%; left:0; transform:translateY(-50%); z-index:200; width:20px; height:48px; border-radius:0 8px 8px 0; border:1px solid var(--primary); border-left:none; background:var(--primary); color:#fff; cursor:pointer; display:none; align-items:center; justify-content:center; font-size:11px; box-shadow:2px 0 8px rgba(0,0,0,.15); }
     .sidebar.hidden ~ .main .sidebar-show-btn { display:flex; }
+    .wa-fullscreen { position:fixed; inset:0; z-index:300; background:var(--bg); display:flex; flex-direction:column; }
+    .wa-fs-header { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; background:var(--surface); border-bottom:1px solid var(--border); flex-shrink:0; }
+    .wa-fs-header h3 { font-size:15px; font-weight:700; margin:0; }
+    .wa-fs-body { flex:1; display:flex; flex-direction:column; overflow:hidden; max-width:800px; width:100%; margin:0 auto; }
+    .wa-fs-body .wa-thread { flex:1; overflow-y:auto; padding:16px 20px; max-height:none !important; }
+    .wa-fs-body .wa-compose { border-top:1px solid var(--border); padding:12px 16px; }
+    .wa-fs-body .wa-compose input[type=text] { font-size:15px; padding:10px 14px; }
     .detail-back { font-size:11px; color:var(--primary); cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:3px; margin-bottom:12px; background:none; border:none; font-family:inherit; padding:0; }
     .detail-back:hover { text-decoration:underline; }
 
@@ -936,7 +943,10 @@ function renderWaSections(cid, phones) {
     return `<div class="acc-sec sec-wa">
       <div class="acc-head" onclick="toggleAcc('wa-${uid}')" style="background:${p.is_primary?'#ecfdf3':'#f0f9ff'}">
         <div class="acc-head-title">💬 ${esc(label)} — ${ph} ${p.is_primary?'<span style="font-size:9px;background:#16a34a;color:#fff;padding:1px 6px;border-radius:8px;margin-left:4px">Primary</span>':''}</div>
-        <div class="acc-arrow" id="accArrow-wa-${uid}">▶</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button onclick="event.stopPropagation();toggleWaFullscreen('${uid}','${esc(label)} — ${ph}')" style="border:none;background:none;cursor:pointer;font-size:14px;color:var(--muted)" title="Expand">⛶</button>
+          <div class="acc-arrow" id="accArrow-wa-${uid}">▶</div>
+        </div>
       </div>
       <div class="acc-body" id="accBody-wa-${uid}">
         <div class="wa-template-row">
@@ -2080,6 +2090,71 @@ async function sendPIWhatsApp(cid, invId, filename) {
     toast('PI sent via WhatsApp!', 'success');
     if (selCust) loadWaThread(cid, true);
   } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+function toggleWaFullscreen(uid, title) {
+  const existing = document.getElementById('waFs-' + uid);
+  if (existing) { existing.remove(); return; }
+  const body = document.getElementById('accBody-wa-' + uid);
+  if (!body) { const accHead = document.getElementById('accArrow-wa-' + uid); if (accHead) accHead.closest('.acc-head').click(); setTimeout(() => toggleWaFullscreen(uid, title), 300); return; }
+  const cid = uid.split('_')[0];
+  const phone = uid.split('_')[1];
+  const overlay = document.createElement('div');
+  overlay.id = 'waFs-' + uid;
+  overlay.className = 'wa-fullscreen';
+  overlay.innerHTML = `
+    <div class="wa-fs-header">
+      <h3>💬 ${title}</h3>
+      <button onclick="document.getElementById('waFs-${uid}').remove()" style="border:none;background:var(--primary);color:#fff;padding:6px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit">✕ Minimize</button>
+    </div>
+    <div class="wa-fs-body">
+      <div class="wa-template-row" style="padding:10px 16px;border-bottom:1px solid var(--border)">
+        ⚡ Use a template:
+        <div style="display:flex;gap:6px;align-items:center;margin-top:5px">
+          <select id="waTplSelFs-${uid}" style="flex:1;font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;background:var(--card)">
+            <option value="">— pick a template —</option>
+          </select>
+          <button class="btn btn-outline btn-sm" onclick="sendSelectedTemplate(${cid},'${phone}','')">Send ➤</button>
+        </div>
+      </div>
+      <div class="wa-thread" id="waThreadFs-${uid}"><div class="wa-empty">Loading…</div></div>
+      <div class="wa-compose">
+        <input type="file" id="waFileFs-${uid}" style="display:none" onchange="sendWaFileByPhone(${cid},'${phone}','${uid}');document.getElementById('waFs-${uid}')&&loadWaThreadFs('${uid}',${cid},'${phone}')">
+        <button onclick="document.getElementById('waFileFs-${uid}').click()">📎</button>
+        <input type="text" id="waInputFs-${uid}" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendWaTextFs('${uid}',${cid},'${phone}')">
+        <button onclick="sendWaTextFs('${uid}',${cid},'${phone}')">➤</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const sel = document.getElementById('waTplSelFs-' + uid);
+  if (sel) _fillWaTplSelect(sel);
+  loadWaThreadFs(uid, cid, phone);
+}
+
+async function sendWaTextFs(uid, cid, phone) {
+  const inp = document.getElementById('waInputFs-' + uid);
+  const text = inp.value.trim();
+  if (!text) return;
+  await fetch('/api/whatsapp/send', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({customerId:cid, phone, text, author:PERSON}) });
+  inp.value = '';
+  loadWaThreadFs(uid, cid, phone);
+  loadWaThreadByPhone(cid, phone, uid);
+}
+
+async function loadWaThreadFs(uid, cid, phone) {
+  const thread = document.getElementById('waThreadFs-' + uid);
+  if (!thread) return;
+  try {
+    const msgs = await fetch('/api/whatsapp/messages/' + cid).then(r=>r.json());
+    const last10 = phone.replace(/\D/g,'').slice(-10);
+    const filtered = msgs.filter(m => (m.phone||'').replace(/\D/g,'').slice(-10) === last10);
+    if (!filtered.length) { thread.innerHTML = '<div class="wa-empty">No messages yet</div>'; return; }
+    thread.innerHTML = filtered.map(m => {
+      const t = new Date(m.created_at.replace(' ','T')+'Z').toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+      return '<div class="wa-bubble '+(m.direction==='out'?'out':'in')+'">'+esc(m.body)+'<span class="wa-time">'+t+(m.direction==='out'?(' · '+(m.status||'sent')):'')+'</span></div>';
+    }).join('');
+    thread.scrollTop = thread.scrollHeight;
+  } catch(e) { thread.innerHTML = '<div class="wa-empty">Could not load</div>'; }
 }
 
 async function deleteCustomer(cid, name) {
