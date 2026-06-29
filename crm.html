@@ -343,6 +343,31 @@
       .wa-compose input::placeholder { font-size:13px; }
       .modal { width:100%; max-width:100%; border-radius:16px 16px 0 0; align-self:flex-end; max-height:90vh; overflow-y:auto; margin:0; }
       .modal-overlay { align-items:flex-end; }
+
+      /* ── PI form: single column on mobile ── */
+      #piForm-* div[style*="grid-template-columns:1fr 1fr"] { grid-template-columns:1fr !important; }
+
+      /* ── Phone cards: stack name input below number ── */
+      div[style*="flex-wrap:wrap"] { gap:6px !important; }
+
+      /* ── Detail fields: full width on narrow screens ── */
+      .d-grid { grid-template-columns:1fr !important; }
+      .d-field[style*="grid-column"] { grid-column:auto !important; }
+
+      /* ── Collapsible panel buttons: hide on mobile (sidebar already hidden) ── */
+      .panel-toggle, .left-toggle, #leftExpandBtn { display:none !important; }
+      .tm-left { width:auto !important; }
+      .tm-left.collapsed { width:auto !important; overflow:visible !important; }
+
+      /* ── WhatsApp fullscreen: proper mobile sizing ── */
+      .wa-fullscreen { inset:0; }
+      .wa-fs-body { max-width:100%; }
+      .wa-fs-body .wa-compose { padding-bottom:calc(12px + env(safe-area-inset-bottom)); }
+      .wa-fs-header { padding:12px 16px; }
+      .wa-fs-header h3 { font-size:13px; }
+
+      /* ── Sidebar show button: hide on mobile ── */
+      .sidebar-show-btn { display:none !important; }
     }
     @media (min-width: 861px) {
       .tm-filters-toggle { display:none !important; }
