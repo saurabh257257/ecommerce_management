@@ -2167,7 +2167,8 @@ function renderWaBody(body) {
   return lines.map(line => {
     if (line.match(/^\/uploads\/.*\.(jpg|jpeg|png|gif|webp)/i)) return `<img src="${esc(line)}" style="max-width:240px;border-radius:8px;display:block;margin:4px 0;cursor:pointer" onclick="window.open('${esc(line)}','_blank')">`;
     if (line.match(/^\/uploads\/.*\.(mp4|mov|webm)/i)) return `<video src="${esc(line)}" controls style="max-width:240px;border-radius:8px;display:block;margin:4px 0"></video>`;
-    if (line.match(/^\/uploads\//)) return `<a href="${esc(line)}" target="_blank" style="color:var(--primary)">${esc(line.split('/').pop())}</a>`;
+    if (line.match(/^\/uploads\/.*\.pdf$/i)) return `<div style="display:flex;align-items:center;gap:8px;margin:4px 0;padding:8px 12px;background:#fff4e6;border:1px solid #fed7aa;border-radius:8px;cursor:pointer" onclick="window.open('${esc(line)}','_blank')"><span style="font-size:20px">📄</span><span style="font-size:12px;font-weight:600;color:#9a3412">${esc(line.split('/').pop())}</span></div>`;
+    if (line.match(/^\/uploads\//)) return `<div style="display:flex;align-items:center;gap:8px;margin:4px 0;padding:8px 12px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;cursor:pointer" onclick="window.open('${esc(line)}','_blank')"><span style="font-size:20px">📎</span><span style="font-size:12px;font-weight:600;color:#0369a1">${esc(line.split('/').pop())}</span></div>`;
     return esc(line);
   }).join('<br>');
 }
