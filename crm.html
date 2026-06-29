@@ -1087,18 +1087,18 @@ function renderDetail() {
           </div>
         </div>
         <div class="wa-thread" id="waThread-${c.id}"><div class="wa-empty">Loading conversation…</div></div>
-        <div id="waPIRow-${c.id}" style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-top:1px solid var(--border);background:var(--bg);font-size:12px">
-          <span style="flex-shrink:0;font-weight:600;color:#d97706">📄 Send PI:</span>
-          <select id="waPISel-${c.id}" style="flex:1;min-width:0;font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-family:inherit;background:var(--card)">
-            <option value="">— select invoice —</option>
-          </select>
-          <button class="btn btn-outline btn-sm" style="flex-shrink:0;font-size:11px;padding:3px 10px" onclick="sendSelectedPI(${c.id})">Send ➤</button>
-        </div>
         <div class="wa-compose">
           <input type="file" id="waFile-${c.id}" style="display:none" onchange="sendWaFile(${c.id},'${esc(c.phone||'')}')">
           <button title="Attach image, document, video…" onclick="document.getElementById('waFile-${c.id}').click()">📎</button>
           <input type="text" id="waInput-${c.id}" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendWaText(${c.id},'${esc(c.phone||'')}')">
           <button onclick="sendWaText(${c.id},'${esc(c.phone||'')}')">➤</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;padding:8px 10px;border-top:1px solid var(--border);background:#fffbeb;font-size:12px">
+          <span style="flex-shrink:0;font-weight:600;color:#d97706">📄 Send PI:</span>
+          <select id="waPISel-${c.id}" style="flex:1;min-width:0;font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-family:inherit;background:var(--card)">
+            <option value="">— select invoice —</option>
+          </select>
+          <button class="btn btn-primary btn-sm" style="flex-shrink:0;font-size:11px;padding:4px 12px;background:#d97706;border-color:#d97706" onclick="sendSelectedPI(${c.id})">Send ➤</button>
         </div>
       </div>
     </div>
@@ -1336,7 +1336,8 @@ function toggleAcc(key) {
   if(key.startsWith('wa-')){
     const cid=key.slice(3);
     if(open){
-      if(_waOpenCid!==cid){ _waOpenCid=cid; loadWaThread(cid); loadWaPISelect(+cid); }
+      if(_waOpenCid!==cid){ _waOpenCid=cid; loadWaThread(cid); }
+      loadWaPISelect(+cid);
       _waStartPoll(cid);
     } else if(_waOpenCid===cid){
       _waOpenCid=null; _waStopPoll();
