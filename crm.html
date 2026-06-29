@@ -99,19 +99,6 @@
     .tm-stat.warn   .tm-stat-v { color:#f59e0b; }
     .tm-stat.ok     .tm-stat-v { color:#16a34a; }
 
-    /* AI brief — slide-over panel (opens on click, closes on click) */
-    .brief-overlay { position:fixed; inset:0; background:rgba(15,23,42,.4); z-index:200; display:none; align-items:stretch; justify-content:flex-end; }
-    .brief-overlay.open { display:flex; }
-    .tm-brief-view { width:420px; max-width:92vw; display:flex; flex-direction:column; overflow:hidden; background:var(--surface); box-shadow:-8px 0 30px rgba(0,0,0,.15); transform:translateX(100%); transition:transform .22s ease; }
-    .brief-overlay.open .tm-brief-view { transform:translateX(0); }
-    .brief-rh { padding:14px 20px 12px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; gap:10px; }
-    .brief-rh-title { font-size:15px; font-weight:700; }
-    .brief-rh-ts    { font-size:11px; color:var(--muted); margin-top:2px; }
-    .brief-rh-actions { display:flex; align-items:center; gap:7px; }
-    .brief-body { flex:1; overflow-y:auto; padding:20px 22px; }
-    .brief-loading { color:var(--muted); font-size:13px; display:flex; align-items:center; gap:8px; }
-    .brief-content { font-size:13px; line-height:1.8; color:var(--text); white-space:pre-wrap; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px 18px; }
-    .brief-empty { color:var(--muted); font-size:13px; text-align:center; padding:40px 20px; }
     .detail-back { font-size:11px; color:var(--primary); cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:3px; margin-bottom:12px; background:none; border:none; font-family:inherit; padding:0; }
     .detail-back:hover { text-decoration:underline; }
 
@@ -242,25 +229,6 @@
     .acp-close:hover { color:var(--text); }
     .acp-body { flex:1; overflow-y:auto; padding:16px 18px 24px; }
     .acp-sec { margin-bottom:18px; }
-    .acp-lbl { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin-bottom:7px; }
-    .acp-tag-inp { width:100%; border:2px solid var(--primary); border-radius:9px; padding:9px 13px; font-size:13px; font-family:inherit; outline:none; background:var(--card); color:var(--text); box-sizing:border-box; font-weight:600; }
-    .acp-cam-lbl { display:flex; align-items:center; justify-content:center; gap:9px; width:100%; padding:20px; border:2px dashed var(--border); border-radius:12px; cursor:pointer; font-size:13px; font-weight:500; background:var(--card); color:var(--text); transition:all .15s; box-sizing:border-box; }
-    .acp-cam-lbl:hover { border-color:var(--primary); color:var(--primary); background:#f0f4ff; }
-    .acp-preview { width:100%; border-radius:10px; overflow:hidden; margin-top:10px; display:none; position:relative; border:1px solid var(--border); }
-    .acp-preview img { width:100%; display:block; }
-    .acp-preview-rm { position:absolute; top:6px; right:6px; background:rgba(0,0,0,.65); color:#fff; border:none; border-radius:50%; width:26px; height:26px; cursor:pointer; font-size:12px; line-height:26px; text-align:center; }
-    .acp-mic-btn { display:flex; align-items:center; gap:9px; padding:10px 14px; border:1px solid var(--border); border-radius:9px; cursor:pointer; font-size:13px; background:var(--card); font-family:inherit; color:var(--text); transition:all .15s; width:100%; box-sizing:border-box; }
-    .acp-mic-btn:hover { border-color:#ef4444; }
-    .acp-mic-btn.rec { background:#fef2f2; border-color:#ef4444; color:#ef4444; animation:pulse 1.2s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.7} }
-    .acp-transcript { margin-top:8px; font-size:12px; line-height:1.55; color:var(--text); background:var(--card); border:1px solid var(--border); border-radius:8px; padding:8px 10px; min-height:60px; display:none; white-space:pre-wrap; width:100%; box-sizing:border-box; font-family:inherit; resize:vertical; }
-    .acp-extract-btn { width:100%; padding:12px; border-radius:10px; border:none; background:var(--primary); color:#fff; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; transition:opacity .15s; }
-    .acp-extract-btn:disabled { opacity:.4; cursor:default; }
-    .acp-extract-btn:not(:disabled):hover { opacity:.88; }
-    .acp-status { font-size:12px; padding:5px 0 2px; min-height:20px; }
-    .acp-status.loading { color:var(--primary); }
-    .acp-status.ok  { color:#16a34a; }
-    .acp-status.err { color:var(--danger); }
     .acp-field { border:1px solid var(--border); border-radius:8px; padding:8px 11px; font-size:13px; font-family:inherit; outline:none; background:var(--card); color:var(--text); width:100%; box-sizing:border-box; margin-bottom:8px; }
     .acp-field:focus { border-color:var(--primary); }
     .acp-form-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px; }
@@ -305,9 +273,6 @@
       .d-grid { grid-template-columns:1fr 1fr !important; }
       .d-actions { flex-wrap:wrap; gap:6px; }
       .d-actions .btn { font-size:11px; padding:6px 9px; }
-
-      /* Brief slide-over takes full width on mobile */
-      .tm-brief-view { width:100vw; max-width:100vw; }
 
       /* Bottom app-style nav bar */
       .tm-bottom-nav { display:flex; position:fixed; left:0; right:0; bottom:0; z-index:120; background:var(--surface); border-top:1px solid var(--border); box-shadow:0 -2px 14px rgba(0,0,0,.06); }
@@ -429,7 +394,7 @@
     <!-- LEFT: customer list -->
     <div class="tm-left">
       <div class="tm-search-bar">
-        <input type="text" id="tmSearch" placeholder="Search name, phone, email, company, city…" oninput="renderList()" />
+        <input type="text" id="tmSearch" placeholder="Search name, phone, email, company, city…" oninput="onSearchInput()" />
       </div>
       <div class="tm-list" id="tmList">
         <div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Loading…</div>
@@ -610,60 +575,88 @@ let sideFilter = { type:null, status:null, state:null };
 let selCust = null, selId = null, tabFilter = 'All', qnActiveCid = null, fuActiveCid = null;
 let allProducts = [], pickerOpen = false, pickerOpenCid = null;
 let allWaTemplates = [];
-let custTotal = 0, custLoading = false, custAllLoaded = false;
+let custTotal = 0, custLoading = false;
 let _serverStats = null;
-const PAGE_SIZE = 200;
+let _searchTimer = null;
+const PAGE_SIZE = 50;
 
 function todayISO() { return new Date().toISOString().split('T')[0]; }
 function isUnassignedRow(c){ const a=(c.assigned_to||'').trim(); return a===''||a==='Unassigned'; }
 
-async function loadMoreCustomers() {
-  if (custLoading || custAllLoaded) return;
+async function fetchCustomers(opts) {
+  opts = opts || {};
+  const params = new URLSearchParams();
+  params.set('limit', opts.limit || PAGE_SIZE);
+  params.set('offset', opts.offset || 0);
+  if (opts.search) params.set('search', opts.search);
+  if (opts.status) params.set('status', opts.status);
+  if (opts.customer_type) params.set('customer_type', opts.customer_type);
+  if (opts.state) params.set('state', opts.state);
+  const r = await fetch('/api/crm/customers?' + params.toString());
+  return await r.json();
+}
+
+async function loadList() {
+  if (custLoading) return;
   custLoading = true;
+  const el = document.getElementById('tmList');
+  el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Loading...</div>';
   try {
-    const r = await fetch(`/api/crm/customers?limit=${PAGE_SIZE}&offset=${allCust.length}`);
-    const j = await r.json();
-    const batch = j.data || [];
-    custTotal = j.total || custTotal;
-    allCust = allCust.concat(batch);
-    if (batch.length < PAGE_SIZE || allCust.length >= custTotal) custAllLoaded = true;
+    const q = (document.getElementById('tmSearch').value || '').trim();
+    const opts = { limit: PAGE_SIZE, offset: 0 };
+    if (q) opts.search = q;
+    if (sideFilter.status) opts.status = sideFilter.status;
+    if (sideFilter.type) opts.customer_type = sideFilter.type;
+    if (sideFilter.state) opts.state = sideFilter.state;
+    const j = await fetchCustomers(opts);
+    allCust = j.data || [];
+    custTotal = j.total || allCust.length;
+    renderList();
   } catch(e) {}
   custLoading = false;
+}
+
+async function loadMoreScroll() {
+  if (custLoading || allCust.length >= custTotal) return;
+  custLoading = true;
+  try {
+    const q = (document.getElementById('tmSearch').value || '').trim();
+    const opts = { limit: PAGE_SIZE, offset: allCust.length };
+    if (q) opts.search = q;
+    if (sideFilter.status) opts.status = sideFilter.status;
+    if (sideFilter.type) opts.customer_type = sideFilter.type;
+    if (sideFilter.state) opts.state = sideFilter.state;
+    const j = await fetchCustomers(opts);
+    const batch = j.data || [];
+    allCust = allCust.concat(batch);
+    custTotal = j.total || custTotal;
+    renderList();
+  } catch(e) {}
+  custLoading = false;
+}
+
+function onSearchInput() {
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(() => loadList(), 300);
 }
 
 async function init() {
   document.title = 'CRM — Arambhika Enablers';
   document.getElementById('pageTitle').textContent = 'CRM';
-  const [custR, tmR, stR, ctR, prR] = await Promise.all([
-    fetch(`/api/crm/customers?limit=${PAGE_SIZE}&offset=0`), fetch('/api/team-members'),
+  const [statsR, tmR, stR, ctR, prR] = await Promise.all([
+    fetch('/api/dashboard/stats'), fetch('/api/team-members'),
     fetch('/api/statuses'), fetch('/api/customer-types'), fetch('/api/products')
   ]);
-  const custJ = await custR.json();
-  allCust = custJ.data || [];
-  custTotal = custJ.total || allCust.length;
-  if (allCust.length >= custTotal) custAllLoaded = true;
+  _serverStats = await statsR.json();
+  custTotal = _serverStats.total || 0;
   teamMembers = (await tmR.json()).data || [];
   allStatuses = (await stR.json()).data || [];
   allTypes = (await ctR.json()).data || [];
   allProducts = (await prR.json()).data || [];
-  renderTiles(); renderFilterSidebar(); renderList();
+  renderTiles(); renderFilterSidebar();
+  await loadList();
   loadNotifications();
   setInterval(loadNotifications, 20000);
-  // Fetch accurate tile counts from server
-  fetch('/api/dashboard/stats').then(r=>r.json()).then(st=>{
-    _serverStats = st;
-    renderTiles();
-  }).catch(()=>{});
-  // Lazy-load remaining customers in background
-  if (!custAllLoaded) {
-    (async function bgLoad() {
-      while (!custAllLoaded) {
-        await loadMoreCustomers();
-        renderList();
-      }
-      renderTiles();
-    })();
-  }
   // Load WhatsApp templates in background (triggers Meta sync)
   fetch('/api/whatsapp/templates').then(r=>r.json()).then(data=>{
     allWaTemplates = (data||[]).filter(t=>t.status==='APPROVED'||t.status==='ACTIVE'||t.status==='approved');
@@ -756,11 +749,11 @@ function renderTiles() {
 }
 function filterByStatus(val) {
   sideFilter.status = val;
-  renderTiles(); renderFilterSidebar(); renderList();
+  renderTiles(); renderFilterSidebar(); loadList();
 }
 function setScope(s){
   scope=s; sideFilter={type:null,status:null,state:null}; tabFilter='All';
-  renderTiles(); renderFilterSidebar(); renderList();
+  renderTiles(); renderFilterSidebar(); loadList();
   // On mobile, collapse the drawer after picking a scope so the list is immediately visible
   const drawer=document.getElementById('tmFilters'), toggle=document.getElementById('tmFiltToggle');
   if (drawer && drawer.classList.contains('open') && window.innerWidth<=860){ drawer.classList.remove('open'); toggle.classList.remove('open'); }
@@ -831,31 +824,20 @@ function toggleFiltGroup(e, key){
 }
 function toggleSideFilter(key, val){
   sideFilter[key] = (sideFilter[key]===val) ? null : val;
-  renderFilterSidebar(); renderList();
+  renderFilterSidebar(); loadList();
   const drawer=document.getElementById('tmFilters'), toggle=document.getElementById('tmFiltToggle');
   if (drawer && drawer.classList.contains('open') && window.innerWidth<=860){ drawer.classList.remove('open'); toggle.classList.remove('open'); }
 }
-function clearSideFilters(){ sideFilter={type:null,status:null,state:null}; openFiltGroup=null; renderFilterSidebar(); renderList(); }
+function clearSideFilters(){ sideFilter={type:null,status:null,state:null}; openFiltGroup=null; renderFilterSidebar(); loadList(); }
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.tm-filters') && openFiltGroup){ openFiltGroup=null; renderFilterSidebar(); }
 });
 
-// Always return all contacts — no per-person scoping
-function scopedList(){ return allCust; }
 
 function renderList() {
-  const q = (document.getElementById('tmSearch').value||'').toLowerCase();
   const t = todayISO();
   const isUnassignedScope = scope==='unassigned';
-  let list = scopedList();
-  if      (tabFilter==='overdue') list=list.filter(c=>c.next_followup&&c.next_followup<t);
-  else if (tabFilter==='today')   list=list.filter(c=>c.next_followup===t);
-  else if (tabFilter==='nodate')  list=list.filter(c=>!c.next_followup&&c.status!=='Onboarded');
-  else if (tabFilter!=='All')     list=list.filter(c=>c.status===tabFilter);
-  if (sideFilter.type)   list=list.filter(c=>(c.customer_type||'')===sideFilter.type);
-  if (sideFilter.status) list=list.filter(c=>c.status===sideFilter.status);
-  if (sideFilter.state)  list=list.filter(c=>(c.state||'')===sideFilter.state);
-  if (q) list=list.filter(c=>[c.name,c.company,c.phone,c.phone2,c.email,c.city,c.state,c.country,c.gst_number,c.source,c.requirement,c.remark,c.customer_type].join(' ').toLowerCase().includes(q));
+  let list = allCust;
   list.sort((a,b)=>{
     const rank=x=>!x.next_followup?3:x.next_followup<t?0:x.next_followup===t?1:2;
     return rank(a)-rank(b)||(a.next_followup||'9').localeCompare(b.next_followup||'9');
@@ -874,6 +856,9 @@ function renderList() {
       ${assignBtn}
     </div>`;
   }).join('');
+  if (allCust.length < custTotal) {
+    el.innerHTML += `<div style="padding:12px;text-align:center;color:var(--muted);font-size:11px">Showing ${allCust.length} of ${custTotal} — scroll for more</div>`;
+  }
 }
 
 async function assignToMe(cid) {
@@ -1926,6 +1911,9 @@ async function sendPIWhatsApp(cid, invId, filename) {
 }
 
 init();
+document.getElementById('tmList').addEventListener('scroll', function() {
+  if (this.scrollTop + this.clientHeight >= this.scrollHeight - 100) loadMoreScroll();
+});
 </script>
 <script src="js/nav.js"></script>
 </body>

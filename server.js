@@ -14,12 +14,6 @@ const PORT = process.env.PORT || 3000;
 const db = new Database(path.join(__dirname, 'shopmanager.db'));
 
 db.exec(`
-  CREATE TABLE IF NOT EXISTS customers (
-    id TEXT PRIMARY KEY,
-    firstName TEXT, lastName TEXT, email TEXT,
-    phone TEXT, city TEXT, address TEXT,
-    status TEXT DEFAULT 'Active', notes TEXT, joined TEXT
-  );
   CREATE TABLE IF NOT EXISTS customers_v2 (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -77,13 +71,6 @@ db.exec(`
     name TEXT NOT NULL UNIQUE,
     color TEXT DEFAULT '#0ea5e9',
     sort_order INTEGER DEFAULT 0
-  );
-  CREATE TABLE IF NOT EXISTS orders (
-    id TEXT PRIMARY KEY,
-    customerName TEXT, product TEXT,
-    qty INTEGER DEFAULT 1, amount REAL DEFAULT 0,
-    status TEXT DEFAULT 'Pending',
-    payment TEXT DEFAULT 'COD', notes TEXT, date TEXT
   );
   CREATE TABLE IF NOT EXISTS products (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -171,6 +158,13 @@ try { db.exec("CREATE INDEX IF NOT EXISTS idx_wa_phone ON wa_messages(phone)"); 
 try { db.exec("CREATE INDEX IF NOT EXISTS idx_wa_customer ON wa_messages(customer_id)"); } catch(e) {}
 try { db.exec("CREATE INDEX IF NOT EXISTS idx_phones_customer ON customer_phones(customer_id)"); } catch(e) {}
 try { db.exec("CREATE INDEX IF NOT EXISTS idx_notif_read ON notifications(is_read)"); } catch(e) {}
+try { db.exec("CREATE INDEX IF NOT EXISTS idx_cv2_status ON customers_v2(status)"); } catch(e) {}
+try { db.exec("CREATE INDEX IF NOT EXISTS idx_cv2_type ON customers_v2(customer_type)"); } catch(e) {}
+try { db.exec("CREATE INDEX IF NOT EXISTS idx_cv2_state ON customers_v2(state)"); } catch(e) {}
+try { db.exec("CREATE INDEX IF NOT EXISTS idx_cv2_phone ON customers_v2(phone)"); } catch(e) {}
+try { db.exec("CREATE INDEX IF NOT EXISTS idx_cv2_updated ON customers_v2(updated_at)"); } catch(e) {}
+try { db.exec("CREATE INDEX IF NOT EXISTS idx_cv2_assigned ON customers_v2(assigned_to)"); } catch(e) {}
+try { db.exec("CREATE INDEX IF NOT EXISTS idx_pi_customer ON proforma_invoices(customer_id)"); } catch(e) {}
 
 // Backfill: copy existing customers_v2.phone into customer_phones as primary, if not already present
 try {
@@ -202,8 +196,40 @@ try { db.exec("INSERT OR IGNORE INTO statuses (name,color,sort_order) VALUES ('L
 // Seed default customer types
 try { db.exec("INSERT OR IGNORE INTO customer_types (name,color,sort_order) VALUES ('EV Battery','#22c55e',1),('Supplier','#f97316',2),('Retailer','#3b82f6',3),('Distributor','#8b5cf6',4)"); } catch(e) {}
 
+// ── Compression + caching ─────────────────────────────────────
+const zlib = require('zlib');
+app.use((req, res, next) => {
+  const accept = req.headers['accept-encoding'] || '';
+  if (accept.includes('gzip')) {
+    const origSend = res.send.bind(res);
+    res.send = (body) => {
+      if (typeof body === 'string' || Buffer.isBuffer(body)) {
+        const buf = typeof body === 'string' ? Buffer.from(body) : body;
+        if (buf.length > 1024) {
+          zlib.gzip(buf, (err, compressed) => {
+            if (err) return origSend(body);
+            res.setHeader('Content-Encoding', 'gzip');
+            res.setHeader('Vary', 'Accept-Encoding');
+            origSend(compressed);
+          });
+          return;
+        }
+      }
+      origSend(body);
+    };
+  }
+  next();
+});
+
 app.use(express.json({ limit: '15mb' }));
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(path.join(__dirname), {
+  maxAge: '1h',
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache');
+    else if (filePath.match(/\.(css|js)$/)) res.setHeader('Cache-Control', 'public, max-age=3600');
+    else if (filePath.match(/\.(png|jpg|jpeg|webp|svg|ico)$/)) res.setHeader('Cache-Control', 'public, max-age=86400');
+  }
+}));
 
 // ── Image upload setup ────────────────────────────────────────
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -215,76 +241,6 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname.replace(/[^a-zA-Z0-9.]/g, '-')),
 });
 const upload = multer({ storage, limits: { fileSize: 20 * 1024 * 1024 } });
-
-function genId() {
-  return Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 5).toUpperCase();
-}
-
-// ── Customers ─────────────────────────────────────────────────
-app.get('/api/customers', (req, res) => {
-  res.json({ data: db.prepare('SELECT * FROM customers ORDER BY rowid DESC').all() });
-});
-app.post('/api/customers', (req, res) => {
-  const c = req.body, id = genId();
-  db.prepare(`INSERT INTO customers VALUES (?,?,?,?,?,?,?,?,?,?)`)
-    .run(id, c.firstName, c.lastName, c.email, c.phone, c.city, c.address, c.status || 'Active', c.notes, c.joined || new Date().toLocaleDateString('en-IN'));
-  res.json({ success: true, id });
-});
-app.put('/api/customers/:id', (req, res) => {
-  const c = req.body;
-  db.prepare(`UPDATE customers SET firstName=?,lastName=?,email=?,phone=?,city=?,address=?,status=?,notes=? WHERE id=?`)
-    .run(c.firstName, c.lastName, c.email, c.phone, c.city, c.address, c.status, c.notes, req.params.id);
-  res.json({ success: true });
-});
-app.delete('/api/customers/:id', (req, res) => {
-  db.prepare('DELETE FROM customers WHERE id=?').run(req.params.id);
-  res.json({ success: true });
-});
-
-// ── Orders ────────────────────────────────────────────────────
-app.get('/api/orders', (req, res) => {
-  res.json({ data: db.prepare('SELECT * FROM orders ORDER BY rowid DESC').all() });
-});
-app.post('/api/orders', (req, res) => {
-  const o = req.body, id = genId();
-  db.prepare(`INSERT INTO orders VALUES (?,?,?,?,?,?,?,?,?)`)
-    .run(id, o.customerName, o.product, o.qty || 1, o.amount || 0, o.status || 'Pending', o.payment || 'COD', o.notes, o.date || new Date().toLocaleDateString('en-IN'));
-  res.json({ success: true, id });
-});
-app.put('/api/orders/:id', (req, res) => {
-  const o = req.body;
-  db.prepare(`UPDATE orders SET customerName=?,product=?,qty=?,amount=?,status=?,payment=?,notes=? WHERE id=?`)
-    .run(o.customerName, o.product, o.qty, o.amount, o.status, o.payment, o.notes, req.params.id);
-  res.json({ success: true });
-});
-
-// Mark Paid → updates order status AND auto-sends a Utility WhatsApp template confirming payment
-app.post('/api/orders/:id/mark-paid', async (req, res) => {
-  try {
-    const { customerId, phone, template, language, params, author } = req.body;
-    db.prepare("UPDATE orders SET status='Paid' WHERE id=?").run(req.params.id);
-    let waResult = null;
-    if (phone && template) {
-      const to = waToE164(phone);
-      const components = (params && params.length) ? [{ type: 'body', parameters: params.map(p => ({ type: 'text', text: String(p) })) }] : [];
-      const result = await waApiCall({
-        messaging_product: 'whatsapp', to, type: 'template',
-        template: { name: template, language: { code: language || 'en_US' }, components }
-      });
-      const waId = result.messages?.[0]?.id || '';
-      db.prepare(`INSERT INTO wa_messages (customer_id, phone, direction, body, msg_type, wa_msg_id, status, author) VALUES (?,?,?,?,?,?,?,?)`)
-        .run(customerId || null, phone, 'out', `[template: ${template}]`, 'template', waId, 'sent', author || '');
-      waResult = { wa_msg_id: waId };
-    }
-    res.json({ success: true, whatsapp: waResult });
-  } catch (e) {
-    res.status(500).json({ success: false, error: e.message });
-  }
-});
-app.delete('/api/orders/:id', (req, res) => {
-  db.prepare('DELETE FROM orders WHERE id=?').run(req.params.id);
-  res.json({ success: true });
-});
 
 // ── Tags ──────────────────────────────────────────────────────
 app.get('/api/tags', (req, res) => {
@@ -394,12 +350,14 @@ app.delete('/api/crm/customers/:id/tags/:tagId', (req, res) => {
 
 // ── Customers V2 (CRM) ───────────────────────────────────────
 app.get('/api/crm/customers', (req, res) => {
-  const { assigned_to, status, search, limit, offset } = req.query;
+  const { assigned_to, status, search, limit, offset, customer_type, state } = req.query;
   let sql = 'SELECT * FROM customers_v2';
   let countSql = 'SELECT COUNT(*) as total FROM customers_v2';
   const params = [], conds = [];
   if (assigned_to) { conds.push('assigned_to = ?'); params.push(assigned_to); }
   if (status) { conds.push('status = ?'); params.push(status); }
+  if (customer_type) { conds.push('customer_type = ?'); params.push(customer_type); }
+  if (state) { conds.push('state = ?'); params.push(state); }
   if (search) { conds.push('(name LIKE ? OR company LIKE ? OR phone LIKE ? OR phone2 LIKE ? OR email LIKE ? OR city LIKE ? OR state LIKE ? OR country LIKE ? OR requirement LIKE ? OR remark LIKE ? OR source LIKE ? OR customer_type LIKE ? OR status LIKE ?)'); params.push(...Array(13).fill(`%${search}%`)); }
   if (conds.length) { const w = ' WHERE ' + conds.join(' AND '); sql += w; countSql += w; }
   const total = db.prepare(countSql).get(...params).total;
