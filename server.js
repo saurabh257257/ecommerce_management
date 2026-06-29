@@ -1443,18 +1443,21 @@ app.get('/api/crm/invoices/:id/pdf', (req, res) => {
   const invDate = new Date(inv.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-');
 
   // Logo banner
-  doc.rect(LX, 30, W, 50).fill('#1a2332');
-  doc.font('Helvetica-Bold').fontSize(20).fillColor('#ffffff').text('ARAMBHIKA', LX + 15, 38, { continued: false });
-  doc.font('Helvetica').fontSize(10).fillColor('#8899aa').text('ENABLERS', LX + 155, 48);
-  doc.font('Helvetica').fontSize(7.5).fillColor('#aabbcc').text('Nickel & Copper Battery Connectors: Mfg. & Dist.', LX + 15, 62);
+  doc.rect(LX, 30, W, 60).fill('#111827');
+  doc.rect(LX, 86, W, 3).fill('#4f7df5');
+  doc.font('Helvetica-Bold').fontSize(26).fillColor('#ffffff').text('AR', LX + 20, 40, { continued: true });
+  doc.fillColor('#4f7df5').text('/', { continued: true });
+  doc.fillColor('#ffffff').text('AMBHIKA', { continued: false });
+  doc.font('Helvetica-Bold').fontSize(11).fillColor('#94a3b8').text('E N A B L E R S', LX + 20, 70);
+  doc.font('Helvetica').fontSize(8).fillColor('#cbd5e1').text('Nickel & Copper Battery Connectors: Mfg. & Dist.', LX + W - 260, 72, { width: 250, align: 'right' });
   doc.fillColor('#000');
 
   // Title + Date
-  doc.font('Helvetica-Bold').fontSize(16).fillColor('#1a2332').text('PROFORMA INVOICE', LX, 90, { align: 'center', width: W });
-  doc.font('Helvetica').fontSize(10).fillColor('#000').text(`Date: ${invDate}`, LX + W - 180, 90, { width: 180, align: 'right' });
+  doc.font('Helvetica-Bold').fontSize(16).fillColor('#111827').text('PROFORMA INVOICE', LX, 100, { align: 'center', width: W });
+  doc.font('Helvetica').fontSize(10).fillColor('#000').text(`Date: ${invDate}`, LX + W - 180, 100, { width: 180, align: 'right' });
 
   // Header table
-  const HY = 115;
+  const HY = 125;
   const HW = W / 2;
   doc.rect(LX, HY, W, 120).stroke();
   doc.moveTo(LX + HW, HY).lineTo(LX + HW, HY + 120).stroke();
