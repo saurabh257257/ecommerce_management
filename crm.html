@@ -1243,9 +1243,8 @@ function renderDetail() {
           <div style="font-size:13px;font-weight:700;margin-bottom:10px">New Proforma Invoice</div>
           <div id="piItems-${c.id}"></div>
           <button class="btn btn-outline btn-sm" onclick="addPIRow(${c.id})" style="margin:8px 0">+ Add Item</button>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
-            <div><label style="font-size:10px;color:var(--muted);font-weight:600">FREIGHT</label><input type="number" id="piFreight-${c.id}" value="0" step="0.01" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"></div>
-            <div><label style="font-size:10px;color:var(--muted);font-weight:600">P&amp;F</label><input type="number" id="piPF-${c.id}" value="0" step="0.01" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"></div>
+          <div style="margin-top:8px">
+            <label style="font-size:10px;color:var(--muted);font-weight:600">FREIGHT</label><input type="number" id="piFreight-${c.id}" value="0" step="0.01" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px">
           </div>
           <div style="margin-top:8px"><label style="font-size:10px;color:var(--muted);font-weight:600">REMARKS</label><input type="text" id="piRemarks-${c.id}" placeholder="Optional remarks" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"></div>
           <div style="display:flex;gap:8px;margin-top:12px">
@@ -1958,9 +1957,8 @@ function addPIRow(cid) {
         <div><label style="font-size:9px;color:var(--muted)">HSN Code</label><input type="text" id="piHsn-${rid}" value="85079090" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px"></div>
         <div><label style="font-size:9px;color:var(--muted)">QTY (kg)</label><input type="number" id="piQ-${rid}" value="1" min="1" oninput="calcPIRow(${rid})" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px"></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:6px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px">
         <div><label style="font-size:9px;color:var(--muted)">Rate/kg</label><input type="number" id="piR-${rid}" value="0" step="0.01" oninput="calcPIRow(${rid})" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px"></div>
-        <div><label style="font-size:9px;color:var(--muted)">P&F/Freight</label><input type="number" id="piPF2-${rid}" value="0" step="0.01" oninput="calcPIRow(${rid})" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px"></div>
         <div><label style="font-size:9px;color:var(--muted)">Taxable</label><input type="text" id="piTax-${rid}" value="0.00" readonly style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:#f1f5f9;font-weight:700"></div>
       </div>
     </div>
@@ -1984,8 +1982,7 @@ function onPIProductChange(rid) {
 function calcPIRow(rid) {
   const qty = parseFloat(document.getElementById('piQ-' + rid).value) || 0;
   const rate = parseFloat(document.getElementById('piR-' + rid).value) || 0;
-  const pf = parseFloat(document.getElementById('piPF2-' + rid).value) || 0;
-  const taxable = qty * rate + pf;
+  const taxable = qty * rate;
   document.getElementById('piTax-' + rid).value = taxable.toFixed(2);
 }
 
@@ -2000,7 +1997,7 @@ function collectPIRows(cid) {
       description: document.getElementById('piDesc-' + rid).value,
       qty: document.getElementById('piQ-' + rid).value,
       rate: document.getElementById('piR-' + rid).value,
-      pf_freight: document.getElementById('piPF2-' + rid).value,
+      pf_freight: '0',
       taxable: document.getElementById('piTax-' + rid).value,
       igst: '18'
     });
@@ -2012,7 +2009,7 @@ async function savePIForm(cid) {
   const items = collectPIRows(cid);
   if (!items.length || !items.some(it => it.description)) { toast('Add at least one item', 'error'); return; }
   const freight = parseFloat(document.getElementById('piFreight-' + cid).value) || 0;
-  const pf = parseFloat(document.getElementById('piPF-' + cid).value) || 0;
+  const pf = 0;
   const remarks = document.getElementById('piRemarks-' + cid).value.trim();
   try {
     const r = await fetch(`/api/crm/customers/${cid}/invoices`, {
