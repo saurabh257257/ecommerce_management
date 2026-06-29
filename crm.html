@@ -861,8 +861,8 @@ function renderList() {
     const fuCls=!c.next_followup?'none':ov?'ov':td?'td':'ok';
     const assignBtn=isUnassignedScope?`<button class="btn btn-primary btn-sm" style="margin-top:5px;font-size:11px;padding:3px 9px" onclick="event.stopPropagation();assignToMe(${c.id})">➕ Assign to me</button>`:'';
     return `<div class="tm-item${selId===c.id?' active':''}" id="li-${c.id}" onclick="selectC(${c.id})">
-      <div class="tm-item-name">${esc(c.name)}<span class="s-badge ${S_MAP[c.status]||''}" style="margin-left:6px">${c.status||'—'}</span></div>
-      <div class="tm-item-sub">${[c.company,c.phone].filter(Boolean).map(esc).join(' · ')}</div>
+      <div class="tm-item-name">${c.company && c.company !== c.name ? esc(c.company)+': ' : ''}${esc(c.name)}<span class="s-badge ${S_MAP[c.status]||''}" style="margin-left:6px">${c.status||'—'}</span></div>
+      <div class="tm-item-sub">${esc(c.phone||'')}${c.state?' · '+esc(c.state):''}</div>
       <div class="tm-item-fu ${fuCls}">${fuLabel}</div>
       ${assignBtn}
     </div>`;
@@ -901,12 +901,14 @@ async function loadCustomerPhones(cid) {
     const el = document.getElementById('phoneList-'+cid);
     if (!el) return;
     if (!phones.length) { el.innerHTML = '<span style="color:var(--muted)">No numbers added</span>'; return; }
+    const custName = selCust ? selCust.name : '';
     el.innerHTML = phones.map(p => `
-      <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:8px;cursor:pointer;${p.is_primary?'background:#ecfdf3;border:1px solid #bbf7d0':'background:var(--bg);border:1px solid var(--border)'};margin-bottom:4px" onclick="selectCustomerPhone(${cid},${p.id})">
-        <span style="font-size:16px">${p.is_primary?'🟢':'⚪'}</span>
-        <a href="tel:${esc(p.phone)}" onclick="event.stopPropagation()" style="font-size:13px;font-weight:${p.is_primary?'600':'400'};color:var(--text);text-decoration:none">${esc(p.phone)}</a>
-        ${p.is_primary?'<span style="font-size:10px;background:#16a34a;color:#fff;padding:1px 7px;border-radius:10px;font-weight:600">WhatsApp</span>':'<span style="font-size:10px;color:var(--muted)">tap to select</span>'}
-        <button title="Remove" onclick="event.stopPropagation();removeCustomerPhone(${cid},${p.id})" style="border:none;background:none;cursor:pointer;color:var(--muted);font-size:12px;margin-left:auto">✕</button>
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;${p.is_primary?'background:#ecfdf3;border:1px solid #bbf7d0':'background:var(--bg);border:1px solid var(--border)'};margin-bottom:4px;flex-wrap:wrap">
+        <span style="font-size:16px;cursor:pointer" onclick="selectCustomerPhone(${cid},${p.id})" title="${p.is_primary?'WhatsApp number':'Click to use for WhatsApp'}">${p.is_primary?'🟢':'⚪'}</span>
+        <a href="tel:${esc(p.phone)}" style="font-size:13px;font-weight:${p.is_primary?'600':'400'};color:var(--text);text-decoration:none">${esc(p.phone)}</a>
+        ${p.is_primary?'<span style="font-size:10px;background:#16a34a;color:#fff;padding:1px 7px;border-radius:10px;font-weight:600">WhatsApp</span>':'<span style="font-size:10px;color:var(--muted);cursor:pointer" onclick="selectCustomerPhone(${cid},${p.id})">tap to select</span>'}
+        <input type="text" value="${esc(p.label || custName)}" placeholder="Contact name" onblur="updatePhoneLabel(${cid},${p.id},this.value)" onclick="event.stopPropagation()" style="flex:1;min-width:80px;font-size:11px;padding:3px 7px;border:1px solid var(--border);border-radius:5px;background:var(--card);color:var(--text);font-family:inherit">
+        <button title="Remove" onclick="event.stopPropagation();removeCustomerPhone(${cid},${p.id})" style="border:none;background:none;cursor:pointer;color:var(--muted);font-size:12px">✕</button>
       </div>
     `).join('');
   } catch(e) {}
@@ -931,6 +933,15 @@ async function selectCustomerPhone(cid, phoneId) {
   const waTitle = document.querySelector(`#accSec-wa-${cid} .acc-head-title`);
   if (waTitle) waTitle.textContent = '💬 WhatsApp' + (selCust.phone ? (' — '+selCust.phone) : '');
   toast('WhatsApp number updated','success');
+}
+
+async function updatePhoneLabel(cid, phoneId, label) {
+  try {
+    await fetch(`/api/crm/customers/${cid}/phones/${phoneId}/label`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label: label.trim() })
+    });
+  } catch(e) {}
 }
 
 async function removeCustomerPhone(cid, phoneId) {

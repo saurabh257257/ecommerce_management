@@ -506,6 +506,11 @@ app.post('/api/crm/customers/:id/phones', (req, res) => {
   if (isFirst) db.prepare("UPDATE customers_v2 SET phone=?,updated_at=datetime('now') WHERE id=?").run(phone.trim(), cid);
   res.json({ success: true, id: r.lastInsertRowid });
 });
+app.put('/api/crm/customers/:id/phones/:phoneId/label', (req, res) => {
+  const { label } = req.body;
+  db.prepare('UPDATE customer_phones SET label=? WHERE id=? AND customer_id=?').run(label || '', req.params.phoneId, req.params.id);
+  res.json({ success: true });
+});
 app.put('/api/crm/customers/:id/phones/:phoneId/select', (req, res) => {
   const cid = req.params.id;
   const row = db.prepare('SELECT * FROM customer_phones WHERE id=? AND customer_id=?').get(req.params.phoneId, cid);
