@@ -1087,6 +1087,13 @@ function renderDetail() {
           </div>
         </div>
         <div class="wa-thread" id="waThread-${c.id}"><div class="wa-empty">Loading conversation…</div></div>
+        <div id="waPIRow-${c.id}" style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-top:1px solid var(--border);background:var(--bg);font-size:12px">
+          <span style="flex-shrink:0;font-weight:600;color:#d97706">📄 Send PI:</span>
+          <select id="waPISel-${c.id}" style="flex:1;min-width:0;font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-family:inherit;background:var(--card)">
+            <option value="">— select invoice —</option>
+          </select>
+          <button class="btn btn-outline btn-sm" style="flex-shrink:0;font-size:11px;padding:3px 10px" onclick="sendSelectedPI(${c.id})">Send ➤</button>
+        </div>
         <div class="wa-compose">
           <input type="file" id="waFile-${c.id}" style="display:none" onchange="sendWaFile(${c.id},'${esc(c.phone||'')}')">
           <button title="Attach image, document, video…" onclick="document.getElementById('waFile-${c.id}').click()">📎</button>
@@ -1329,7 +1336,7 @@ function toggleAcc(key) {
   if(key.startsWith('wa-')){
     const cid=key.slice(3);
     if(open){
-      if(_waOpenCid!==cid){ _waOpenCid=cid; loadWaThread(cid); }
+      if(_waOpenCid!==cid){ _waOpenCid=cid; loadWaThread(cid); loadWaPISelect(+cid); }
       _waStartPoll(cid);
     } else if(_waOpenCid===cid){
       _waOpenCid=null; _waStopPoll();
@@ -1925,6 +1932,27 @@ async function deletePIInvoice(cid, invId) {
     toast('Invoice deleted', 'success');
     loadPIList(cid);
   } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function loadWaPISelect(cid) {
+  const sel = document.getElementById('waPISel-' + cid);
+  if (!sel) return;
+  try {
+    const invoices = await fetch(`/api/crm/customers/${cid}/invoices`).then(r => r.json());
+    sel.innerHTML = '<option value="">— select invoice —</option>' +
+      invoices.map(inv => {
+        const d = new Date(inv.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+        return `<option value="${inv.id}" data-fn="${esc(inv.filename)}">${esc(inv.filename)} (${d} — ₹${parseFloat(inv.total).toLocaleString('en-IN')})</option>`;
+      }).join('');
+  } catch(e) {}
+}
+
+async function sendSelectedPI(cid) {
+  const sel = document.getElementById('waPISel-' + cid);
+  if (!sel || !sel.value) { toast('Select an invoice first', 'error'); return; }
+  const invId = sel.value;
+  const filename = sel.options[sel.selectedIndex].dataset.fn || 'invoice.pdf';
+  await sendPIWhatsApp(cid, invId, filename);
 }
 
 async function sendPIWhatsApp(cid, invId, filename) {
