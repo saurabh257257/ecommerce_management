@@ -1415,11 +1415,13 @@ app.post('/api/crm/customers/:id/invoices', (req, res) => {
   const taxableTotal = items.reduce((s, it) => s + (parseFloat(it.taxable) || 0), 0);
   const totalFreight = parseFloat(freight) || 0;
   const totalPF = parseFloat(pf) || 0;
-  const tax = (taxableTotal + totalFreight + totalPF) * 0.18;
+  const tax = taxableTotal * 0.18;
   const total = taxableTotal + totalFreight + totalPF + tax;
-  const dateStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-');
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-');
+  const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }).replace(':', '');
   const safeName = (c.name || 'Customer').replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_');
-  const filename = `${safeName}_${dateStr}.pdf`;
+  const filename = `${safeName}_${dateStr}_${timeStr}.pdf`;
   const r = db.prepare('INSERT INTO proforma_invoices (customer_id, filename, items, freight, pf, remarks, total) VALUES (?,?,?,?,?,?,?)')
     .run(cid, filename, JSON.stringify(items), totalFreight, totalPF, remarks || '', total);
   res.json({ success: true, id: r.lastInsertRowid, filename });
@@ -1534,7 +1536,7 @@ app.get('/api/crm/invoices/:id/pdf', (req, res) => {
   const taxableTotal = items.reduce((s, it) => s + (parseFloat(it.taxable) || 0), 0);
   const totalFreight = inv.freight || 0;
   const totalPF = inv.pf || 0;
-  const tax = (taxableTotal + totalFreight + totalPF) * 0.18;
+  const tax = taxableTotal * 0.18;
   const grandTotal = taxableTotal + totalFreight + totalPF + tax;
 
   const totals = [

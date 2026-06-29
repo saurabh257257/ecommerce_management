@@ -1924,7 +1924,6 @@ async function loadPIList(cid) {
         <span style="font-size:11px;color:var(--muted)">${d}</span>
         <span style="font-size:11px;font-weight:700;color:var(--primary)">₹${parseFloat(inv.total).toLocaleString('en-IN',{minimumFractionDigits:2})}</span>
         <a href="/api/crm/invoices/${inv.id}/pdf" target="_blank" class="btn btn-outline btn-sm" style="font-size:10px;padding:3px 8px">Download</a>
-        <button class="btn btn-outline btn-sm" style="font-size:10px;padding:3px 8px" onclick="sendPIWhatsApp(${cid},${inv.id},'${esc(inv.filename).replace(/'/g,"\\'")}')">Send WA</button>
         <button style="border:none;background:none;color:var(--muted);cursor:pointer;font-size:14px" onclick="deletePIInvoice(${cid},${inv.id})" title="Delete">✕</button>
       </div>`;
     }).join('');
