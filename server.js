@@ -1293,14 +1293,22 @@ app.post('/api/whatsapp/webhook', (req, res) => {
       for (const m of value.messages) {
         const fromPhone = m.from; // e.g. "918886772827"
         const body = m.text?.body || m.button?.text || m.interactive?.button_reply?.title || `[${m.type}]`;
-        const cust = findCustomerByPhone(fromPhone);
+        let cust = findCustomerByPhone(fromPhone);
+        if (!cust) {
+          const clean = fromPhone.replace(/\D/g,'').slice(-10);
+          const now = new Date();
+          const autoName = 'WA-' + now.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}) + '-' + now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:false}).replace(':','');
+          const r = db.prepare("INSERT INTO customers_v2 (name,company,phone,status,source,customer_type,country) VALUES (?,?,?,?,?,?,?)")
+            .run(autoName, '', clean, 'Lead', 'WhatsApp Inbound', 'Others', 'India');
+          db.prepare("INSERT INTO customer_phones (customer_id, phone, label, is_primary) VALUES (?,?,?,1)").run(r.lastInsertRowid, clean, autoName);
+          cust = { id: r.lastInsertRowid, name: autoName, phone: clean };
+        }
         db.prepare(`INSERT INTO wa_messages (customer_id, phone, direction, body, msg_type, wa_msg_id, status, author) VALUES (?,?,?,?,?,?,?,?)`)
-          .run(cust ? cust.id : null, fromPhone, 'in', body, m.type || 'text', m.id || '', 'received', '');
-        // Create an in-app notification for incoming customer messages
+          .run(cust.id, fromPhone, 'in', body, m.type || 'text', m.id || '', 'received', '');
         try {
-          const notifBody = cust ? `${cust.name}: ${body}`.slice(0, 200) : `${fromPhone}: ${body}`.slice(0, 200);
+          const notifBody = `${cust.name}: ${body}`.slice(0, 200);
           db.prepare('INSERT INTO notifications (customer_id, type, body) VALUES (?,?,?)')
-            .run(cust ? cust.id : null, 'wa_message', notifBody);
+            .run(cust.id, 'wa_message', notifBody);
         } catch(e) {}
       }
     }
