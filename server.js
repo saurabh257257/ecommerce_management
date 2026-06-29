@@ -6,6 +6,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
+const PDFDocument = require('pdfkit');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -155,6 +156,17 @@ try { db.exec("ALTER TABLE customers_v2 ADD COLUMN country TEXT DEFAULT ''"); } 
 try { db.exec("ALTER TABLE products ADD COLUMN flag_out_of_stock INTEGER DEFAULT 0"); } catch(e) {}
 try { db.exec("ALTER TABLE products ADD COLUMN flag_for_internal INTEGER DEFAULT 0"); } catch(e) {}
 try { db.exec("ALTER TABLE team_members ADD COLUMN password TEXT DEFAULT ''"); } catch(e) {}
+try { db.exec(`CREATE TABLE IF NOT EXISTS proforma_invoices (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  customer_id INTEGER NOT NULL,
+  filename TEXT NOT NULL,
+  items TEXT DEFAULT '[]',
+  freight REAL DEFAULT 0,
+  pf REAL DEFAULT 0,
+  remarks TEXT DEFAULT '',
+  total REAL DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now'))
+)`); } catch(e) {}
 try { db.exec("CREATE INDEX IF NOT EXISTS idx_wa_phone ON wa_messages(phone)"); } catch(e) {}
 try { db.exec("CREATE INDEX IF NOT EXISTS idx_wa_customer ON wa_messages(customer_id)"); } catch(e) {}
 try { db.exec("CREATE INDEX IF NOT EXISTS idx_phones_customer ON customer_phones(customer_id)"); } catch(e) {}
@@ -1373,6 +1385,172 @@ app.get('/api/download/images.zip', (req, res) => {
     zip.stderr.on('data', () => {});
     zip.on('error', () => res.status(500).end());
   } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Proforma Invoice ──────────────────────────────────────────
+const COMPANY = {
+  name: 'SWASTIK METAL COMPONENTS',
+  gstin: '09ARLPG4112H1ZY',
+  address: 'PLOT NO- 366, UDYOG KENDRA 2nd, ECOTECH 3rd, GRATER NOIDA, GAUTAM BUDDHA NAGAR, UP- 201306',
+  stateCode: '9'
+};
+
+app.get('/api/crm/customers/:id/invoices', (req, res) => {
+  const rows = db.prepare('SELECT * FROM proforma_invoices WHERE customer_id=? ORDER BY created_at DESC').all(req.params.id);
+  res.json(rows);
+});
+
+app.post('/api/crm/customers/:id/invoices', (req, res) => {
+  const cid = req.params.id;
+  const c = db.prepare('SELECT * FROM customers_v2 WHERE id=?').get(cid);
+  if (!c) return res.status(404).json({ error: 'Customer not found' });
+  const { items, freight, pf, remarks } = req.body;
+  if (!items || !items.length) return res.status(400).json({ error: 'At least one item required' });
+  const taxableTotal = items.reduce((s, it) => s + (parseFloat(it.taxable) || 0), 0);
+  const totalFreight = parseFloat(freight) || 0;
+  const totalPF = parseFloat(pf) || 0;
+  const tax = (taxableTotal + totalFreight + totalPF) * 0.18;
+  const total = taxableTotal + totalFreight + totalPF + tax;
+  const dateStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-');
+  const safeName = (c.name || 'Customer').replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_');
+  const filename = `${safeName}_${dateStr}.pdf`;
+  const r = db.prepare('INSERT INTO proforma_invoices (customer_id, filename, items, freight, pf, remarks, total) VALUES (?,?,?,?,?,?,?)')
+    .run(cid, filename, JSON.stringify(items), totalFreight, totalPF, remarks || '', total);
+  res.json({ success: true, id: r.lastInsertRowid, filename });
+});
+
+app.delete('/api/crm/invoices/:id', (req, res) => {
+  const { password } = req.body || {};
+  const admin = db.prepare("SELECT password FROM team_members WHERE role='admin' LIMIT 1").get();
+  const loginPw = process.env.ADMIN_PASSWORD || (admin && admin.password) || 'admin';
+  if (password !== loginPw) return res.status(403).json({ error: 'Wrong admin password' });
+  db.prepare('DELETE FROM proforma_invoices WHERE id=?').run(req.params.id);
+  res.json({ success: true });
+});
+
+app.get('/api/crm/invoices/:id/pdf', (req, res) => {
+  const inv = db.prepare('SELECT * FROM proforma_invoices WHERE id=?').get(req.params.id);
+  if (!inv) return res.status(404).json({ error: 'Invoice not found' });
+  const c = db.prepare('SELECT * FROM customers_v2 WHERE id=?').get(inv.customer_id);
+  if (!c) return res.status(404).json({ error: 'Customer not found' });
+  const items = JSON.parse(inv.items || '[]');
+  const doc = new PDFDocument({ size: 'A4', margin: 40 });
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `inline; filename="${inv.filename}"`);
+  doc.pipe(res);
+  const W = doc.page.width - 80;
+  const LX = 40;
+  const invDate = new Date(inv.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-');
+
+  // Title
+  doc.font('Helvetica-Bold').fontSize(18).text('PROFORMA INVOICE', LX, 40, { align: 'center', width: W });
+  doc.fontSize(10).text(`PROFORMA INVOICE-`, LX + W - 180, 40, { width: 180, align: 'right' });
+  doc.text(`Date: ${invDate}`, LX + W - 180, 52, { width: 180, align: 'right' });
+
+  // Header table
+  const HY = 80;
+  const HW = W / 2;
+  doc.rect(LX, HY, W, 120).stroke();
+  doc.moveTo(LX + HW, HY).lineTo(LX + HW, HY + 120).stroke();
+
+  // Consignee label
+  doc.font('Helvetica-Bold').fontSize(9).text('Consignee (Ship to)', LX + HW, HY - 12, { width: HW, align: 'right' });
+
+  // Left side - Swastik
+  let ly = HY + 8;
+  const lbl = (label, val, y) => {
+    doc.font('Helvetica-Bold').fontSize(8).text(label, LX + 5, y, { width: 65 });
+    doc.font('Helvetica').fontSize(8).text(val, LX + 72, y, { width: HW - 82 });
+  };
+  lbl('GSTIN :', COMPANY.gstin, ly); ly += 14;
+  lbl('NAME :', COMPANY.name, ly); ly += 14;
+  lbl('ADDRESS :', COMPANY.address, ly); ly += 36;
+  lbl('STATE CODE', COMPANY.stateCode, ly);
+
+  // Right side - Customer
+  let ry = HY + 8;
+  const rlbl = (label, val, y) => {
+    doc.font('Helvetica-Bold').fontSize(8).text(label, LX + HW + 5, y, { width: 85 });
+    doc.font('Helvetica').fontSize(8).text(val || '', LX + HW + 92, y, { width: HW - 102 });
+  };
+  rlbl('GSTIN :', c.gst_number || '', ry); ry += 14;
+  rlbl('NAME :', c.name || '', ry); ry += 14;
+  rlbl('ADDRESS :', [c.city, c.state].filter(Boolean).join(', ') || '', ry); ry += 28;
+  rlbl('STATE CODE', c.state || '', ry); ry += 14;
+  rlbl('CONTACT PERSON :', c.name || '', ry); ry += 14;
+  rlbl('CONTACT NO :', c.phone || '', ry);
+
+  // Items table header
+  let TY = HY + 135;
+  const cols = [
+    { label: 'Sr', w: 22 }, { label: 'HSN CODE', w: 55 }, { label: 'DESCRIPTION', w: 120 },
+    { label: 'WIDTH', w: 38 }, { label: 'THICK', w: 38 }, { label: 'GRADE', w: 40 },
+    { label: 'QTY', w: 30 }, { label: 'PER KG\nRATE', w: 50 }, { label: 'P&F/\nFREIGHT', w: 45 },
+    { label: 'TAXABLE\nVALUE', w: 55 }, { label: 'IGST %', w: 35 }, { label: 'Date', w: 50 }
+  ];
+  const totalColW = cols.reduce((s, c) => s + c.w, 0);
+  const scale = W / totalColW;
+  cols.forEach(c => c.w = Math.round(c.w * scale));
+
+  // Header row
+  doc.rect(LX, TY, W, 28).fillAndStroke('#f0f0f0', '#000');
+  let cx = LX;
+  cols.forEach(col => {
+    doc.fillColor('#000').font('Helvetica-Bold').fontSize(6.5).text(col.label, cx + 2, TY + 4, { width: col.w - 4, align: 'center' });
+    cx += col.w;
+  });
+  TY += 28;
+
+  // Item rows
+  items.forEach((it, i) => {
+    const rh = 22;
+    doc.rect(LX, TY, W, rh).stroke();
+    cx = LX;
+    const vals = [
+      i + 1, it.hsn || '85079090', it.description || '', it.width || '', it.thickness || '',
+      it.grade || '', it.qty || '', parseFloat(it.rate || 0).toFixed(2),
+      parseFloat(it.pf_freight || 0).toFixed(2), parseFloat(it.taxable || 0).toFixed(2),
+      it.igst || '18', invDate
+    ];
+    vals.forEach((v, j) => {
+      doc.font('Helvetica').fontSize(7).fillColor('#000').text(String(v), cx + 2, TY + 5, { width: cols[j].w - 4, align: 'center' });
+      cx += cols[j].w;
+    });
+    TY += rh;
+  });
+
+  // Totals
+  const taxableTotal = items.reduce((s, it) => s + (parseFloat(it.taxable) || 0), 0);
+  const totalFreight = inv.freight || 0;
+  const totalPF = inv.pf || 0;
+  const tax = (taxableTotal + totalFreight + totalPF) * 0.18;
+  const grandTotal = taxableTotal + totalFreight + totalPF + tax;
+
+  const totals = [
+    ['TOTAL TAXABLE VALUE', taxableTotal.toFixed(2)],
+    ['FREIGHT', totalFreight.toFixed(2)],
+    ['TOTAL P and F', totalPF.toFixed(2)],
+    ['TAX-18%', tax.toFixed(2)],
+    ['TOTAL', grandTotal.toFixed(2)]
+  ];
+  totals.forEach(([label, val]) => {
+    doc.rect(LX, TY, W, 18).stroke();
+    doc.font(label === 'TOTAL' ? 'Helvetica-Bold' : 'Helvetica').fontSize(8).fillColor('#000');
+    doc.text(label, LX + 5, TY + 4, { width: W - 70 });
+    doc.text(val, LX + W - 65, TY + 4, { width: 60, align: 'right' });
+    TY += 18;
+  });
+
+  // Remarks & Signature
+  TY += 10;
+  doc.rect(LX, TY, W / 2, 80).stroke();
+  doc.rect(LX + W / 2, TY, W / 2, 80).stroke();
+  doc.font('Helvetica-Bold').fontSize(9).text('REMARKS :', LX + 8, TY + 8);
+  doc.font('Helvetica').fontSize(8).text(inv.remarks || '', LX + 8, TY + 24, { width: W / 2 - 20 });
+  doc.font('Helvetica-Bold').fontSize(9).text('FOR SWASTIK METAL COMPONENTS', LX + W / 2 + 10, TY + 8);
+  doc.font('Helvetica-Bold').fontSize(9).text('AUTHORIZED SIGNATORY', LX + W / 2 + 10, TY + 58);
+
+  doc.end();
 });
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));

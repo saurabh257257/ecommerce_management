@@ -1095,6 +1095,30 @@ function renderDetail() {
         </div>
       </div>
     </div>
+    <div class="acc-sec" id="accSec-pi-${c.id}" style="border-left-color:#d97706">
+      <div class="acc-head" onclick="toggleAcc('pi-${c.id}')" style="background:#fffbeb">
+        <div class="acc-head-title">📄 Proforma Invoices</div>
+        <div class="acc-arrow" id="accArrow-pi-${c.id}">▶</div>
+      </div>
+      <div class="acc-body" id="accBody-pi-${c.id}">
+        <div id="piList-${c.id}" style="margin-bottom:12px"><span style="color:var(--muted);font-size:12px">Loading...</span></div>
+        <button class="btn btn-primary btn-sm" onclick="openPIForm(${c.id})">+ Create Proforma Invoice</button>
+        <div id="piForm-${c.id}" style="display:none;margin-top:14px;border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--bg)">
+          <div style="font-size:13px;font-weight:700;margin-bottom:10px">New Proforma Invoice</div>
+          <div id="piItems-${c.id}"></div>
+          <button class="btn btn-outline btn-sm" onclick="addPIRow(${c.id})" style="margin:8px 0">+ Add Item</button>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+            <div><label style="font-size:10px;color:var(--muted);font-weight:600">FREIGHT</label><input type="number" id="piFreight-${c.id}" value="0" step="0.01" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"></div>
+            <div><label style="font-size:10px;color:var(--muted);font-weight:600">P&amp;F</label><input type="number" id="piPF-${c.id}" value="0" step="0.01" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"></div>
+          </div>
+          <div style="margin-top:8px"><label style="font-size:10px;color:var(--muted);font-weight:600">REMARKS</label><input type="text" id="piRemarks-${c.id}" placeholder="Optional remarks" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"></div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn btn-primary btn-sm" onclick="savePIForm(${c.id})">Generate PI</button>
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('piForm-${c.id}').style.display='none'">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="acc-sec sec-tl" id="accSec-tl-${c.id}">
       <div class="acc-head" onclick="toggleAcc('tl-${c.id}')">
         <div class="acc-head-title">🕘 Timeline — Activity &amp; Notes</div>
@@ -1311,6 +1335,7 @@ function toggleAcc(key) {
       _waOpenCid=null; _waStopPoll();
     }
   }
+  if(key.startsWith('pi-')){ const cid=key.slice(3); if(open) loadPIList(+cid); }
 }
 
 // Poll the open WhatsApp thread every few seconds so incoming replies show up without manual action
@@ -1760,6 +1785,162 @@ async function saveACP(){
   _serverStats=null; fetch('/api/dashboard/stats').then(r=>r.json()).then(st=>{_serverStats=st;renderTiles();}).catch(()=>{});
   renderTiles(); renderFilterSidebar(); renderList();
   if(d.id) selectC(d.id);
+}
+
+// ── Proforma Invoice ──────────────────────────────────────────
+async function loadPIList(cid) {
+  const el = document.getElementById('piList-' + cid);
+  if (!el) return;
+  try {
+    const invoices = await fetch(`/api/crm/customers/${cid}/invoices`).then(r => r.json());
+    if (!invoices.length) { el.innerHTML = '<span style="color:var(--muted);font-size:12px">No invoices yet</span>'; return; }
+    el.innerHTML = invoices.map(inv => {
+      const d = new Date(inv.created_at).toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'numeric'});
+      return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;background:var(--card)">
+        <span style="font-size:13px;font-weight:600;flex:1">${esc(inv.filename)}</span>
+        <span style="font-size:11px;color:var(--muted)">${d}</span>
+        <span style="font-size:11px;font-weight:700;color:var(--primary)">₹${parseFloat(inv.total).toLocaleString('en-IN',{minimumFractionDigits:2})}</span>
+        <a href="/api/crm/invoices/${inv.id}/pdf" target="_blank" class="btn btn-outline btn-sm" style="font-size:10px;padding:3px 8px">Download</a>
+        <button class="btn btn-outline btn-sm" style="font-size:10px;padding:3px 8px" onclick="sendPIWhatsApp(${cid},${inv.id},'${esc(inv.filename).replace(/'/g,"\\'")}')">Send WA</button>
+        <button style="border:none;background:none;color:var(--muted);cursor:pointer;font-size:14px" onclick="deletePIInvoice(${cid},${inv.id})" title="Delete">✕</button>
+      </div>`;
+    }).join('');
+  } catch(e) { el.innerHTML = '<span style="color:var(--danger);font-size:12px">Could not load invoices</span>'; }
+}
+
+function openPIForm(cid) {
+  const form = document.getElementById('piForm-' + cid);
+  form.style.display = 'block';
+  const items = document.getElementById('piItems-' + cid);
+  items.innerHTML = '';
+  addPIRow(cid);
+}
+
+let _piRowId = 0;
+function addPIRow(cid) {
+  const rid = ++_piRowId;
+  const container = document.getElementById('piItems-' + cid);
+  const productOpts = allProducts.map(p => `<option value="${esc(p.name)}" data-price="${p.price||p.new_price||0}" data-hsn="85079090">${esc(p.name)}</option>`).join('');
+  container.insertAdjacentHTML('beforeend', `
+    <div id="piRow-${rid}" style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:6px;background:var(--card)">
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+        <select id="piProd-${rid}" onchange="onPIProductChange(${rid})" style="flex:2;font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px">
+          <option value="">— Select product —</option>
+          ${productOpts}
+          <option value="__custom">Other (custom)</option>
+        </select>
+        <button onclick="document.getElementById('piRow-${rid}').remove()" style="border:none;background:none;color:var(--muted);cursor:pointer;font-size:14px">✕</button>
+      </div>
+      <input type="text" id="piDesc-${rid}" placeholder="Description" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;margin-bottom:6px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:6px">
+        <div><label style="font-size:9px;color:var(--muted)">HSN</label><input type="text" id="piHsn-${rid}" value="85079090" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px"></div>
+        <div><label style="font-size:9px;color:var(--muted)">Width</label><input type="text" id="piW-${rid}" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px"></div>
+        <div><label style="font-size:9px;color:var(--muted)">Thickness</label><input type="text" id="piT-${rid}" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px"></div>
+        <div><label style="font-size:9px;color:var(--muted)">Grade</label><input type="text" id="piG-${rid}" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px"></div>
+        <div><label style="font-size:9px;color:var(--muted)">QTY (kg)</label><input type="number" id="piQ-${rid}" value="1" min="1" oninput="calcPIRow(${rid})" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:6px">
+        <div><label style="font-size:9px;color:var(--muted)">Rate/kg</label><input type="number" id="piR-${rid}" value="0" step="0.01" oninput="calcPIRow(${rid})" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px"></div>
+        <div><label style="font-size:9px;color:var(--muted)">P&F/Freight</label><input type="number" id="piPF2-${rid}" value="0" step="0.01" oninput="calcPIRow(${rid})" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px"></div>
+        <div><label style="font-size:9px;color:var(--muted)">Taxable</label><input type="text" id="piTax-${rid}" value="0.00" readonly style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:#f1f5f9;font-weight:700"></div>
+      </div>
+    </div>
+  `);
+}
+
+function onPIProductChange(rid) {
+  const sel = document.getElementById('piProd-' + rid);
+  const opt = sel.options[sel.selectedIndex];
+  if (sel.value === '__custom') {
+    document.getElementById('piDesc-' + rid).value = '';
+    document.getElementById('piDesc-' + rid).focus();
+  } else if (sel.value) {
+    document.getElementById('piDesc-' + rid).value = sel.value;
+    const price = parseFloat(opt.dataset.price) || 0;
+    document.getElementById('piR-' + rid).value = price;
+    calcPIRow(rid);
+  }
+}
+
+function calcPIRow(rid) {
+  const qty = parseFloat(document.getElementById('piQ-' + rid).value) || 0;
+  const rate = parseFloat(document.getElementById('piR-' + rid).value) || 0;
+  const pf = parseFloat(document.getElementById('piPF2-' + rid).value) || 0;
+  const taxable = qty * rate + pf;
+  document.getElementById('piTax-' + rid).value = taxable.toFixed(2);
+}
+
+function collectPIRows(cid) {
+  const container = document.getElementById('piItems-' + cid);
+  const rows = container.querySelectorAll('[id^="piRow-"]');
+  const items = [];
+  rows.forEach(row => {
+    const rid = row.id.split('-')[1];
+    items.push({
+      hsn: document.getElementById('piHsn-' + rid).value,
+      description: document.getElementById('piDesc-' + rid).value,
+      width: document.getElementById('piW-' + rid).value,
+      thickness: document.getElementById('piT-' + rid).value,
+      grade: document.getElementById('piG-' + rid).value,
+      qty: document.getElementById('piQ-' + rid).value,
+      rate: document.getElementById('piR-' + rid).value,
+      pf_freight: document.getElementById('piPF2-' + rid).value,
+      taxable: document.getElementById('piTax-' + rid).value,
+      igst: '18'
+    });
+  });
+  return items;
+}
+
+async function savePIForm(cid) {
+  const items = collectPIRows(cid);
+  if (!items.length || !items.some(it => it.description)) { toast('Add at least one item', 'error'); return; }
+  const freight = parseFloat(document.getElementById('piFreight-' + cid).value) || 0;
+  const pf = parseFloat(document.getElementById('piPF-' + cid).value) || 0;
+  const remarks = document.getElementById('piRemarks-' + cid).value.trim();
+  try {
+    const r = await fetch(`/api/crm/customers/${cid}/invoices`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items, freight, pf, remarks })
+    });
+    const d = await r.json();
+    if (!r.ok) { toast(d.error || 'Failed', 'error'); return; }
+    toast('Proforma Invoice created!', 'success');
+    document.getElementById('piForm-' + cid).style.display = 'none';
+    loadPIList(cid);
+    window.open(`/api/crm/invoices/${d.id}/pdf`, '_blank');
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function deletePIInvoice(cid, invId) {
+  const pw = prompt('Enter admin password to delete:');
+  if (!pw) return;
+  try {
+    const r = await fetch(`/api/crm/invoices/${invId}`, {
+      method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw })
+    });
+    const d = await r.json();
+    if (!r.ok) { toast(d.error || 'Delete failed', 'error'); return; }
+    toast('Invoice deleted', 'success');
+    loadPIList(cid);
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function sendPIWhatsApp(cid, invId, filename) {
+  const phone = selCust && selCust.phone;
+  if (!phone) { toast('No phone number', 'error'); return; }
+  try {
+    const pdfUrl = window.location.origin + `/api/crm/invoices/${invId}/pdf`;
+    const r = await fetch('/api/whatsapp/send-media', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, mediaUrl: pdfUrl, type: 'document', filename, caption: 'Proforma Invoice - ' + filename })
+    });
+    const d = await r.json();
+    if (!r.ok) { toast(d.error || 'Failed to send', 'error'); return; }
+    toast('PI sent via WhatsApp!', 'success');
+    if (selCust) loadWaThread(cid, true);
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
 }
 
 init();
