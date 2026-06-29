@@ -914,7 +914,7 @@ async function loadCustomerPhones(cid) {
         <span style="font-size:16px;cursor:pointer" onclick="selectCustomerPhone(${cid},${p.id})" title="${p.is_primary?'WhatsApp number':'Click to use for WhatsApp'}">${p.is_primary?'🟢':'⚪'}</span>
         <a href="tel:${esc(p.phone)}" style="font-size:13px;font-weight:${p.is_primary?'600':'400'};color:var(--text);text-decoration:none">${esc(p.phone)}</a>
         ${p.is_primary?'<span style="font-size:10px;background:#16a34a;color:#fff;padding:1px 7px;border-radius:10px;font-weight:600">WhatsApp</span>':'<span style="font-size:10px;color:var(--muted);cursor:pointer" onclick="selectCustomerPhone(${cid},${p.id})">tap to select</span>'}
-        <input type="text" value="${esc(p.label || custName)}" placeholder="Contact name" onblur="updatePhoneLabel(${cid},${p.id},this.value)" onclick="event.stopPropagation()" style="flex:1;min-width:80px;font-size:11px;padding:3px 7px;border:1px solid var(--border);border-radius:5px;background:var(--card);color:var(--text);font-family:inherit">
+        <input type="text" value="${esc((!p.label || p.label === 'Primary') ? custName : p.label)}" placeholder="Contact name" onblur="updatePhoneLabel(${cid},${p.id},this.value)" onclick="event.stopPropagation()" style="flex:1;min-width:80px;font-size:11px;padding:3px 7px;border:1px solid var(--border);border-radius:5px;background:var(--card);color:var(--text);font-family:inherit">
         <button title="Remove" onclick="event.stopPropagation();removeCustomerPhone(${cid},${p.id})" style="border:none;background:none;cursor:pointer;color:var(--muted);font-size:12px">✕</button>
       </div>
     `).join('');
