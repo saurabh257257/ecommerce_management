@@ -196,30 +196,9 @@ try { db.exec("INSERT OR IGNORE INTO statuses (name,color,sort_order) VALUES ('L
 // Seed default customer types
 try { db.exec("INSERT OR IGNORE INTO customer_types (name,color,sort_order) VALUES ('EV Battery','#22c55e',1),('Supplier','#f97316',2),('Retailer','#3b82f6',3),('Distributor','#8b5cf6',4)"); } catch(e) {}
 
-// ── Compression + caching ─────────────────────────────────────
-const zlib = require('zlib');
-app.use((req, res, next) => {
-  const accept = req.headers['accept-encoding'] || '';
-  if (accept.includes('gzip')) {
-    const origSend = res.send.bind(res);
-    res.send = (body) => {
-      if (typeof body === 'string' || Buffer.isBuffer(body)) {
-        const buf = typeof body === 'string' ? Buffer.from(body) : body;
-        if (buf.length > 1024) {
-          zlib.gzip(buf, (err, compressed) => {
-            if (err) return origSend(body);
-            res.setHeader('Content-Encoding', 'gzip');
-            res.setHeader('Vary', 'Accept-Encoding');
-            origSend(compressed);
-          });
-          return;
-        }
-      }
-      origSend(body);
-    };
-  }
-  next();
-});
+// ── Compression + security ─────────────────────────────────────
+const compression = require('compression');
+app.use(compression());
 
 app.use(express.json({ limit: '15mb' }));
 app.use(express.static(path.join(__dirname), {
@@ -426,8 +405,14 @@ app.put('/api/crm/customers/:id', (req, res) => {
 });
 
 app.delete('/api/crm/customers/:id', (req, res) => {
+  const { password } = req.body || {};
+  if (password !== 'deletebyadmin') return res.status(403).json({ error: 'Wrong admin password' });
   db.prepare('DELETE FROM discussions WHERE customer_id=?').run(req.params.id);
   db.prepare('DELETE FROM customer_interests WHERE customer_id=?').run(req.params.id);
+  db.prepare('DELETE FROM customer_phones WHERE customer_id=?').run(req.params.id);
+  db.prepare('DELETE FROM customer_tags WHERE customer_id=?').run(req.params.id);
+  db.prepare('DELETE FROM proforma_invoices WHERE customer_id=?').run(req.params.id);
+  db.prepare('DELETE FROM wa_messages WHERE customer_id=?').run(req.params.id);
   db.prepare('DELETE FROM customers_v2 WHERE id=?').run(req.params.id);
   res.json({ success: true });
 });

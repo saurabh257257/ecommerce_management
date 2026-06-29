@@ -1008,25 +1008,23 @@ async function sendWaFileByPhone(cid, phone, uid) {
   loadWaThreadByPhone(cid, phone, uid);
 }
 
-async function loadWaThreadByPhone(cid, phone, uid) {
-  const thread = document.getElementById('waThread-' + uid);
+async function loadWaChat(cid, phone, threadElId) {
+  const thread = document.getElementById(threadElId);
   if (!thread) return;
   try {
-    const r = await fetch('/api/whatsapp/messages/' + cid);
-    const msgs = await r.json();
-    const filtered = msgs.filter(m => {
-      const mPhone = (m.phone||'').replace(/\D/g,'').slice(-10);
-      const targetPhone = phone.replace(/\D/g,'').slice(-10);
-      return mPhone === targetPhone;
-    });
+    const msgs = await fetch('/api/whatsapp/messages/' + cid).then(r=>r.json());
+    const last10 = phone ? phone.replace(/\D/g,'').slice(-10) : null;
+    const filtered = last10 ? msgs.filter(m => (m.phone||'').replace(/\D/g,'').slice(-10) === last10) : msgs;
     if (!filtered.length) { thread.innerHTML = '<div class="wa-empty">No messages yet</div>'; return; }
+    const wasNear = thread.scrollHeight - thread.scrollTop - thread.clientHeight < 80;
     thread.innerHTML = filtered.map(m => {
       const t = new Date(m.created_at.replace(' ','T')+'Z').toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
       return '<div class="wa-bubble '+(m.direction==='out'?'out':'in')+'">'+renderWaBody(m.body)+'<span class="wa-time">'+t+(m.direction==='out'?(' · '+(m.status||'sent')):'')+'</span></div>';
     }).join('');
-    thread.scrollTop = thread.scrollHeight;
+    if (wasNear || !thread.dataset.loaded) { thread.scrollTop = thread.scrollHeight; thread.dataset.loaded = '1'; }
   } catch(e) { thread.innerHTML = '<div class="wa-empty">Could not load</div>'; }
 }
+function loadWaThreadByPhone(cid, phone, uid) { return loadWaChat(cid, phone, 'waThread-'+uid); }
 
 async function loadWaPISelectByUid(cid, uid) {
   const sel = document.getElementById('waPISel-' + uid);
@@ -1577,26 +1575,7 @@ async function saveInlineNote(cid) {
 
 // ── WhatsApp panel ────────────────────────────────────────────────
 let _waOpenCid=null;
-async function loadWaThread(cid,silent) {
-  const thread=document.getElementById('waThread-'+cid);
-  if(!thread)return;
-  if(!silent) thread.innerHTML='<div class="wa-empty">Loading conversation…</div>';
-  try {
-    const r=await fetch(`/api/whatsapp/messages/${cid}`);
-    const msgs=await r.json();
-    if(!msgs.length){ thread.innerHTML='<div class="wa-empty">No WhatsApp conversation yet — send the first message below 👇</div>'; return; }
-    const wasNearBottom = thread.scrollHeight - thread.scrollTop - thread.clientHeight < 80;
-    thread.innerHTML=msgs.map(m=>{
-      const t=new Date(m.created_at.replace(' ','T')+'Z').toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-      return `<div class="wa-bubble ${m.direction==='out'?'out':'in'}">${renderWaBody(m.body)}<span class="wa-time">${t}${m.direction==='out'?(' · '+(m.status||'sent')):''}</span></div>`;
-    }).join('');
-    if(!silent || wasNearBottom) thread.scrollTop=thread.scrollHeight;
-  } catch(e){ if(!silent) thread.innerHTML='<div class="wa-empty">Could not load messages</div>'; }
-}
-function _waPhone(cid,phone) {
-  // Production number — always message the customer's actual phone (no test override)
-  return phone;
-}
+function loadWaThread(cid,silent) { return loadWaChat(cid, null, 'waThread-'+cid); }
 async function sendWaText(cid,phone) {
   phone=_waPhone(cid,phone);
   const inp=document.getElementById('waInput-'+cid);
@@ -2145,21 +2124,7 @@ async function sendWaTextFs(uid, cid, phone) {
   loadWaThreadByPhone(cid, phone, uid);
 }
 
-async function loadWaThreadFs(uid, cid, phone) {
-  const thread = document.getElementById('waThreadFs-' + uid);
-  if (!thread) return;
-  try {
-    const msgs = await fetch('/api/whatsapp/messages/' + cid).then(r=>r.json());
-    const last10 = phone.replace(/\D/g,'').slice(-10);
-    const filtered = msgs.filter(m => (m.phone||'').replace(/\D/g,'').slice(-10) === last10);
-    if (!filtered.length) { thread.innerHTML = '<div class="wa-empty">No messages yet</div>'; return; }
-    thread.innerHTML = filtered.map(m => {
-      const t = new Date(m.created_at.replace(' ','T')+'Z').toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-      return '<div class="wa-bubble '+(m.direction==='out'?'out':'in')+'">'+renderWaBody(m.body)+'<span class="wa-time">'+t+(m.direction==='out'?(' · '+(m.status||'sent')):'')+'</span></div>';
-    }).join('');
-    thread.scrollTop = thread.scrollHeight;
-  } catch(e) { thread.innerHTML = '<div class="wa-empty">Could not load</div>'; }
-}
+function loadWaThreadFs(uid, cid, phone) { return loadWaChat(cid, phone, 'waThreadFs-'+uid); }
 
 function renderWaBody(body) {
   if (!body) return '';
@@ -2176,11 +2141,10 @@ function renderWaBody(body) {
 async function deleteCustomer(cid, name) {
   const pw = prompt('Enter admin password to delete "' + name + '":');
   if (!pw) return;
-  if (pw !== 'deletebyadmin') { toast('Wrong password', 'error'); return; }
   if (!confirm('Are you sure you want to permanently delete "' + name + '"?')) return;
   try {
-    const r = await fetch('/api/crm/customers/' + cid, { method: 'DELETE' });
-    if (!r.ok) { toast('Delete failed', 'error'); return; }
+    const r = await fetch('/api/crm/customers/' + cid, { method: 'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({password:pw}) });
+    if (!r.ok) { const d = await r.json().catch(()=>({})); toast(d.error || 'Delete failed', 'error'); return; }
     toast(name + ' deleted', 'success');
     selCust = null; selId = null;
     document.getElementById('tmDetail').style.display = 'none';
