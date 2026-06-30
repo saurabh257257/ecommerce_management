@@ -192,9 +192,25 @@ try {
 // Seed initial team members
 try { db.exec("INSERT OR IGNORE INTO team_members (name,color,role) VALUES ('Rohan','#1d4ed8','Sales'),('Saurabh','#15803d','Sales')"); } catch(e) {}
 // Seed default statuses
-try { db.exec("INSERT OR IGNORE INTO statuses (name,color,sort_order) VALUES ('Lead','#f59e0b',1),('Contacted','#3b82f6',2),('Contacted but No Response','#f97316',3),('Onboarded','#22c55e',4)"); } catch(e) {}
-// Seed default customer types
-try { db.exec("INSERT OR IGNORE INTO customer_types (name,color,sort_order) VALUES ('EV Battery','#22c55e',1),('Supplier','#f97316',2),('Retailer','#3b82f6',3),('Distributor','#8b5cf6',4)"); } catch(e) {}
+// Enforce exactly the 4 approved statuses and 4 approved customer types
+{
+  const APPROVED_STATUSES = [
+    { name: 'Lead', color: '#f59e0b', sort_order: 0 },
+    { name: 'Contacted and Has Potential', color: '#3b82f6', sort_order: 1 },
+    { name: 'Contacted but No Response', color: '#ef4444', sort_order: 2 },
+    { name: 'Onboarded', color: '#10b981', sort_order: 3 },
+  ];
+  const APPROVED_TYPES = [
+    { name: 'Battery Manufacturer', color: '#6366f1', sort_order: 0 },
+    { name: 'Retailer', color: '#0ea5e9', sort_order: 1 },
+    { name: 'Trader', color: '#f59e0b', sort_order: 2 },
+    { name: 'Others', color: '#10b981', sort_order: 3 },
+  ];
+  db.prepare('DELETE FROM statuses').run();
+  APPROVED_STATUSES.forEach(s => db.prepare('INSERT INTO statuses(name,color,sort_order) VALUES(?,?,?)').run(s.name, s.color, s.sort_order));
+  db.prepare('DELETE FROM customer_types').run();
+  APPROVED_TYPES.forEach(t => db.prepare('INSERT INTO customer_types(name,color,sort_order) VALUES(?,?,?)').run(t.name, t.color, t.sort_order));
+}
 
 // ── Compression + security ─────────────────────────────────────
 const compression = require('compression');
