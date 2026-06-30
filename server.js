@@ -877,7 +877,7 @@ app.get('/api/dashboard/stats', (req, res) => {
   const today = new Date().toISOString().slice(0, 10);
   const customers = db.prepare('SELECT assigned_to, status, next_followup FROM customers_v2').all();
   const byAssignee = { Rohan: 0, Saurabh: 0, Unassigned: 0 };
-  const byStatus = { Lead: 0, 'Contacted and Has Response': 0, 'Contacted but No Response': 0, Onboarded: 0 };
+  const byStatus = { Lead: 0, 'Contacted and Has Potential': 0, 'Contacted but No Response': 0, Onboarded: 0 };
   let overdue = 0, dueToday = 0;
   customers.forEach(c => {
     byAssignee[c.assigned_to] = (byAssignee[c.assigned_to] || 0) + 1;

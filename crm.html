@@ -594,7 +594,7 @@
         </select>
         <select class="acp-field" id="acpStatus" style="padding:10px 13px">
           <option value="Lead" selected>Lead</option>
-          <option value="Contacted and Has Response">Contacted & Has Response</option>
+          <option value="Contacted and Has Potential">Contacted & Has Potential</option>
           <option value="Contacted but No Response">No Response</option>
           <option value="Onboarded">Onboarded</option>
         </select>
@@ -616,7 +616,7 @@
 <script>
 const PERSON = 'CRM';
 function logout(){ sessionStorage.removeItem('arambhika_auth'); location.replace('login.html'); }
-const S_MAP  = { Lead:'s-lead', 'Contacted and Has Response':'s-contacted', 'Contacted but No Response':'s-noresp', Onboarded:'s-onboarded' };
+const S_MAP  = { Lead:'s-lead', 'Contacted and Has Potential':'s-contacted', 'Contacted but No Response':'s-noresp', Onboarded:'s-onboarded' };
 let allCust = [], teamMembers = [], allStatuses = [], allTypes = [];
 let scope = 'all';
 let sideFilter = { type:null, status:null, state:null };
@@ -795,7 +795,7 @@ function renderTiles() {
        <div class="tm-tile-sub"><span><b class="ov">${overdue}</b> overdue</span></div>
      </div>` +
     mk('Lead','🆕 Leads', sCount('Lead'), '') +
-    mk('Contacted and Has Response','📞 Contacted & Responded', sCount('Contacted and Has Response'), '') +
+    mk('Contacted and Has Potential','📞 Contacted & Has Potential', sCount('Contacted and Has Potential'), '') +
     mk('Contacted but No Response','🔇 No Response', sCount('Contacted but No Response'), '') +
     mk('Onboarded','✅ Onboarded', sCount('Onboarded'), '');
 }
@@ -1685,9 +1685,9 @@ async function sendSelectedTemplate(cid, phone, name) {
 async function markCalled(cid) {
   const dt=new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
   await fetch(`/api/crm/customers/${cid}/discussions`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({note:`Called on ${dt}.`,author:PERSON,type:'call'})});
-  await patchC(cid,{status:'Contacted and Has Response'});
-  updateMine(cid,{status:'Contacted and Has Response'}); renderStats(); renderList();
-  if(selCust&&selCust.id===cid){selCust.status='Contacted and Has Response'; renderDetail();}
+  await patchC(cid,{status:'Contacted and Has Potential'});
+  updateMine(cid,{status:'Contacted and Has Potential'}); renderStats(); renderList();
+  if(selCust&&selCust.id===cid){selCust.status='Contacted and Has Potential'; renderDetail();}
   toast('Marked as Called','success'); openFU(cid);
 }
 async function markNoAnswer(cid) {
