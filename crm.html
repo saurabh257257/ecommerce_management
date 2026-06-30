@@ -426,10 +426,6 @@
   <!-- FILTERS BAR — horizontal, placed right after the tiles row -->
   <div class="tm-filters" id="tmFilters">
     <div class="tm-filters-row">
-      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-        <div class="tm-person" id="tmPerson" style="font-size:14px">—</div>
-        <button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 7px" onclick="logout()" title="Sign out">⏻</button>
-      </div>
       <div id="tmFilterGroups"></div>
     </div>
     <!-- Horizontal options strip — appears here (above the search bar) when a filter group is opened -->
@@ -848,7 +844,7 @@ function renderFiltOptionsRow() {
   if (!openFiltGroup) { row.style.display='none'; row.innerHTML=''; return; }
   const key = openFiltGroup;
   const [title, getItems] = FILT_DEFS[key];
-  const base = scopedList();
+  const base = allCust;
   const cntOf = it => base.filter(c=>{
     if(key==='status') return c.status===it.name;
     if(key==='type') return (c.customer_type||'')===it.name;
